@@ -1,0 +1,322 @@
+.page {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(var(--nav-total) + 20px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 12px;
+}
+
+.ctaBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 20px 12px;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  background: var(--accent);
+  border-radius: 18px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dirTabs {
+  display: flex;
+  gap: 0;
+  padding: 0 16px 0;
+  margin-bottom: 8px;
+}
+
+.dirBtn {
+  flex: 1;
+  height: 40px;
+  background: var(--surface);
+  color: var(--text3);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.dirBtn:first-child { border-radius: var(--r) 0 0 var(--r); }
+.dirBtn:last-child { border-radius: 0 var(--r) var(--r) 0; }
+
+.dirActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.paidRow {
+  display: flex;
+  gap: 6px;
+  padding: 0 16px 12px;
+}
+
+.paidBtn {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text3);
+}
+
+.paidActive {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 60px 0;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+.empty p:first-child { font-size: 40px; }
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.debtCard {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px;
+  animation: fadeInUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.list .debtCard:nth-child(1) { animation-delay: 0ms; }
+.list .debtCard:nth-child(2) { animation-delay: 60ms; }
+.list .debtCard:nth-child(3) { animation-delay: 120ms; }
+.list .debtCard:nth-child(4) { animation-delay: 180ms; }
+.list .debtCard:nth-child(5) { animation-delay: 240ms; }
+.list .debtCard:nth-child(n+6) { animation-delay: 300ms; }
+
+.paid {
+  opacity: 0.55;
+}
+
+.debtTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.debtInfo { flex: 1; }
+
+.debtPerson {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.debtComment {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.debtDue {
+  font-size: 12px;
+  color: var(--expense);
+  margin-top: 3px;
+}
+
+.debtActions {
+  display: flex;
+  gap: 6px;
+}
+
+.paidToggle,
+.delBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+}
+
+.paidToggle { color: var(--income); }
+.delBtn { color: var(--text3); }
+.payBtn { color: var(--accent2); }
+
+.debtAmounts {
+  display: flex;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.amtLabel {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 3px;
+}
+
+.amtVal {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.commVal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--expense);
+}
+
+.totalVal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent2);
+}
+
+.paidAmtVal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--income);
+}
+
+.remainingVal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--expense);
+}
+
+.progressWrap {
+  margin-top: 10px;
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--income);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.payInfo {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+
+/* Form styles */
+.formDirRow {
+  display: flex;
+  gap: 8px;
+  background: var(--surface2);
+  border-radius: var(--r);
+  padding: 4px;
+}
+
+.formDirBtn {
+  flex: 1;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text2);
+  transition: all 0.2s;
+}
+
+.formDirActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.amountRow {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text2);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.checkRow input { cursor: pointer; accent-color: var(--accent); }
+
+.commRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.amtInput {
+  width: 100%;
+  height: 44px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.saveBtn {
+  width: 100%;
+  height: 52px;
+  background: var(--accent);
+  border-radius: var(--r);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.disabled { opacity: 0.5; }

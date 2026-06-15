@@ -1,0 +1,363 @@
+.page {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(var(--nav-total) + 20px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+}
+
+.ctaBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.headerSub {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  background: var(--accent);
+  border-radius: 18px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 80px 0;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+.empty p:first-child { font-size: 52px; }
+
+/* ── Goal cards ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 16px;
+}
+
+.goalCard {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeInUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.list .goalCard:nth-child(1) { animation-delay: 0ms; }
+.list .goalCard:nth-child(2) { animation-delay: 60ms; }
+.list .goalCard:nth-child(3) { animation-delay: 120ms; }
+.list .goalCard:nth-child(n+4) { animation-delay: 180ms; }
+
+.goalDone {
+  border: 1.5px solid rgba(48, 209, 88, 0.3);
+}
+
+.goalTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goalIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.goalInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.goalName {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.goalTime {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.overdue {
+  color: var(--expense);
+}
+
+.deleteBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.deleteBtn:active { color: var(--expense); }
+
+/* ── Progress bar ── */
+.progressBg {
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  min-width: 4px;
+}
+
+.progressDone {
+  background: linear-gradient(90deg, #30D158, #34D982);
+}
+
+/* ── Amounts row ── */
+.goalAmounts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.amtLabel {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 2px;
+}
+
+.amtSaved {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--income);
+}
+
+.amtTarget {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  text-align: right;
+}
+
+.pctBadge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent2);
+  background: rgba(124, 58, 237, 0.12);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+/* ── Footer row ── */
+.goalFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 2px;
+  border-top: 1px solid var(--border);
+}
+
+.deadlineVal {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+.dailyVal {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+/* ── Contribute button ── */
+.contributeBtn {
+  width: 100%;
+  height: 40px;
+  background: rgba(124, 58, 237, 0.12);
+  border-radius: var(--r-sm);
+  color: var(--accent2);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: background 0.15s;
+}
+
+.contributeBtn:active {
+  background: rgba(124, 58, 237, 0.22);
+}
+
+/* ── Modal form styles ── */
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+.iconBtn {
+  height: 38px;
+  border-radius: 10px;
+  font-size: 20px;
+  background: var(--surface2);
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+}
+
+.iconActive {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.amountRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border-radius: var(--r);
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+}
+
+.amountInput {
+  flex: 1;
+  height: 56px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  background: none;
+  min-width: 0;
+}
+
+.amountInput::placeholder { color: var(--text3); }
+.amountInput::-webkit-inner-spin-button,
+.amountInput::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.currencyPick {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent2);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+}
+
+.currencyLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent2);
+}
+
+/* ── Contribute modal ── */
+.contributeInfo {
+  background: var(--surface2);
+  border-radius: var(--r);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contributeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.savedColor { color: var(--income); }
+
+.quickRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quickBtn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  transition: all 0.15s;
+}
+
+.quickBtn:active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.saveBtn {
+  width: 100%;
+  height: 52px;
+  background: var(--accent);
+  border-radius: var(--r);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.disabled { opacity: 0.45; }
+
+.errorMsg {
+  font-size: 13px;
+  color: var(--expense);
+  text-align: center;
+  margin-bottom: 8px;
+}

@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg: #161618;
+  --surface: #242426;
+  --surface2: #323234;
+  --surface3: #424244;
+  --accent: #7C3AED;
+  --accent2: #9C63FF;
+  --income: #30D158;
+  --income-bg: rgba(48, 209, 88, 0.12);
+  --expense: #FF453A;
+  --expense-bg: rgba(255, 69, 58, 0.12);
+  --text: #FFFFFF;
+  --text2: #ABABAB;
+  --text3: #636366;
+  --border: rgba(255, 255, 255, 0.08);
+  --nav-bg: rgba(14, 14, 16, 0.94);
+  --overlay: rgba(0, 0, 0, 0.65);
+  --r: 12px;
+  --r-sm: 8px;
+  --r-lg: 20px;
+  --nav: 68px;
+  /* set by JS from Telegram viewportStableHeight or window.innerHeight */
+  --vh: 100vh;
+  /* set by JS from Telegram contentSafeAreaInset.top (space for Telegram's close/back buttons) */
+  --tg-top: 0px;
+  /* total bottom clearance = nav bar + device safe area */
+  --nav-total: calc(var(--nav) + env(safe-area-inset-bottom, 0px));
+}
+
+:root[data-theme="light"] {
+  --bg: #F2F2F7;
+  --surface: #FFFFFF;
+  --surface2: #F2F2F7;
+  --surface3: #E5E5EA;
+  --accent: #7C3AED;
+  --accent2: #9C63FF;
+  --income: #28A745;
+  --income-bg: rgba(40, 167, 69, 0.12);
+  --expense: #DC3545;
+  --expense-bg: rgba(220, 53, 58, 0.12);
+  --text: #0B0B0F;
+  --text2: #5C5C66;
+  --text3: #8E8E93;
+  --border: rgba(0, 0, 0, 0.08);
+  --nav-bg: rgba(255, 255, 255, 0.94);
+  --overlay: rgba(0, 0, 0, 0.45);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: var(--vh);
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  padding-top: var(--tg-top);
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  outline: none;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* ── Shared keyframes ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes popIn {
+  0%   { transform: scale(0.8);  opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ── Button tap feedback ── */
+button:active { transform: scale(0.94); transition: transform 0.08s ease; }

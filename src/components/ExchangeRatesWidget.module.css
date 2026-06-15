@@ -1,0 +1,80 @@
+.card {
+  margin: 0 16px 20px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 22px 40px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.flag {
+  font-size: 16px;
+}
+
+.code {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.rate {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.unit {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.diff {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+}
+
+.up { color: var(--income, #30d158); }
+.down { color: var(--expense, #ff453a); }
+.flat { color: var(--text3); }
+
+.muted {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  padding: 8px 0;
+}
+
+.source {
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--text3);
+  text-align: right;
+  letter-spacing: 0.04em;
+}

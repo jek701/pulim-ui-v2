@@ -1,0 +1,113 @@
+.page { flex: 1; overflow-y: auto; padding-bottom: calc(var(--nav-total) + 20px); }
+
+.header { padding: 20px 20px 16px; }
+.header h1 { font-size: 24px; font-weight: 700; }
+
+.ctaBar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 12px;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--r-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.walletCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px 16px;
+}
+
+.walletIcon { font-size: 22px; flex-shrink: 0; }
+
+.walletMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.walletName { font-size: 15px; font-weight: 500; }
+
+.walletBalance { font-size: 15px; font-weight: 700; color: var(--income); flex-shrink: 0; }
+
+.includeBtn {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.includeBtnOn {
+  background: rgba(48, 209, 88, 0.14);
+  color: var(--income);
+}
+
+.includeBtnOff {
+  background: var(--surface2);
+  color: var(--text3);
+}
+
+.delBtn { color: var(--text3); padding: 4px; flex-shrink: 0; }
+.delBtn:hover { color: var(--expense); }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+/* Modal */
+.fieldLabel { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; display: block; }
+.numInput { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; font-size: 15px; color: var(--text); }
+.saveBtn { width: 100%; background: var(--accent); color: #fff; border-radius: var(--r); padding: 14px; font-size: 15px; font-weight: 600; }
+.saveBtn.disabled { opacity: 0.45; }
+.errorMsg { font-size: 13px; color: var(--expense); text-align: center; }
+
+.editBalBtn {
+  padding: 5px;
+  color: var(--text3);
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  margin-left: auto;
+}
+.editBalBtn:hover { color: var(--accent); }
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.checkboxRow input {
+  width: 16px;
+  height: 16px;
+}

@@ -1,0 +1,108 @@
+.loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--surface2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.pageAnim {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeInUp 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.setup {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.setupCard {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 380px;
+}
+
+.setupIcon {
+  font-size: 40px;
+  text-align: center;
+}
+
+.setupCard h2 {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.setupCard p {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.setupCode {
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  font-size: 11px;
+  color: var(--accent2);
+  font-family: monospace;
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.7;
+}
+
+.setupHint {
+  font-size: 13px;
+  color: var(--text3);
+}
+
+.setupHint strong {
+  color: var(--text2);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+.primaryBtn {
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+}

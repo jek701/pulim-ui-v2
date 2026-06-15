@@ -1,0 +1,409 @@
+.page {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(var(--nav-total) + 20px);
+}
+
+/* ── Header ─────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.monthNav span {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.monthNav button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Calendar Grid ──────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 0 12px;
+}
+
+.dayHeader {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  padding: 6px 0 8px;
+}
+
+.empty {
+  /* placeholder cell */
+}
+
+.day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px 5px;
+  border-radius: var(--r-sm);
+  min-height: 54px;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.day:active {
+  transform: scale(0.95);
+}
+
+.today .dayNum {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selected {
+  outline: 1.5px solid var(--accent2);
+}
+
+.dayNum {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dayAmt {
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Planned dots ──────────────────────────── */
+.dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent2);
+  flex-shrink: 0;
+}
+
+.dotSub {
+  background: #FF9F0A;
+}
+
+.dotIncome {
+  background: var(--income);
+}
+
+.dotDebt {
+  background: var(--expense);
+}
+
+.dotMore {
+  font-size: 7px;
+  color: var(--accent2);
+  font-weight: 700;
+}
+
+/* ── Day Detail Panel ───────────────────────── */
+.detail {
+  margin: 12px 16px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  border: 1px solid var(--border);
+  animation: fadeInUp 0.2s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.detailHeader span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.closeDetail {
+  color: var(--text3);
+  padding: 4px;
+}
+
+.section {
+  margin-bottom: 14px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.emptyDetail {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ── Transaction row (in detail) ─────────────── */
+.txRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.txRow:last-child {
+  border-bottom: none;
+}
+
+.txIcon {
+  font-size: 18px;
+}
+
+.txName {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.txAmt {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.inc { color: var(--income); }
+.exp { color: var(--expense); }
+.neutral { color: var(--text2); }
+
+/* ── Planned expense row (in detail + list) ──── */
+.peRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.peRow:last-child {
+  border-bottom: none;
+}
+
+.peIcon {
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+
+.peMid {
+  flex: 1;
+  min-width: 0;
+}
+
+.peName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.peAmt {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.peRecurrence {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.peActions {
+  display: flex;
+  gap: 8px;
+  color: var(--text3);
+}
+
+.peActions button {
+  padding: 6px;
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+}
+
+/* ── Projected balance summary ───────────────── */
+.forecast {
+  margin: 12px 16px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.forecastRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forecastLabel {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.forecastVal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dayBalance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  margin-bottom: 14px;
+}
+
+/* ── Full planned list ──────────────────────── */
+.plannedList {
+  margin: 16px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.plannedListTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plannedListRange {
+  color: var(--text3);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.peListRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.peListRow:last-child {
+  border-bottom: none;
+}
+
+.peMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* ── Empty state ────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 20px;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+.emptyState p:first-child {
+  font-size: 40px;
+}
+
+.emptyAddBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 500;
+}

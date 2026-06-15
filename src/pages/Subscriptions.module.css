@@ -1,0 +1,443 @@
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px calc(var(--nav-total) + 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Summary ── */
+.summary {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.summaryAmount {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.summarySide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.summaryPill {
+  background: var(--surface2);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.pillWarn {
+  background: rgba(255, 159, 10, 0.15);
+  color: #FF9F0A;
+}
+
+/* ── Section ── */
+.section { display: flex; flex-direction: column; gap: 8px; }
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* ── Cards ── */
+.list { display: flex; flex-direction: column; gap: 8px; }
+
+.card {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardInactive { opacity: 0.5; }
+
+.cardLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.iconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.info { min-width: 0; }
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.normalized { color: var(--text3); }
+
+/* ── Right side ── */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dueDate {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--income);
+}
+
+.dueDate.soon { color: #FF9F0A; }
+.dueDate.overdue { color: var(--expense); }
+
+.dueFull {
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* ── Actions ── */
+.actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.paidBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--income-bg);
+  color: var(--income);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--expense-bg);
+  color: var(--expense);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Empty ── */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text3);
+  font-size: 14px;
+  text-align: center;
+}
+.empty p:first-child { font-size: 40px; }
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-total) + 16px);
+  right: max(16px, calc(50vw - 430px/2 + 16px));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* ── Modal form ── */
+.pickLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+
+.presetRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.presetBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  border: 2px solid transparent;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text2);
+}
+
+.presetBtn span:first-child { font-size: 18px; }
+
+.presetActive {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--accent2);
+}
+
+.iconGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.iconBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  background: var(--surface2);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+}
+
+.iconActive {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.rowFields {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.amountWrap { flex: 1; }
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.amountInput {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.dateInput {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.toggleLabel { font-size: 14px; font-weight: 500; }
+
+.toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--surface2);
+  position: relative;
+  transition: background 0.2s;
+  border: none;
+}
+
+.toggleOn { background: var(--accent); }
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.toggleOn .toggleThumb { transform: translateX(18px); }
+
+.saveBtn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--r);
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.disabled { opacity: 0.5; }
+.errorMsg { font-size: 13px; color: var(--expense); text-align: center; }
+
+/* ── Pay modal ── */
+.paySubInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.paySubIcon { font-size: 26px; }
+
+.paySubName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.paySubMeta {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.payCardLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.payCardGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payCardBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  border: 2px solid transparent;
+  width: 100%;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.payCardActive {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.payCardInfo { flex: 1; min-width: 0; }
+
+.payCardName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.payCardBank {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 1px;
+}
+
+.payCardCur {
+  font-size: 12px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.payNoCards {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  padding: 20px 0;
+}

@@ -1,0 +1,34 @@
+.wrap {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  z-index: 400;
+}
+
+.select {
+  min-width: 132px;
+  height: 42px;
+  border-radius: 12px;
+  padding: 0 38px 0 14px;
+  background: rgba(10, 20, 36, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f7fb;
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(244, 247, 251, 0.9) 50%),
+    linear-gradient(135deg, rgba(244, 247, 251, 0.9) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 18px,
+    calc(100% - 11px) 18px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.select:focus {
+  outline: none;
+  border-color: rgba(103, 199, 255, 0.55);
+}

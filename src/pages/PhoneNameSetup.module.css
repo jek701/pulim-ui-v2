@@ -1,0 +1,128 @@
+.page {
+  min-height: var(--vh);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+  gap: 24px;
+  background:
+    radial-gradient(circle at top, rgba(124, 58, 237, 0.22), transparent 38%),
+    linear-gradient(180deg, #071321 0%, #0d1b2f 100%);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.appName {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: -1.2px;
+  color: #f4f7fb;
+}
+
+.tagline {
+  max-width: 320px;
+  font-size: 15px;
+  color: rgba(244, 247, 251, 0.72);
+}
+
+.card {
+  width: 100%;
+  max-width: 390px;
+  background: rgba(10, 20, 36, 0.82);
+  border: 1px solid rgba(156, 99, 255, 0.22);
+  backdrop-filter: blur(18px);
+  border-radius: 28px;
+  padding: 24px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.2);
+  color: #b794f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.title {
+  font-size: 21px;
+  font-weight: 800;
+  color: #f4f7fb;
+}
+
+.subtitle {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(244, 247, 251, 0.68);
+}
+
+.label {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(244, 247, 251, 0.78);
+}
+
+.input {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 0 14px;
+  font-size: 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus {
+  border-color: #9c63ff;
+  box-shadow: 0 0 0 3px rgba(156, 99, 255, 0.16);
+}
+
+.input::placeholder {
+  color: rgba(244, 247, 251, 0.38);
+}
+
+.button {
+  min-height: 50px;
+  border-radius: 14px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.error {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 69, 58, 0.12);
+  color: #ff6b63;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}

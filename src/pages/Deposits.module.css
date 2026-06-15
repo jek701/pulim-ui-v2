@@ -1,0 +1,105 @@
+.page { flex: 1; overflow-y: auto; padding-bottom: calc(var(--nav-total) + 20px); }
+.header { padding: 20px 20px 16px; }
+.header h1 { font-size: 24px; font-weight: 700; }
+
+.ctaBar { display: flex; justify-content: flex-end; padding: 0 20px 12px; }
+.addBtn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--accent); color: #fff;
+  border-radius: var(--r-sm); padding: 8px 14px;
+  font-size: 13px; font-weight: 600;
+}
+
+/* Summary */
+.summary {
+  display: flex; gap: 12px;
+  padding: 0 16px 16px;
+}
+.summaryItem {
+  flex: 1; background: var(--surface); border-radius: var(--r);
+  padding: 14px 16px;
+}
+.summaryLabel { font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 4px; }
+.summaryVal   { font-size: 17px; font-weight: 700; }
+
+/* List */
+.list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+
+.depositCard {
+  background: var(--surface); border-radius: var(--r);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.maturedCard { border: 1.5px solid var(--income); }
+.closedCard  { opacity: 0.6; }
+
+.depositTop { display: flex; align-items: flex-start; justify-content: space-between; }
+.depositInfo { display: flex; flex-direction: column; gap: 2px; }
+.depositBank { font-size: 16px; font-weight: 600; }
+.depositMeta { font-size: 12px; color: var(--text3); }
+
+.depositTopRight { display: flex; align-items: center; gap: 8px; }
+.daysBadge  { font-size: 12px; font-weight: 600; }
+.maturedBadge {
+  font-size: 11px; font-weight: 700; color: var(--income);
+  background: rgba(52,199,89,0.15); border-radius: 6px; padding: 3px 8px;
+}
+.closedBadge {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  background: var(--surface2); border-radius: 6px; padding: 3px 8px;
+}
+
+.delBtn { color: var(--text3); padding: 2px; }
+.delBtn:hover { color: var(--expense); }
+
+.depositAmounts { display: flex; gap: 20px; }
+.amtLabel { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+.amtVal   { font-size: 14px; font-weight: 600; }
+
+.interestColor { color: var(--income); }
+
+/* Action buttons */
+.depositActions    { display: flex; flex-direction: column; gap: 8px; }
+.depositActionsRow { display: flex; gap: 8px; }
+.depositActionsRow > button { flex: 1; }
+
+.collectBtn, .closeBtn, .replenishBtn, .withdrawBtn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 10px; border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 600;
+}
+.collectBtn   { background: rgba(52,199,89,0.12); color: var(--income); }
+.closeBtn     { background: var(--accent); color: #fff; }
+.replenishBtn { background: rgba(99,102,241,0.12); color: var(--accent); }
+.withdrawBtn  { background: rgba(255,59,48,0.10);  color: var(--expense); }
+
+.showClosedBtn {
+  display: block; margin: 16px auto 0;
+  font-size: 13px; color: var(--text3); padding: 8px 16px;
+}
+
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 40px 20px; color: var(--text3); font-size: 14px; text-align: center;
+}
+
+/* Modal */
+.fieldLabel { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; display: block; }
+.numInput   { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; font-size: 15px; color: var(--text); }
+.amountRow  { display: flex; gap: 8px; align-items: center; }
+.amountInput { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; font-size: 15px; color: var(--text); }
+.currencyPick { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 10px; font-size: 14px; color: var(--text); }
+.dateRow { display: flex; gap: 10px; }
+.dateRow > * { flex: 1; }
+
+.toggleRow { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text2); cursor: pointer; }
+.toggleRow input { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; }
+
+.infoBlock { background: var(--surface2); border-radius: var(--r-sm); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.infoRow   { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text2); }
+.infoRow strong { font-weight: 600; color: var(--text); }
+.totalRow  { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+.totalRow span, .totalRow strong { font-size: 15px; }
+
+.saveBtn { width: 100%; background: var(--accent); color: #fff; border-radius: var(--r); padding: 14px; font-size: 15px; font-weight: 600; }
+.saveBtn.disabled { opacity: 0.45; }
+.errorMsg { font-size: 13px; color: var(--expense); text-align: center; }

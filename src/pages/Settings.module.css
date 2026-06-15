@@ -1,0 +1,501 @@
+.page {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(var(--nav-total) + 20px);
+  padding-top: 16px;
+}
+
+.section {
+  padding: 0 16px;
+  margin-bottom: 28px;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.settingCard {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* Profile */
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.profileAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profileInfo { flex: 1; }
+
+.profileEmail {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.profileContact {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.profileSub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.signOutBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--expense-bg);
+  color: var(--expense);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Categories */
+.smallAddBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  background: var(--accent);
+  border-radius: 15px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.catTypeTabs {
+  display: flex;
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.catTypeBtn {
+  flex: 1;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text3);
+  transition: all 0.15s;
+}
+
+.catTypeActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.catList {
+  background: var(--surface);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.emptyText {
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text3);
+}
+
+.catItem {
+  border-bottom: 1px solid var(--border);
+}
+
+.catItem:last-child { border-bottom: none; }
+
+.catRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.catIconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.catName {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.subCount {
+  font-size: 12px;
+  color: var(--text3);
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+
+.catBudgetInput {
+  width: 90px;
+  height: 30px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  padding: 0 7px;
+  flex-shrink: 0;
+}
+
+.catBudgetInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.catRowActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.catDelBtn {
+  color: var(--text3);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catDelBtn:active { color: var(--expense); }
+
+.subSection {
+  padding: 0 14px 12px 60px;
+  border-top: 1px solid var(--border);
+}
+
+.subItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 14px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+
+.subItem:last-of-type { border-bottom: none; }
+
+.subItem button {
+  color: var(--text3);
+}
+
+.addSubBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent2);
+  font-weight: 500;
+}
+
+/* Add category form */
+.pickLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+.iconBtn {
+  height: 38px;
+  border-radius: 8px;
+  background: var(--surface2);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.iconActive {
+  border-color: var(--accent);
+}
+
+.colorRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.colorBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.colorActive {
+  border-color: #fff;
+  outline: 2px solid var(--accent);
+}
+
+.parentCatLabel {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.saveBtn {
+  width: 100%;
+  height: 52px;
+  background: var(--accent);
+  border-radius: var(--r);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.disabled { opacity: 0.5; }
+
+.importCard {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.importDesc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.importResult {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+}
+
+.importOk    { background: var(--income-bg);  color: var(--income); }
+.importError { background: var(--expense-bg); color: var(--expense); }
+
+.budgetList {
+  background: var(--surface);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.budgetItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.budgetItem:last-child { border-bottom: none; }
+
+.budgetIcon { font-size: 18px; flex-shrink: 0; }
+
+.budgetName {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.budgetInput {
+  width: 110px;
+  height: 34px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  padding: 0 8px;
+}
+
+.budgetInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.budgetCurrency {
+  font-size: 12px;
+  color: var(--text3);
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.budgetAutoValue {
+  width: 110px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.budgetDivider {
+  height: 4px;
+  background: var(--surface2);
+}
+
+/* Financial Profile card */
+.profileInfoCard {
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profileInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.profileInfoIcon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.profileInfoText {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.profileInfoText strong {
+  color: var(--text);
+}
+
+.profileInfoGoals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.goalChip {
+  font-size: 11px;
+  background: var(--surface2);
+  color: var(--text2);
+  border-radius: 20px;
+  padding: 4px 10px;
+}
+
+.setupProfileBtn {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 14px;
+  font-size: 14px;
+  color: var(--accent2);
+  text-align: left;
+}
+
+.dangerCard {
+  background: var(--surface);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.dangerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 46px;
+  background: var(--expense-bg);
+  color: var(--expense);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.importBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  background: var(--accent);
+  border-radius: var(--r);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}

@@ -1,0 +1,229 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phoneFlow {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.phoneIntro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.phoneIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(124, 58, 237, 0.18);
+  color: var(--accent2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.phoneTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.phoneSubtitle {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text3);
+}
+
+.phoneForm,
+.codeForm,
+.legacyForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.codeForm,
+.legacyForm {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.field {
+  position: relative;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+}
+
+.fieldIcon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  min-height: 50px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0 14px;
+  color: var(--text);
+  font-size: 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field .input {
+  padding-left: 42px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+}
+
+.input:disabled {
+  opacity: 0.72;
+}
+
+.codeInput {
+  text-align: center;
+  letter-spacing: 0.32em;
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.legacyToggle {
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  transition: opacity 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+
+.primaryBtn {
+  width: 100%;
+  min-height: 50px;
+  background: var(--accent);
+  color: #fff;
+  padding: 0 16px;
+}
+
+.primaryBtn:disabled,
+.secondaryBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.secondaryBtn {
+  min-height: 42px;
+  background: var(--surface2);
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.smsNote,
+.legacyHint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text3);
+}
+
+.sentNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--income);
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.legacy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+
+.legacyToggle {
+  min-height: 44px;
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.legacyToggle:hover,
+.legacyToggle[aria-expanded='true'] {
+  border-color: rgba(156, 99, 255, 0.5);
+  color: var(--text);
+}
+
+.error {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--expense-bg);
+  font-size: 12px;
+  color: var(--expense);
+  text-align: center;
+  line-height: 1.45;
+}
+
+@media (max-height: 680px) {
+  .phoneIntro {
+    display: none;
+  }
+
+  .wrap {
+    gap: 12px;
+  }
+
+  .phoneFlow {
+    gap: 10px;
+  }
+}

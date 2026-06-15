@@ -1,0 +1,46 @@
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lead {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text3);
+}
+
+.methodBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.methodLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.methodList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.methodChip {
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text2);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}

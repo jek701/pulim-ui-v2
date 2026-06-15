@@ -1,0 +1,71 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg, #fff);
+  border-radius: var(--r);
+  border: 1px solid var(--border, rgba(0,0,0,0.08));
+}
+
+.handle {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  touch-action: none;
+}
+
+.icon { font-size: 18px; }
+
+.label {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  display: inline-block;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border, #ccc);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.slider::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.switch input:checked + .slider { background: var(--accent, #7C3AED); }
+.switch input:checked + .slider::before { transform: translateX(18px); }
