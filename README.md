@@ -11,6 +11,8 @@ The primary registration and sign-in flow uses Firebase phone authentication. Be
 5. Keep Email/Password enabled for legacy users. The app does not expose email registration.
 
 The web flow uses Firebase's invisible reCAPTCHA and sends phone numbers in E.164 format.
+Do not add a separate reCAPTCHA site/API key for Firebase Phone Auth; the Firebase
+SDK creates and manages the required reCAPTCHA keys through `RecaptchaVerifier`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

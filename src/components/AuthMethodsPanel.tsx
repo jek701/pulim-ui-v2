@@ -61,7 +61,9 @@ const AuthMethodsPanel: React.FC<Props> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { reloadUser } = useApp();
-  const sendButtonId = `phone_send_${useId().replace(/:/g, '_')}`;
+  const idPrefix = useId().replace(/:/g, '_');
+  const sendButtonId = `phone_send_${idPrefix}`;
+  const recaptchaContainerId = `phone_recaptcha_${idPrefix}`;
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
   const [busyMethod, setBusyMethod] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -118,12 +120,17 @@ const AuthMethodsPanel: React.FC<Props> = ({
     verifierRef.current = null;
   };
 
-  const ensureRecaptcha = () => {
+  const ensureRecaptcha = async () => {
     if (verifierRef.current) return verifierRef.current;
     auth.languageCode = i18n.resolvedLanguage ?? i18n.language;
-    verifierRef.current = new RecaptchaVerifier(auth, sendButtonId, {
+    verifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerId, {
       size: 'invisible',
+      badge: 'bottomright',
+      'expired-callback': () => {
+        clearVerifier();
+      },
     });
+    await verifierRef.current.render();
     return verifierRef.current;
   };
 
@@ -146,7 +153,7 @@ const AuthMethodsPanel: React.FC<Props> = ({
     setError('');
     try {
       clearVerifier();
-      const verifier = ensureRecaptcha();
+      const verifier = await ensureRecaptcha();
       let result: ConfirmationResult;
       if (mode === 'link') {
         if (!auth.currentUser) throw new Error(t('auth.err_no_user'));
@@ -253,6 +260,7 @@ const AuthMethodsPanel: React.FC<Props> = ({
                 ? t('auth.phone_resend_code')
                 : t('auth.phone_send_code')}
           </button>
+          <div id={recaptchaContainerId} className={styles.recaptchaContainer} />
           <p className={styles.smsNote}>{t('auth.phone_sms_note')}</p>
         </form>
 
