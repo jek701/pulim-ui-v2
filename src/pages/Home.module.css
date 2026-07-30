@@ -513,7 +513,32 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
-  white-space: pre-wrap;
+}
+
+.forecastText p {
+  margin: 0;
+}
+
+.forecastText ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.forecastText li {
+  margin: 4px 0;
+}
+
+.forecastAction {
+  color: var(--accent2);
+  font-weight: 600;
+}
+
+.forecastError {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--expense);
+  font-size: 13px;
 }
 
 /* AI Insights */

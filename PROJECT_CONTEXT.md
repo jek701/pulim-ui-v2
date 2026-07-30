@@ -2,7 +2,7 @@
 
 This file is a compact technical map of the Pulim codebase. It is intended to help future AI/code agents understand the project quickly without re-reading every file.
 
-Last reviewed: 2026-05-23.
+Last reviewed: 2026-07-15.
 
 ## Product Summary
 
@@ -25,7 +25,7 @@ Core business idea:
 - Charts: `recharts`.
 - Drag/drop: `@dnd-kit/*`.
 - Icons: `react-icons/hi2`.
-- AI: Anthropic SDK used directly in frontend utilities.
+- AI: OpenAI Responses API through the separate `pulim-api-v2` backend; the browser only consumes the app's SSE stream.
 - Dates: `dayjs` with localized format plugin.
 
 ## Commands
@@ -46,7 +46,7 @@ Configured in `.env` or deployment environment:
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
 - `VITE_TELEGRAM_AUTH_API_URL`
-- Anthropic API key is expected by `@anthropic-ai/sdk` usage in AI utilities. Be careful: this project currently imports Anthropic client code in frontend files, so exposing API keys would be a security risk unless proxied or otherwise protected.
+- No model-provider key belongs in Vite. `OPENAI_API_KEY` is configured only in `pulim-api-v2`.
 
 `src/firebase.ts` exports `firebaseConfigured`, `firebaseProjectId`, `firebaseAuthDomain`, `db`, and `auth`. If Firebase env vars are missing, `App.tsx` renders a setup screen instead of the app.
 
@@ -214,8 +214,8 @@ Key hooks:
 - `useEntitlements`
   - Reads premium access from `profile.isPremium`.
   - Free limits: 1 debit card, 2 subscriptions, 10 AI messages/month, 1 AI chat.
-  - Premium currently uses `claude-sonnet-4-6`; free uses `claude-haiku-4-5-20251001`.
-  - `incrementAiUsage` updates `profiles/{uid}.usage` for free users.
+  - Model routing is server-owned. The current API defaults are `gpt-5.6-terra` for Premium and `gpt-5.4-mini` for free users.
+  - Usage is reserved and enforced by the API; the frontend refetches the profile after a completed answer.
 
 - `useAiChats`
   - Stores AI chat history in `aiChats`.
@@ -321,11 +321,10 @@ Key hooks:
   - Used by Calendar and AI context builders.
 
 - `utils/ai.ts`
-  - Builds a month-end budget forecast prompt for Anthropic.
-  - Uses current month, historical months, budgets, profile, subscriptions, and planned expenses.
+  - Calls the API's structured month-end forecast endpoint and returns the typed result.
 
 - `utils/aiChat.ts`
-  - Builds a broader finance context snapshot and streams chat replies from Anthropic.
+  - Consumes the API's `meta`, `delta`, `done`, and `error` SSE events.
 
 - `utils/defaultCategories.ts`
   - Default categories seeded for new users.
@@ -474,7 +473,7 @@ Recommended checks after changes:
 
 ## Known Technical Risks and Cleanup Targets
 
-- Anthropic SDK usage appears in frontend code. This can expose API credentials if not proxied safely.
+- AI chat documents still store message arrays in one document; long-term, move messages to a paginated subcollection.
 - Some auth migration code/types remain after reverting visible login to email-only.
 - `README.md` is still the default Vite template and does not describe Pulim.
 - The app relies heavily on client-side balance adjustments. Multi-step operations are often not Firestore transactions, so partial failures can leave data inconsistent.

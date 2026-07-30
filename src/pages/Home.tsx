@@ -7,7 +7,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useCards } from '../hooks/useCards';
 import { formatAmount, formatDate, formatMonth } from '../utils/format';
 import dayjs from '../utils/dayjs';
-import { getBudgetForecast } from '../utils/ai';
+import { getBudgetForecast, type BudgetForecast } from '../utils/ai';
 import { useBudgets } from '../hooks/useBudgets';
 import AddTransactionModal from '../components/AddTransactionModal';
 import ReturnModal from '../components/ReturnModal';
@@ -32,11 +32,12 @@ const Home = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
   const [showAskAi, setShowAskAi] = useState(false);
-  const [forecast, setForecast] = useState<string | null>(null);
+  const [forecast, setForecast] = useState<BudgetForecast | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState<string | null>(null);
   const [showAllBudgets, setShowAllBudgets] = useState(false);
 
-  const now = new Date();
+  const [now] = useState(() => new Date());
   const userName = profile?.name?.trim()
     || user?.displayName?.trim()
     || user?.email?.split('@')[0]
@@ -52,7 +53,7 @@ const Home = () => {
     const income  = uzs.filter(t => t.type === 'income'  && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
     const expense = uzs.filter(t => t.type === 'expense' && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
     return { income, expense, balance: income - expense };
-  }, [transactions]);
+  }, [now, transactions]);
 
   const includedBalances = useMemo(() => {
     const totals = new Map<Currency, number>();
@@ -83,7 +84,7 @@ const Home = () => {
       const d = new Date(t.date);
       return d.getMonth() === m && d.getFullYear() === y;
     });
-  }, [transactions]);
+  }, [now, transactions]);
 
   const budgetRows = useMemo(() => {
     return budgets
@@ -139,10 +140,12 @@ const Home = () => {
   const handleForecast = async () => {
     setForecastLoading(true);
     setForecast(null);
+    setForecastError(null);
     try {
-      const language = i18n.language === 'ru' ? 'Russian' : i18n.language === 'uz' ? 'Uzbek' : 'English';
-      const text = await getBudgetForecast(language);
-      setForecast(text);
+      const language = i18n.language === 'ru' ? 'ru' : i18n.language === 'uz' ? 'uz' : 'en';
+      setForecast(await getBudgetForecast(language));
+    } catch {
+      setForecastError(t('home.forecast_ai_error'));
     } finally {
       setForecastLoading(false);
     }
@@ -345,7 +348,16 @@ const Home = () => {
               </button>
             </div>
           </div>
-          {forecast && <p className={styles.forecastText}>{forecast}</p>}
+          {forecast && (
+            <div className={styles.forecastText}>
+              <p>{forecast.summary}</p>
+              <ol>
+                {forecast.predictions.map((prediction, index) => <li key={index}>{prediction}</li>)}
+              </ol>
+              <p className={styles.forecastAction}>→ {forecast.action}</p>
+            </div>
+          )}
+          {forecastError && <p className={styles.forecastError}>{forecastError}</p>}
         </div>
     );
   };

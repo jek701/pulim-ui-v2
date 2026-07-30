@@ -374,6 +374,31 @@
   background: rgba(0, 0, 0, 0.02);
 }
 
+.messageActions {
+  display: flex;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.messageActions button {
+  width: 27px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.messageActions button:hover,
+.messageActions .actionActive {
+  color: var(--accent2);
+  background: rgba(147, 51, 234, 0.09);
+}
+
 /* Streaming cursor */
 .cursor {
   display: inline-block;

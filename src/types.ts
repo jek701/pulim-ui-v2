@@ -52,11 +52,16 @@ export interface SubscriptionState {
   /** Whether the current premium grant came from the rollout trial (vs a paid purchase). */
   isTrial?: boolean;
   trialGrantedAt?: number;
+  source?: 'trial' | 'atmos' | 'none';
+  billingVersion?: number;
+  lastOrderId?: string;
 }
 
 export interface UsageState {
   /** Counter for the current month window. Reset when periodStart rolls over. */
   aiMessagesThisPeriod: number;
+  /** Separate Premium fair-use counter so a trial does not consume the free allowance. */
+  aiPremiumMessagesThisPeriod?: number;
   /** ms timestamp of the start of the current monthly window. */
   periodStart: number;
 }

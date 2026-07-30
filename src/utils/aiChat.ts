@@ -11,14 +11,14 @@ export interface ChatStreamInput {
   /** Omit to start a new chat; the server returns the new id via the `meta` event. */
   chatId?: string;
   message: string;
-  language: string;
+  language: 'en' | 'ru' | 'uz';
 }
 
 export interface StreamCallbacks {
   onMeta?: (chatId: string) => void;
   onThinkingStart?: () => void;
   onDelta: (chunk: string) => void;
-  onComplete: (fullText: string) => void;
+  onComplete: (fullText: string, incomplete: boolean) => void;
   onError: (err: Error) => void;
 }
 
@@ -54,6 +54,7 @@ export function streamChatReply(input: ChatStreamInput, callbacks: StreamCallbac
       const decoder = new TextDecoder();
       let buffer = '';
       let full = '';
+      let incomplete = false;
 
       for (;;) {
         const { value, done } = await reader.read();
@@ -71,11 +72,14 @@ export function streamChatReply(input: ChatStreamInput, callbacks: StreamCallbac
           const payload = JSON.parse(dataLine.slice(6));
           if (event === 'meta') callbacks.onMeta?.(payload.chatId);
           else if (event === 'delta') callbacks.onDelta(payload.text);
-          else if (event === 'done') full = payload.text ?? full;
+          else if (event === 'done') {
+            full = payload.text ?? full;
+            incomplete = payload.incomplete === true;
+          }
           else if (event === 'error') throw new Error(payload.message || 'AI error');
         }
       }
-      callbacks.onComplete(full);
+      callbacks.onComplete(full, incomplete);
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       callbacks.onError(err as Error);

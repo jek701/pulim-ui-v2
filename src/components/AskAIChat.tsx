@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   HiXMark, HiPaperAirplane, HiSparkles, HiStop,
   HiBars3, HiPencilSquare, HiTrash, HiChatBubbleLeftRight,
+  HiClipboardDocument, HiHandThumbUp, HiHandThumbDown, HiCheck,
 } from 'react-icons/hi2';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { streamChatReply, type ChatMessage } from '../utils/aiChat';
 import { useAiChats } from '../hooks/useAiChats';
 import { qk } from '../api/queryClient';
+import { api } from '../api/client';
 import { useApp } from '../context';
 import { useEntitlements } from '../hooks/useEntitlements';
 import PremiumModal from './PremiumModal';
@@ -41,6 +43,8 @@ const AskAIChat = ({ onClose }: Props) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showChatList, setShowChatList] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<Record<number, 'up' | 'down'>>({});
 
   const abortRef = useRef<(() => void) | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +128,27 @@ const AskAIChat = ({ onClose }: Props) => {
     if (activeChatId === chatId) startNewChat();
   };
 
-  const language = i18n.language === 'ru' ? 'Russian' : i18n.language === 'uz' ? 'Uzbek' : 'English';
+  const language = i18n.language === 'ru' ? 'ru' : i18n.language === 'uz' ? 'uz' : 'en';
+
+  const copyMessage = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIndex(index);
+      window.setTimeout(() => setCopiedIndex(current => current === index ? null : current), 1500);
+    } catch {
+      setError(t('ask_ai.copy_failed'));
+    }
+  };
+
+  const rateMessage = async (index: number, rating: 'up' | 'down') => {
+    if (!activeChatId) return;
+    try {
+      await api.post<void>('/v1/ai/feedback', { chatId: activeChatId, messageIndex: index, rating });
+      setFeedback(current => ({ ...current, [index]: rating }));
+    } catch {
+      setError(t('ask_ai.feedback_failed'));
+    }
+  };
 
   const send = (text: string) => {
     const trimmed = text.trim();
@@ -152,13 +176,15 @@ const AskAIChat = ({ onClose }: Props) => {
           setIsThinking(false);
           setStreamingText(prev => prev + chunk);
         },
-        onComplete: (full) => {
+        onComplete: (full, incomplete) => {
           setPendingMessages(prev => [...prev, { role: 'assistant', content: full }]);
           setStreamingText('');
           setIsStreaming(false);
           setIsThinking(false);
+          if (incomplete) setError(t('ask_ai.incomplete_response'));
           // Refresh the chat list (titles, order) + the loaded chat's messages.
           qc.invalidateQueries({ queryKey: qk.aiChats(user.uid) });
+          qc.invalidateQueries({ queryKey: qk.profile(user.uid) });
         },
         onError: (err) => {
           setError(err.message || 'Failed to get a response');
@@ -217,7 +243,7 @@ const AskAIChat = ({ onClose }: Props) => {
             <div className={styles.headerText}>
               <p className={styles.headerTitle}>
                 {headerTitle}
-                {!isPremium && <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)' }}>· Haiku</span>}
+                {!isPremium && <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text3)' }}>· Standard</span>}
                 {isPremium && <span style={{ marginLeft: 6 }}><PremiumBadge /></span>}
               </p>
               <p className={styles.headerSubtitle}>
@@ -271,7 +297,30 @@ const AskAIChat = ({ onClose }: Props) => {
               )}
               <div className={`${styles.bubbleText} ${m.role === 'assistant' ? styles.markdown : ''}`}>
                 {m.role === 'assistant'
-                  ? <MarkdownContent text={m.content} />
+                  ? (
+                    <>
+                      <MarkdownContent text={m.content} />
+                      <div className={styles.messageActions}>
+                        <button onClick={() => copyMessage(m.content, i)} title={t('ask_ai.copy')}>
+                          {copiedIndex === i ? <HiCheck size={14} /> : <HiClipboardDocument size={14} />}
+                        </button>
+                        <button
+                          className={feedback[i] === 'up' ? styles.actionActive : ''}
+                          onClick={() => rateMessage(i, 'up')}
+                          title={t('ask_ai.helpful')}
+                        >
+                          <HiHandThumbUp size={14} />
+                        </button>
+                        <button
+                          className={feedback[i] === 'down' ? styles.actionActive : ''}
+                          onClick={() => rateMessage(i, 'down')}
+                          title={t('ask_ai.not_helpful')}
+                        >
+                          <HiHandThumbDown size={14} />
+                        </button>
+                      </div>
+                    </>
+                  )
                   : m.content}
               </div>
             </div>

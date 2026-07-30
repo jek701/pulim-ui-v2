@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   HiXMark, HiSparkles, HiCreditCard, HiChartPie, HiCalendar,
   HiBanknotes, HiCurrencyDollar, HiFlag, HiTag, HiFunnel, HiStar,
 } from 'react-icons/hi2';
 import { useEntitlements } from '../hooks/useEntitlements';
+import { paymentApi, type PaymentPlan, type PaymentPlanCode } from '../api/paymentClient';
 import styles from './PremiumModal.module.css';
 
 export type PremiumFeatureKey =
@@ -19,17 +20,86 @@ interface Props {
 }
 
 const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { aiUsed, isPremium } = useEntitlements();
+  const [plans, setPlans] = useState<PaymentPlan[]>([]);
+  const [selectedCode, setSelectedCode] = useState<PaymentPlanCode>('premium_12_months');
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const idempotencyKey = useRef<string | null>(null);
+  const language = (['ru', 'uz', 'en'].includes(i18n.resolvedLanguage ?? '')
+    ? i18n.resolvedLanguage
+    : 'ru') as 'ru' | 'uz' | 'en';
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const handleUpgrade = () => {
-    if (onUpgrade) onUpgrade();
-    onClose();
+  useEffect(() => {
+    let cancelled = false;
+    setPlansLoading(true);
+    setPaymentError(null);
+    paymentApi.listPlans(language)
+      .then((loaded) => {
+        if (!cancelled) setPlans(loaded);
+      })
+      .catch((error) => {
+        console.error('[billing] plans failed:', error);
+        if (!cancelled) setPaymentError(t('premium.payment_error'));
+      })
+      .finally(() => {
+        if (!cancelled) setPlansLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [language, t]);
+
+  const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? plans[0];
+  const formatPrice = (amountMinor: number) => (
+    `${new Intl.NumberFormat(language).format(amountMinor / 100)} UZS`
+  );
+
+  const selectPlan = (code: PaymentPlanCode) => {
+    setSelectedCode(code);
+    idempotencyKey.current = null;
+    setPaymentError(null);
+  };
+
+  const handleUpgrade = async () => {
+    if (onUpgrade) {
+      onUpgrade();
+      onClose();
+      return;
+    }
+    if (!selectedPlan || purchasing) return;
+    setPurchasing(true);
+    setPaymentError(null);
+    try {
+      idempotencyKey.current ??= crypto.randomUUID();
+      const telegram = (window as unknown as {
+        Telegram?: { WebApp?: { initData?: string; openLink?: (url: string) => void } };
+      }).Telegram?.WebApp;
+      const channel = telegram?.initData ? 'telegram' : 'web';
+      const checkout = await paymentApi.createCheckout(
+        selectedPlan.code,
+        language,
+        channel,
+        idempotencyKey.current,
+      );
+      if (!checkout.checkoutUrl) throw new Error('ATMOS checkout URL is missing.');
+      if (channel === 'telegram' && telegram?.openLink) {
+        telegram.openLink(checkout.checkoutUrl);
+      } else {
+        window.location.assign(checkout.checkoutUrl);
+      }
+      onClose();
+    } catch (error) {
+      console.error('[billing] checkout failed:', error);
+      setPaymentError(t('premium.payment_error'));
+    } finally {
+      setPurchasing(false);
+    }
   };
 
   const headlines: Record<PremiumFeatureKey, { title: string; subtitle: string }> = {
@@ -83,6 +153,36 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
           )}
         </div>
 
+        <section className={styles.plans} aria-label={t('premium.choose_plan')}>
+          <h3 className={styles.plansTitle}>{t('premium.choose_plan')}</h3>
+          {plansLoading ? (
+            <div className={styles.plansLoading}>{t('premium.loading_plans')}</div>
+          ) : (
+            <div className={styles.planGrid}>
+              {plans.map((plan) => (
+                <button
+                  key={plan.code}
+                  type="button"
+                  className={`${styles.planCard} ${plan.code === selectedPlan?.code ? styles.planCardSelected : ''}`}
+                  onClick={() => selectPlan(plan.code)}
+                >
+                  {plan.code === 'premium_12_months' && (
+                    <span className={styles.bestValue}>{t('premium.best_value')}</span>
+                  )}
+                  <span className={styles.planDuration}>{plan.name}</span>
+                  <strong className={styles.planPrice}>{formatPrice(plan.amountMinor)}</strong>
+                  <span className={styles.planPerMonth}>
+                    {t('premium.per_month', {
+                      price: formatPrice(Math.round(plan.amountMinor / plan.durationMonths)),
+                    })}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {paymentError && <p className={styles.paymentError} role="alert">{paymentError}</p>}
+        </section>
+
         <div className={styles.features}>
           {features.map((f) => (
             <div
@@ -99,9 +199,15 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
         </div>
 
         <div className={styles.cta}>
-          <button className={styles.ctaBtn} onClick={handleUpgrade}>
+          <button
+            className={styles.ctaBtn}
+            onClick={() => void handleUpgrade()}
+            disabled={plansLoading || purchasing || !selectedPlan}
+          >
             <HiSparkles size={18} />
-            {t('premium.cta_button')}
+            {purchasing
+              ? t('premium.opening_payment')
+              : t('premium.buy_for', { price: selectedPlan ? formatPrice(selectedPlan.amountMinor) : '—' })}
           </button>
         </div>
 

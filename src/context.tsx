@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { auth } from './firebase';
 import { api } from './api/client';
 import { qk } from './api/queryClient';
+import { paymentApi } from './api/paymentClient';
 import type { AuthMethod, Tab, UserProfile } from './types';
 
 interface AppContextType {
@@ -228,6 +229,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const profile = (profileQuery.data as UserProfile | undefined) ?? null;
   const profileLoading = !!uid && (!bootstrapped || profileQuery.isLoading);
+
+  // ATMOS returns through the public web URL. The query string is only a hint:
+  // always ask the payment service for the authenticated, provider-verified status.
+  useEffect(() => {
+    if (!uid) return;
+    const url = new URL(window.location.href);
+    const orderId = url.searchParams.get('order');
+    const paymentHint = url.searchParams.get('payment');
+    if (!orderId || !paymentHint) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        let paid = false;
+        for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
+          const order = await paymentApi.refreshOrder(orderId);
+          if (order.status === 'PAID') {
+            paid = true;
+            break;
+          }
+          if (order.status !== 'PENDING_PAYMENT') break;
+          if (attempt < 9) {
+            await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+          }
+        }
+
+        if (!paid || cancelled) return;
+        // Give the transactional outbox a short delivery window, then refresh
+        // the Firestore profile projection owned by pulim-api.
+        await new Promise((resolve) => window.setTimeout(resolve, 2_500));
+        if (!cancelled) {
+          await queryClient.invalidateQueries({ queryKey: qk.profile(uid) });
+        }
+      } catch (err) {
+        console.error('[billing] payment status refresh failed:', err);
+      } finally {
+        if (!cancelled) {
+          url.searchParams.delete('payment');
+          url.searchParams.delete('order');
+          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [uid, queryClient]);
 
   const reloadUser = async () => {
     if (!auth.currentUser) return;

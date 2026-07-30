@@ -1,10 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context';
 import type { UserProfile, SubscriptionTier } from '../types';
 
-/** Source of truth for premium access: the `isPremium` boolean on the user's profile. */
-function readIsPremium(profile: UserProfile | null): boolean {
-  return profile?.isPremium === true;
+/** `isPremium` is a compatibility cache; the paid/trial deadline is authoritative. */
+function readIsPremium(profile: UserProfile | null, now: number): boolean {
+  const premiumUntil = profile?.subscription?.premiumUntil;
+  return profile?.isPremium === true
+    && typeof premiumUntil === 'number'
+    && premiumUntil > now;
 }
 
 export const FREE_LIMITS = {
@@ -13,19 +16,14 @@ export const FREE_LIMITS = {
   aiMessagesPerMonth: 10,
   aiChats: 1,
   subscriptions: 2,
-  aiModel: 'claude-haiku-4-5-20251001',
-} as const;
-
-export const PREMIUM_LIMITS = {
-  aiModel: 'claude-sonnet-4-6',
 } as const;
 
 const MONTH_MS = 30 * 86_400_000;
 
-function currentPeriodStart(profile: UserProfile | null): number {
+function currentPeriodStart(profile: UserProfile | null, now: number): number {
   const stored = profile?.usage?.periodStart;
-  if (stored && Date.now() - stored < MONTH_MS) return stored;
-  return Date.now();
+  if (stored && now - stored < MONTH_MS) return stored;
+  return now;
 }
 
 export type FeatureKey =
@@ -38,24 +36,28 @@ export type FeatureKey =
 
 export function useEntitlements() {
   const { profile } = useApp();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return useMemo(() => {
-    const premium = readIsPremium(profile);
+    const premium = readIsPremium(profile, now);
     const tier: SubscriptionTier = premium ? 'premium' : 'free';
-    const aiPeriodStart = currentPeriodStart(profile);
-    const aiUsed = (profile?.usage?.periodStart && Date.now() - profile.usage.periodStart < MONTH_MS)
+    const aiPeriodStart = currentPeriodStart(profile, now);
+    const aiUsed = (profile?.usage?.periodStart && now - profile.usage.periodStart < MONTH_MS)
       ? profile.usage.aiMessagesThisPeriod ?? 0
       : 0;
 
     const isPremium = premium;
     const isTrial = !!profile?.subscription?.isTrial && premium;
     const trialDaysLeft = profile?.subscription?.premiumUntil
-      ? Math.max(0, Math.ceil((profile.subscription.premiumUntil - Date.now()) / 86_400_000))
+      ? Math.max(0, Math.ceil((profile.subscription.premiumUntil - now) / 86_400_000))
       : null;
 
     const aiRemaining = isPremium ? Infinity : Math.max(0, FREE_LIMITS.aiMessagesPerMonth - aiUsed);
-    const aiModel: string = isPremium ? PREMIUM_LIMITS.aiModel : FREE_LIMITS.aiModel;
-
     const canUse = (feature: FeatureKey, count?: number): boolean => {
       if (isPremium) return true;
       switch (feature) {
@@ -93,9 +95,8 @@ export function useEntitlements() {
       aiUsed,
       aiRemaining,
       aiPeriodStart,
-      aiModel,
       canUse,
       incrementAiUsage,
     };
-  }, [profile]);
+  }, [now, profile]);
 }
