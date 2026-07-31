@@ -6,6 +6,8 @@ interface Props {
   onChange: (emoji: string) => void;
   suggestions?: string[];
   label?: string;
+  placeholder?: string;
+  compactSuggestions?: boolean;
 }
 
 const getFirstEmoji = (str: string): string => {
@@ -13,7 +15,7 @@ const getFirstEmoji = (str: string): string => {
   return seg[0]?.segment ?? '';
 };
 
-const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label }) => {
+const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, placeholder = 'Type any emoji…', compactSuggestions = false }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -39,14 +41,14 @@ const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label }) =>
         <input
           ref={inputRef}
           className={styles.hiddenInput}
-          placeholder="Type any emoji…"
+          placeholder={placeholder}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={e => handleChange(e.target.value)}
         />
       </div>
       {suggestions && suggestions.length > 0 && (
-        <div className={styles.suggestions}>
+        <div className={`${styles.suggestions} ${compactSuggestions ? styles.suggestionsCompact : ''}`}>
           {suggestions.map(s => (
             <button
               key={s}

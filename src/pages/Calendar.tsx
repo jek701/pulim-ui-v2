@@ -325,7 +325,7 @@ const Calendar = () => {
             <div className={styles.header}>
                 <div className={styles.monthNav}>
                     <button onClick={prevMonth}><HiChevronLeft size={20}/></button>
-                    <span>{monthLabel}</span>
+                    <h1 aria-live="polite">{monthLabel}</h1>
                     <button onClick={nextMonth}><HiChevronRight size={20}/></button>
                 </div>
                 <button className={styles.addBtn} onClick={() => requestAddPlanned()}>

@@ -93,6 +93,13 @@
   margin-bottom: 16px;
 }
 
+.cardTopActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .cardMeta {
   display: flex;
   align-items: center;
@@ -137,6 +144,7 @@
   font-weight: 700;
 }
 
+.editAccountBtn,
 .delBtn {
   color: var(--text3);
   width: 32px;
@@ -149,6 +157,7 @@
   transition: color 0.15s;
 }
 
+.editAccountBtn:active { color: var(--accent); }
 .delBtn:active { color: var(--expense); }
 
 .limitBar {
@@ -356,19 +365,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.editBalBtn {
-  padding: 4px;
-  color: var(--text3);
-  border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
-  margin-top: 2px;
-}
-
-.editBalBtn:hover {
-  color: var(--accent);
-  background: var(--accent)18;
 }
 
 .includeBtn {

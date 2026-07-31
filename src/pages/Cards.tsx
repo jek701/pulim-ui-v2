@@ -69,6 +69,7 @@ const Cards = ({embedded, filterType, addTrigger}: {
 
     // Transfer state
     const [editingBalance, setEditingBalance] = useState<typeof cards[0] | null>(null);
+    const [editNameStr, setEditNameStr] = useState('');
     const [editBalanceStr, setEditBalanceStr] = useState('');
 
     const [showTransfer, setShowTransfer] = useState(false);
@@ -193,17 +194,30 @@ const Cards = ({embedded, filterType, addTrigger}: {
         }
     };
 
+    const openEditAccount = (card: typeof cards[0]) => {
+        setEditingBalance(card);
+        setEditNameStr(card.name);
+        setEditBalanceStr(String(card.cardType === 'credit'
+            ? (card.limit ?? 0) - card.balance
+            : card.balance));
+    };
+
+    const closeEditAccount = () => {
+        setEditingBalance(null);
+        setEditNameStr('');
+        setEditBalanceStr('');
+    };
+
     const handleSetBalance = async () => {
         if (!editingBalance) return;
         const entered = parseFloat(editBalanceStr);
-        if (isNaN(entered)) return;
+        if (isNaN(entered) || !editNameStr.trim()) return;
         // For credit cards, the user is editing "Left to use" — convert back to debt.
         const newBalance = editingBalance.cardType === 'credit'
             ? Math.max(0, (editingBalance.limit ?? 0) - entered)
             : entered;
-        await update(editingBalance.id, {balance: newBalance});
-        setEditingBalance(null);
-        setEditBalanceStr('');
+        await update(editingBalance.id, {name: editNameStr.trim(), balance: newBalance});
+        closeEditAccount();
     };
 
     const toggleIncludedInTotals = async (id: string, currentValue: boolean | undefined) => {
@@ -274,10 +288,15 @@ const Cards = ({embedded, filterType, addTrigger}: {
                                         </div>
                                         <p className={styles.cardName}>{card.name}</p>
                                     </div>
-                                    <button className={styles.delBtn}
-                                            onClick={() => confirm(t('cards.confirm_delete')) && remove(card.id)}>
-                                        <HiTrash size={16}/>
-                                    </button>
+                                    <div className={styles.cardTopActions}>
+                                        <button className={styles.editAccountBtn} onClick={() => openEditAccount(card)} aria-label={t('common.edit')}>
+                                            <HiPencil size={15}/>
+                                        </button>
+                                        <button className={styles.delBtn}
+                                                onClick={() => confirm(t('cards.confirm_delete')) && remove(card.id)}>
+                                            <HiTrash size={16}/>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {isCredit && card.limit && (
@@ -305,12 +324,6 @@ const Cards = ({embedded, filterType, addTrigger}: {
                                                         {formatAmount(((card.limit ?? 0) - card.balance), card.currency)}
                                                     </p>
                                                 </div>
-                                                <button className={styles.editBalBtn} onClick={() => {
-                                                    setEditingBalance(card);
-                                                    setEditBalanceStr(String((card.limit ?? 0) - card.balance));
-                                                }}>
-                                                    <HiPencil size={13}/>
-                                                </button>
                                             </div>
                                             <div>
                                                 <p className={styles.cardLabel}>{t('cards.label_limit')}</p>
@@ -332,12 +345,6 @@ const Cards = ({embedded, filterType, addTrigger}: {
                                                         {formatAmount(card.balance, card.currency)}
                                                     </p>
                                                 </div>
-                                                <button className={styles.editBalBtn} onClick={() => {
-                                                    setEditingBalance(card);
-                                                    setEditBalanceStr(String(card.balance));
-                                                }}>
-                                                    <HiPencil size={13}/>
-                                                </button>
                                             </div>
                                             <button
                                                 className={`${styles.includeBtn} ${card.includeInTotalBalance === false ? styles.includeBtnOff : styles.includeBtnOn}`}
@@ -440,21 +447,24 @@ const Cards = ({embedded, filterType, addTrigger}: {
 
             {editingBalance && (
                 <Modal
-                    title={t('cards.modal_edit_balance')}
-                    onClose={() => {
-                        setEditingBalance(null);
-                        setEditBalanceStr('');
-                    }}
+                    title={t('cards.modal_edit_account')}
+                    onClose={closeEditAccount}
                     footer={
                         <button
                             className={styles.saveBtn}
                             onClick={handleSetBalance}
-                            disabled={editBalanceStr === ''}
+                            disabled={editBalanceStr === '' || !editNameStr.trim()}
                         >
-                            {t('cards.btn_set_balance')}
+                            {t('common.save')}
                         </button>
                     }
                 >
+                    <Input
+                        label={t('cards.name_label')}
+                        value={editNameStr}
+                        onChange={event => setEditNameStr(event.target.value)}
+                        autoFocus
+                    />
                     <div>
                         <label className={styles.fieldLabel}>
                             {editingBalance.cardType === 'credit'
@@ -466,7 +476,7 @@ const Cards = ({embedded, filterType, addTrigger}: {
                             placeholder="0"
                             value={editBalanceStr}
                             onChange={setEditBalanceStr}
-                            autoFocus
+                            allowNegative={editingBalance.cardType !== 'credit'}
                         />
                         {editingBalance.cardType === 'credit' && (
                             <p className={styles.fieldHint}>
@@ -623,6 +633,7 @@ const Cards = ({embedded, filterType, addTrigger}: {
                             className={styles.numInput}
                             placeholder="0"
                             value={balanceStr}
+                            allowNegative={form.cardType === 'debit'}
                             onChange={v => {
                                 setBalanceStr(v);
                                 set('balance', parseFloat(v) || 0);

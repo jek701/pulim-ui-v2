@@ -8,19 +8,25 @@ import { useState } from 'react';
 type NumberInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'> & {
   value: string;
   onChange: (raw: string) => void;
+  allowNegative?: boolean;
 };
 
 const formatDisplay = (raw: string): string => {
   if (!raw) return '';
-  const [int, dec] = raw.split('.');
+  const negative = raw.startsWith('-');
+  const unsigned = negative ? raw.slice(1) : raw;
+  if (!unsigned) return negative ? '-' : '';
+  const [int, dec] = unsigned.split('.');
   const intFormatted = Number(int || '0').toLocaleString('en-US');
-  return dec !== undefined ? `${intFormatted}.${dec}` : intFormatted;
+  const formatted = dec !== undefined ? `${intFormatted}.${dec}` : intFormatted;
+  return negative ? `-${formatted}` : formatted;
 };
 
-export const NumberInput: React.FC<NumberInputProps> = ({ value, onChange, ...props }) => {
+export const NumberInput: React.FC<NumberInputProps> = ({ value, onChange, allowNegative = false, ...props }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/,/g, '');
-    if (raw === '' || /^\d*\.?\d*$/.test(raw)) onChange(raw);
+    const pattern = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/;
+    if (raw === '' || pattern.test(raw)) onChange(raw);
   };
 
   return (

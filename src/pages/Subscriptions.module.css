@@ -9,6 +9,37 @@
   gap: 20px;
 }
 
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.headerAddBtn {
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ── Summary ── */
 .summary {
   background: var(--surface);
@@ -192,22 +223,6 @@
   text-align: center;
 }
 .empty p:first-child { font-size: 40px; }
-
-/* ── FAB ── */
-.fab {
-  position: fixed;
-  bottom: calc(var(--nav-total) + 16px);
-  right: max(16px, calc(50vw - 430px/2 + 16px));
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
-}
 
 /* ── Modal form ── */
 .pickLabel {

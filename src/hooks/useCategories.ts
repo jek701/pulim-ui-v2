@@ -25,12 +25,20 @@ export function useCategories(userId: string | null) {
     await api.post('/v1/categories', data);
     qc.invalidateQueries({ queryKey: qk.categories(uid) });
   };
+  const updateCategory = async (id: string, data: Partial<NewCategory>) => {
+    await api.patch(`/v1/categories/${id}`, data);
+    qc.invalidateQueries({ queryKey: qk.categories(uid) });
+  };
   const removeCategory = async (id: string) => {
     await api.del(`/v1/categories/${id}`);
     qc.invalidateQueries({ queryKey: qk.categories(uid) });
   };
   const addSubcategory = async (data: NewSubcategory) => {
     await api.post('/v1/subcategories', data);
+    qc.invalidateQueries({ queryKey: qk.subcategories(uid) });
+  };
+  const updateSubcategory = async (id: string, data: Partial<NewSubcategory>) => {
+    await api.patch(`/v1/subcategories/${id}`, data);
     qc.invalidateQueries({ queryKey: qk.subcategories(uid) });
   };
   const removeSubcategory = async (id: string) => {
@@ -43,8 +51,10 @@ export function useCategories(userId: string | null) {
     subcategories: subsQ.data ?? [],
     loading: catsQ.isLoading,
     addCategory,
+    updateCategory,
     removeCategory,
     addSubcategory,
+    updateSubcategory,
     removeSubcategory,
   };
 }

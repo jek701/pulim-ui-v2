@@ -1,4 +1,6 @@
 .wrap {
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -13,6 +15,8 @@
 }
 
 .row {
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -39,6 +43,8 @@
 }
 
 .hiddenInput {
+  width: 0;
+  min-width: 0;
   flex: 1;
   height: 44px;
   border-radius: 12px;
@@ -61,10 +67,27 @@
 }
 
 .suggestions {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
+
+.suggestionsCompact {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.suggestionsCompact::-webkit-scrollbar { display: none; }
+
+.suggestionsCompact .chip { flex-shrink: 0; }
 
 .chip {
   width: 38px;

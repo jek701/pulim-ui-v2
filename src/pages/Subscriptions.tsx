@@ -179,6 +179,14 @@ const Subscriptions = () => {
 
   return (
     <div className={styles.page}>
+      <header className={styles.pageHeader}>
+        <h1>{t('subscriptions.heading')}</h1>
+        <button className={styles.headerAddBtn} onClick={openAdd}>
+          <HiPlus size={17} />
+          {t('common.add')}
+        </button>
+      </header>
+
       {!isPremium && subscriptions.length >= 2 && (
         <div style={{ padding: '0 16px' }}>
           <PremiumBanner feature="subscriptions" />
@@ -289,10 +297,6 @@ const Subscriptions = () => {
           <p>{t('subscriptions.empty_hint')}</p>
         </div>
       )}
-
-      <button className={styles.fab} onClick={openAdd}>
-        <HiPlus size={24} />
-      </button>
 
       {payingId && (() => {
         const s = subscriptions.find(s => s.id === payingId)!;

@@ -24,6 +24,7 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
 
   const [showAdd, setShowAdd] = useState(false);
   const [editingWallet, setEditingWallet] = useState<typeof wallets[0] | null>(null);
+  const [editNameStr, setEditNameStr] = useState('');
   const [editBalanceStr, setEditBalanceStr] = useState('');
 
   useEffect(() => {
@@ -43,9 +44,22 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
   const handleSetBalance = async () => {
     if (!editingWallet) return;
     const newBalance = parseFloat(editBalanceStr);
-    if (isNaN(newBalance)) return;
-    await update(editingWallet.id, { balance: newBalance });
+    if (isNaN(newBalance) || !editNameStr.trim()) return;
+    await update(editingWallet.id, { name: editNameStr.trim(), balance: newBalance });
     setEditingWallet(null);
+    setEditNameStr('');
+    setEditBalanceStr('');
+  };
+
+  const openEditWallet = (wallet: typeof wallets[0]) => {
+    setEditingWallet(wallet);
+    setEditNameStr(wallet.name);
+    setEditBalanceStr(String(wallet.balance));
+  };
+
+  const closeEditWallet = () => {
+    setEditingWallet(null);
+    setEditNameStr('');
     setEditBalanceStr('');
   };
 
@@ -111,7 +125,7 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
                 </button>
               </div>
               <p className={styles.walletBalance}>{formatAmount(w.balance, w.currency)}</p>
-              <button className={styles.editBalBtn} onClick={() => { setEditingWallet(w); setEditBalanceStr(String(w.balance)); }}>
+              <button className={styles.editBalBtn} onClick={() => openEditWallet(w)} aria-label={t('common.edit')}>
                 <HiPencil size={14} />
               </button>
               <button className={styles.delBtn} onClick={() => confirm(t('cash.confirm_delete')) && remove(w.id)}>
@@ -124,23 +138,29 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
 
       {editingWallet && (
         <Modal
-          title={t('cash.modal_edit_balance')}
-          onClose={() => { setEditingWallet(null); setEditBalanceStr(''); }}
+          title={t('cash.modal_edit_account')}
+          onClose={closeEditWallet}
           footer={
             <button
-              className={`${styles.saveBtn} ${editBalanceStr === '' ? styles.disabled : ''}`}
+              className={`${styles.saveBtn} ${editBalanceStr === '' || !editNameStr.trim() ? styles.disabled : ''}`}
               onClick={handleSetBalance}
-              disabled={editBalanceStr === ''}
+              disabled={editBalanceStr === '' || !editNameStr.trim()}
             >
-              {t('cash.btn_set_balance')}
+              {t('common.save')}
             </button>
           }
         >
+          <Input
+            label={t('common.name')}
+            value={editNameStr}
+            onChange={event => setEditNameStr(event.target.value)}
+            autoFocus
+          />
           <div>
             <label className={styles.fieldLabel}>
               {t('cash.new_balance_label', { currency: editingWallet.currency })}
             </label>
-            <NumberInput className={styles.numInput} placeholder="0" value={editBalanceStr} onChange={setEditBalanceStr} autoFocus />
+            <NumberInput className={styles.numInput} placeholder="0" value={editBalanceStr} onChange={setEditBalanceStr} allowNegative />
           </div>
         </Modal>
       )}
@@ -171,7 +191,7 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
           />
           <div>
             <label className={styles.fieldLabel}>{t('cash.balance_label')}</label>
-            <NumberInput className={styles.numInput} placeholder="0" value={balanceStr} onChange={setBalanceStr} />
+            <NumberInput className={styles.numInput} placeholder="0" value={balanceStr} onChange={setBalanceStr} allowNegative />
           </div>
           <label className={styles.checkboxRow}>
             <input
