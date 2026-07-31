@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   HiXMark, HiPaperAirplane, HiSparkles, HiStop,
@@ -224,7 +225,7 @@ const AskAIChat = ({ onClose }: Props) => {
   const showSuggestions = displayedMessages.length === 0 && !isStreaming;
   const headerTitle = activeChat?.title ?? t('ask_ai.title');
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -427,7 +428,8 @@ const AskAIChat = ({ onClose }: Props) => {
         )}
       </div>
       {showPremium && <PremiumModal feature="ai_chat" onClose={() => setShowPremium(false)} />}
-    </div>
+    </div>,
+    document.body,
   );
 };
 

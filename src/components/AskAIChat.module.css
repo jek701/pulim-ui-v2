@@ -1,6 +1,9 @@
 .overlay {
   position: fixed;
-  inset: 0;
+  top: var(--app-viewport-top);
+  right: 0;
+  left: 0;
+  height: var(--app-height);
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -8,6 +11,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  padding-top: var(--app-content-top);
+  padding-right: var(--app-content-right);
+  padding-left: var(--app-content-left);
   animation: overlayIn 0.22s ease both;
 }
 
@@ -19,7 +25,7 @@
 .modal {
   width: 100%;
   max-width: 640px;
-  height: 100dvh;
+  height: 100%;
   background: var(--surface, #fff);
   display: flex;
   flex-direction: column;
@@ -457,7 +463,7 @@
   border-top: 1px solid var(--border, rgba(0,0,0,0.08));
   background: var(--surface);
   flex-shrink: 0;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(12px + var(--app-content-bottom));
 }
 
 .textarea {

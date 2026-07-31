@@ -1,4 +1,5 @@
 import {useState, useMemo, useEffect} from 'react';
+import {createPortal} from 'react-dom';
 import {
     HiTrash,
     HiPencil,
@@ -474,10 +475,9 @@ const Transactions = () => {
             </button>
 
             {/* Filter Panel */}
-            {showFilterPanel && (
-                <>
-                    <div className={styles.filterOverlay} onClick={() => setShowFilterPanel(false)}/>
-                    <div className={styles.filterPanel}>
+            {showFilterPanel && createPortal(
+                <div className={styles.filterOverlay} onClick={() => setShowFilterPanel(false)}>
+                    <div className={styles.filterPanel} onClick={event => event.stopPropagation()}>
                         <div className={styles.filterHandle}/>
                         <div className={styles.filterPanelHeader}>
                             <span className={styles.filterPanelTitle}>{t('transactions.filter_title')}</span>
@@ -598,7 +598,8 @@ const Transactions = () => {
                             </div>
                         </div>
                     </div>
-                </>
+                </div>,
+                document.body,
             )}
 
             {showAdd && (

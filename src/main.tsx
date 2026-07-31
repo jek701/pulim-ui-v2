@@ -4,11 +4,47 @@ import App from './App.tsx'
 import "./global.css"
 import './i18n/index'
 
+type TelegramInset = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
+type TelegramWebApp = {
+  initData?: string;
+  platform?: string;
+  colorScheme?: 'light' | 'dark';
+  version?: string;
+  isFullscreen?: boolean;
+  viewportHeight?: number;
+  viewportStableHeight?: number;
+  safeAreaInset?: TelegramInset;
+  contentSafeAreaInset?: TelegramInset;
+  ready: () => void;
+  expand: () => void;
+  requestFullscreen?: () => void;
+  isVersionAtLeast?: (version: string) => boolean;
+  setHeaderColor: (color: string) => void;
+  setBackgroundColor: (color: string) => void;
+  setBottomBarColor?: (color: string) => void;
+  onEvent: (event: string, callback: (...args: unknown[]) => void) => void;
+};
+
 // Telegram Mini App bootstrap
-const tg = (window as any).Telegram?.WebApp;
-if (tg) {
-  tg.ready();
-  tg.expand();
+const tg = (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
+const telegramApp = tg && (tg.initData || (tg.platform && tg.platform !== 'unknown')) ? tg : undefined;
+if (telegramApp) {
+  document.documentElement.classList.add('telegram-mini-app');
+  telegramApp.ready();
+  telegramApp.expand();
+  try {
+    if (!telegramApp.isFullscreen && (!telegramApp.isVersionAtLeast || telegramApp.isVersionAtLeast('8.0'))) {
+      telegramApp.requestFullscreen?.();
+    }
+  } catch {
+    // Older clients still get the tallest non-fullscreen viewport via expand().
+  }
 }
 
 // Theme: follow Telegram colorScheme when in TG, otherwise system preference
@@ -16,38 +52,65 @@ const THEME_BG = { dark: '#161618', light: '#F2F2F7' } as const;
 const applyTheme = (scheme: 'light' | 'dark') => {
   document.documentElement.setAttribute('data-theme', scheme);
   const bg = THEME_BG[scheme];
-  if (tg) {
-    try { tg.setHeaderColor(bg); tg.setBackgroundColor(bg); } catch { /* ignore */ }
+  if (telegramApp) {
+    try {
+      telegramApp.setHeaderColor(bg);
+      telegramApp.setBackgroundColor(bg);
+      if (!telegramApp.isVersionAtLeast || telegramApp.isVersionAtLeast('7.10')) {
+        telegramApp.setBottomBarColor?.(bg);
+      }
+    } catch { /* ignore */ }
   }
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
 };
 export const detectScheme = (): 'light' | 'dark' => {
-  if (tg?.colorScheme === 'light' || tg?.colorScheme === 'dark') return tg.colorScheme;
+  if (telegramApp?.colorScheme === 'light' || telegramApp?.colorScheme === 'dark') return telegramApp.colorScheme;
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 };
 applyTheme(detectScheme());
-if (tg) tg.onEvent('themeChanged', () => applyTheme(detectScheme()));
+if (telegramApp) telegramApp.onEvent('themeChanged', () => applyTheme(detectScheme()));
 window.matchMedia?.('(prefers-color-scheme: light)').addEventListener?.('change', () => {
-  if (!tg) applyTheme(detectScheme());
+  if (!telegramApp) applyTheme(detectScheme());
 });
 
-// Set real viewport height as a CSS variable (fixes 100vh in mobile browsers & Telegram)
-const setVh = () => {
-  const h = tg?.viewportStableHeight || window.innerHeight;
-  document.documentElement.style.setProperty('--vh', `${h}px`);
+const setInsetVars = (prefix: string, inset?: TelegramInset) => {
+  const root = document.documentElement.style;
+  root.setProperty(`${prefix}-top-js`, `${inset?.top ?? 0}px`);
+  root.setProperty(`${prefix}-right-js`, `${inset?.right ?? 0}px`);
+  root.setProperty(`${prefix}-bottom-js`, `${inset?.bottom ?? 0}px`);
+  root.setProperty(`${prefix}-left-js`, `${inset?.left ?? 0}px`);
 };
-setVh();
-window.addEventListener('resize', setVh);
-if (tg) tg.onEvent('viewportChanged', setVh);
 
-// Push content below Telegram's top control buttons
-const setTopInset = () => {
-  const top = tg?.contentSafeAreaInset?.top ?? tg?.safeAreaInset?.top ?? 0;
-  document.documentElement.style.setProperty('--tg-top', `${top}px`);
+// Keep the layout tied to the currently visible viewport. This also reacts to
+// the iOS keyboard, unlike viewportStableHeight on its own.
+const syncViewportMetrics = () => {
+  const visualHeight = window.visualViewport?.height;
+  const telegramHeight = telegramApp?.viewportHeight;
+  const candidates = [visualHeight, telegramHeight, window.innerHeight]
+    .filter((value): value is number => typeof value === 'number' && value > 0);
+  const height = Math.min(...candidates);
+  const stableHeight = telegramApp?.viewportStableHeight ?? window.innerHeight;
+  const viewportTop = window.visualViewport?.offsetTop ?? 0;
+  const root = document.documentElement.style;
+
+  root.setProperty('--app-height', `${height}px`);
+  root.setProperty('--app-stable-height', `${stableHeight}px`);
+  root.setProperty('--app-viewport-top', `${viewportTop}px`);
+  setInsetVars('--tg-safe', telegramApp?.safeAreaInset);
+  setInsetVars('--tg-content-safe', telegramApp?.contentSafeAreaInset);
 };
-setTopInset();
-if (tg) tg.onEvent('safeAreaChanged', setTopInset);
-if (tg) tg.onEvent('contentSafeAreaChanged', setTopInset);
+
+syncViewportMetrics();
+window.addEventListener('resize', syncViewportMetrics);
+window.visualViewport?.addEventListener('resize', syncViewportMetrics);
+window.visualViewport?.addEventListener('scroll', syncViewportMetrics);
+if (telegramApp) {
+  telegramApp.onEvent('viewportChanged', syncViewportMetrics);
+  telegramApp.onEvent('safeAreaChanged', syncViewportMetrics);
+  telegramApp.onEvent('contentSafeAreaChanged', syncViewportMetrics);
+  telegramApp.onEvent('fullscreenChanged', syncViewportMetrics);
+  telegramApp.onEvent('fullscreenFailed', syncViewportMetrics);
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

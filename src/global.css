@@ -28,12 +28,29 @@
   --r-sm: 8px;
   --r-lg: 20px;
   --nav: 68px;
-  /* set by JS from Telegram viewportStableHeight or window.innerHeight */
-  --vh: 100vh;
-  /* set by JS from Telegram contentSafeAreaInset.top (space for Telegram's close/back buttons) */
-  --tg-top: 0px;
-  /* total bottom clearance = nav bar + device safe area */
-  --nav-total: calc(var(--nav) + env(safe-area-inset-bottom, 0px));
+  --app-height: 100dvh;
+  --app-stable-height: 100dvh;
+  --app-viewport-top: 0px;
+  --tg-safe-top-js: 0px;
+  --tg-safe-right-js: 0px;
+  --tg-safe-bottom-js: 0px;
+  --tg-safe-left-js: 0px;
+  --tg-content-safe-top-js: 0px;
+  --tg-content-safe-right-js: 0px;
+  --tg-content-safe-bottom-js: 0px;
+  --tg-content-safe-left-js: 0px;
+  --app-safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-safe-top-js));
+  --app-safe-right: max(env(safe-area-inset-right, 0px), var(--tg-safe-area-inset-right, 0px), var(--tg-safe-right-js));
+  --app-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-safe-bottom-js));
+  --app-safe-left: max(env(safe-area-inset-left, 0px), var(--tg-safe-area-inset-left, 0px), var(--tg-safe-left-js));
+  --app-content-top: max(var(--app-safe-top), var(--tg-content-safe-area-inset-top, 0px), var(--tg-content-safe-top-js));
+  --app-content-right: max(var(--app-safe-right), var(--tg-content-safe-area-inset-right, 0px), var(--tg-content-safe-right-js));
+  --app-content-bottom: max(var(--app-safe-bottom), var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-content-safe-bottom-js));
+  --app-content-left: max(var(--app-safe-left), var(--tg-content-safe-area-inset-left, 0px), var(--tg-content-safe-left-js));
+  /* Backward-compatible aliases used by a few existing screens. */
+  --vh: var(--app-height);
+  --tg-top: var(--app-content-top);
+  --nav-total: calc(var(--nav) + var(--app-content-bottom));
 }
 
 :root[data-theme="light"] {
@@ -66,14 +83,17 @@ html, body {
 }
 
 #root {
-  height: var(--vh);
+  width: 100%;
+  height: var(--app-height);
   display: flex;
   flex-direction: column;
   max-width: 430px;
   margin: 0 auto;
   overflow: hidden;
   position: relative;
-  padding-top: var(--tg-top);
+  padding-top: var(--app-content-top);
+  padding-right: var(--app-content-right);
+  padding-left: var(--app-content-left);
 }
 
 input, select, textarea, button {
@@ -85,6 +105,13 @@ input, select, textarea, button {
 }
 
 button { cursor: pointer; }
+
+/* Prevent iOS Telegram's WebView from zooming and shifting forms on focus. */
+html.telegram-mini-app input,
+html.telegram-mini-app select,
+html.telegram-mini-app textarea {
+  font-size: max(16px, 1em);
+}
 
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }

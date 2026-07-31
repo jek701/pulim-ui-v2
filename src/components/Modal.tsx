@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { HiXMark } from 'react-icons/hi2';
 import styles from './Modal.module.css';
 
@@ -11,11 +12,12 @@ interface Props {
 
 const Modal: React.FC<Props> = ({ title, onClose, children, footer }) => {
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, []);
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.sheet} onClick={e => e.stopPropagation()}>
         <div className={styles.handle} />
@@ -26,7 +28,8 @@ const Modal: React.FC<Props> = ({ title, onClose, children, footer }) => {
         <div className={styles.body}>{children}</div>
         {footer && <div className={styles.footer}>{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

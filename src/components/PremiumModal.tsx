@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   HiXMark, HiSparkles, HiCreditCard, HiChartPie, HiCalendar,
@@ -33,8 +34,9 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
     : 'ru') as 'ru' | 'uz' | 'en';
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, []);
 
   useEffect(() => {
@@ -133,7 +135,7 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
     { key: 'filters',     icon: <HiFunnel size={20} />,        title: t('premium.f_filters_title'),desc: t('premium.f_filters_desc') },
   ];
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
         <button className={styles.close} onClick={onClose} aria-label="Close">
@@ -213,7 +215,8 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
 
         <p className={styles.footnote}>{t('premium.footnote')}</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

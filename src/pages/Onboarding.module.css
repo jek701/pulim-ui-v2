@@ -4,6 +4,7 @@
   flex-direction: column;
   overflow-y: auto;
   background: var(--bg);
+  padding-bottom: var(--app-content-bottom);
 }
 
 .progressBar {
