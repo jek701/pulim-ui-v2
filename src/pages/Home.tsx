@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiPlus, HiChevronRight } from 'react-icons/hi2';
+import { HiPlus, HiChevronRight, HiChartPie } from 'react-icons/hi2';
 import { useApp } from '../context';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
@@ -16,6 +16,7 @@ import PageLoader from '../components/PageLoader';
 import ExchangeRatesWidget from '../components/ExchangeRatesWidget';
 import AskAIWidget from '../components/AskAIWidget';
 import AskAIChat from '../components/AskAIChat';
+import BalanceDetails from '../components/BalanceDetails';
 import type { NewTransaction } from '../hooks/useTransactions';
 import type { Currency } from '../types';
 import { resolveHomeWidgets, type HomeWidgetId } from '../utils/homeWidgets';
@@ -37,6 +38,7 @@ const Home = () => {
   const [showLaunchHint, setShowLaunchHint] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
   const [showAskAi, setShowAskAi] = useState(false);
+  const [showBalanceDetails, setShowBalanceDetails] = useState(false);
   const [forecast, setForecast] = useState<BudgetForecast | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [forecastError, setForecastError] = useState<string | null>(null);
@@ -228,8 +230,16 @@ const Home = () => {
   };
 
   const renderBalance = () => (
-      <div className={styles.balanceCard}>
-        <p className={styles.balanceLabel}>{t('home.current_balance_label')}</p>
+      <button
+        className={styles.balanceCard}
+        type="button"
+        onClick={() => setShowBalanceDetails(true)}
+        aria-label={t('home.balance_details_open')}
+      >
+        <div className={styles.balanceTop}>
+          <p className={styles.balanceLabel}>{t('home.current_balance_label')}</p>
+          <span className={styles.balanceOpenIcon}><HiChartPie size={17} /></span>
+        </div>
         {includedBalances.length > 0 ? (
           <div className={styles.balanceAmounts}>
             {includedBalances.map(([currency, amount]) => (
@@ -241,8 +251,13 @@ const Home = () => {
         ) : (
           <p className={styles.balanceEmpty}>{t('home.current_balance_empty')}</p>
         )}
-        <p className={styles.balanceHint}>{t('home.current_balance_hint')}</p>
-      </div>
+        <div className={styles.balanceFooter}>
+          <p className={styles.balanceHint}>{t('home.current_balance_hint')}</p>
+          <span className={styles.balanceDetailsLink}>
+            {t('home.balance_details_short')} <HiChevronRight size={14} />
+          </span>
+        </div>
+      </button>
   );
 
   const renderBudget = () => {
@@ -514,6 +529,7 @@ const Home = () => {
       )}
 
       {showAskAi && <AskAIChat onClose={() => setShowAskAi(false)} />}
+      {showBalanceDetails && <BalanceDetails cards={cards} onClose={() => setShowBalanceDetails(false)} />}
     </div>
   );
 };

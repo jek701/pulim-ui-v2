@@ -1,0 +1,402 @@
+.overlay {
+  position: fixed;
+  top: var(--app-viewport-top);
+  right: 0;
+  left: 0;
+  height: var(--app-height);
+  z-index: 900;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-top: var(--app-content-top);
+  padding-right: var(--app-content-right);
+  padding-left: var(--app-content-left);
+  background: rgba(5, 4, 10, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 26px 26px 0 0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(124, 58, 237, 0.18), transparent 32%),
+    radial-gradient(circle at 100% 30%, rgba(53, 194, 255, 0.09), transparent 30%),
+    var(--bg);
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.32);
+}
+
+.header {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  flex-shrink: 0;
+}
+
+.headerIcon {
+  width: 39px;
+  height: 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(145deg, #6D28D9, #9C63FF);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.32);
+}
+
+.headerCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.headerCopy h2 {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.headerCopy p {
+  margin-top: 2px;
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.closeBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--text2);
+}
+
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px max(26px, var(--app-content-bottom));
+}
+
+.currencyTabs {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 auto 12px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.currencyTab {
+  min-width: 58px;
+  width: 100%;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 999px;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.currencyTabActive {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.15);
+}
+
+.hero {
+  overflow: hidden;
+  padding: 19px 15px 15px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12);
+}
+
+.totalBlock {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.totalBlock p {
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.totalBlock strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: clamp(25px, 7.5vw, 32px);
+  font-weight: 820;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.totalBlock > span {
+  display: inline-flex;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.chartWrap {
+  position: relative;
+  width: min(100%, 300px);
+  aspect-ratio: 1;
+  margin: -4px auto -6px;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.chartTrack,
+.chartSegment {
+  fill: none;
+  stroke-width: 24;
+}
+
+/*.chartTrack { stroke: var(--surface2); }*/
+
+.chartSegment {
+  stroke-linecap: round;
+  /*filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.17));*/
+}
+
+.chartCenter {
+  position: absolute;
+  inset: 27%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg) 91%, transparent);
+  box-shadow: inset 0 0 35px rgba(124, 58, 237, 0.08), 0 12px 36px rgba(0, 0, 0, 0.14);
+}
+
+.chartCenter > span {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 7px;
+  border-radius: 11px;
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--accent2);
+}
+
+.chartCenter small {
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.chartCenter strong {
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.accountsSection { margin-top: 18px; }
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 0 3px;
+}
+
+.sectionHeader p {
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.sectionHeader span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text3);
+  font-size: 10px;
+}
+
+.sectionHeader > strong {
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 11px;
+}
+
+.accountList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.accountCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07);
+}
+
+.accountIcon {
+  --account-color: var(--accent);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 13px;
+  color: var(--account-color);
+  background: color-mix(in srgb, var(--account-color) 15%, var(--surface2));
+}
+
+.accountCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.accountMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.accountCopy > strong {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountCopy > p {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.negativeBalance { color: var(--expense); }
+
+.accountStatus {
+  flex-shrink: 0;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(61, 220, 151, 0.13);
+  color: #3DDC97;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+}
+
+.accountStatusMuted {
+  background: var(--surface2);
+  color: var(--text3);
+}
+
+.accountLimit {
+  display: block;
+  margin-top: 3px;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.emptyState {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  text-align: center;
+}
+
+.emptyState > span {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+  border-radius: 20px;
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--accent2);
+}
+
+.emptyState strong { font-size: 17px; }
+
+.emptyState p {
+  max-width: 270px;
+  margin-top: 7px;
+  color: var(--text3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (min-width: 700px) {
+  .sheet {
+    height: min(900px, 92dvh);
+    margin-bottom: 3dvh;
+    border-radius: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroller { scroll-behavior: auto; }
+}

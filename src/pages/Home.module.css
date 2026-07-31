@@ -33,12 +33,42 @@
 }
 
 .balanceCard {
+  width: calc(100% - 32px);
+  display: block;
   margin: 0 16px 20px;
   background: linear-gradient(135deg, #5B21B6, #7C3AED, #9333EA);
   border-radius: var(--r-lg);
   padding: 22px 20px 20px;
   animation: fadeInScale 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
   animation-delay: 0.05s;
+  text-align: left;
+  box-shadow: 0 14px 34px rgba(91, 33, 182, 0.24);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.balanceCard:active {
+  transform: scale(0.985);
+  box-shadow: 0 8px 22px rgba(91, 33, 182, 0.22);
+}
+
+.balanceTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.balanceOpenIcon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .balanceLabel {
@@ -48,6 +78,8 @@
   margin-bottom: 6px;
   letter-spacing: 0.3px;
 }
+
+.balanceTop .balanceLabel { margin-bottom: 0; }
 
 .balance {
   font-size: 34px;
@@ -60,6 +92,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-top: 6px;
   margin-bottom: 12px;
 }
 
@@ -73,7 +106,30 @@
 .balanceHint {
   font-size: 12px;
   color: rgba(255,255,255,0.65);
-  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.balanceFooter {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.balanceFooter .balanceHint {
+  min-width: 0;
+  flex: 1;
+}
+
+.balanceDetailsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .netLine {
