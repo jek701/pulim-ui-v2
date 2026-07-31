@@ -1,5 +1,16 @@
 import {useState, useMemo} from 'react';
-import {HiCheck, HiCreditCard, HiArrowsUpDown, HiBars3} from 'react-icons/hi2';
+import {
+    HiCheck,
+    HiCreditCard,
+    HiArrowsUpDown,
+    HiBars3,
+    HiMagnifyingGlass,
+    HiChevronDown,
+    HiBanknotes,
+    HiBuildingLibrary,
+    HiSparkles,
+    HiXMark,
+} from 'react-icons/hi2';
 import {useTranslation} from 'react-i18next';
 import {
     DndContext,
@@ -20,11 +31,11 @@ import {CSS} from '@dnd-kit/utilities';
 import Modal from './Modal';
 import {Input, Textarea} from './FormField';
 import {NumberInput} from './NumberInput';
-import type {Category, Subcategory, Currency, Card, Transaction} from '../types';
+import type {Category, Subcategory, Currency, Card, Transaction, CardType} from '../types';
 import type {NewTransaction} from '../hooks/useTransactions';
 import {CURRENCIES} from '../utils/currencies';
 import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
-import {toDateInput} from '../utils/format';
+import {formatAmount, toDateInput} from '../utils/format';
 import styles from './AddTransactionModal.module.css';
 
 function applyOrder(cards: Card[], order: string[]): Card[] {
@@ -81,11 +92,18 @@ interface Props {
     onClose: () => void;
     onReturn?: () => void;
     onSaveCardOrder: (ids: string[]) => Promise<void>;
+    recentCardIds?: string[];
+    launchHint?: {
+        visible: boolean;
+        onDismiss: () => void;
+        onOpenSettings: () => void;
+    };
 }
 
 const AddTransactionModal: React.FC<Props> = ({
                                                   categories, subcategories, cards, cardOrder, initialData,
                                                   onAdd, onClose, onReturn, onSaveCardOrder,
+                                                  recentCardIds = [], launchHint,
                                               }) => {
     const {t} = useTranslation();
     const editing = !!initialData;
@@ -94,14 +112,39 @@ const AddTransactionModal: React.FC<Props> = ({
     const [currency, setCurrency] = useState<Currency>(initialData?.currency ?? 'UZS');
     const [categoryId, setCategoryId] = useState(initialData?.categoryId ?? '');
     const [subcategoryId, setSubcategoryId] = useState(initialData?.subcategoryId ?? '');
-    const [cardId, setCardId] = useState(initialData?.cardId ?? '');
+    const [cardId, setCardId] = useState(initialData?.cardId ?? (cards.length === 1 ? cards[0].id : ''));
     const [date, setDate] = useState(initialData ? toDateInput(initialData.date) : toDateInput(Date.now()));
     const [comment, setComment] = useState(initialData?.comment ?? '');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [showReorder, setShowReorder] = useState(false);
+    const [showCardPicker, setShowCardPicker] = useState(false);
+    const [cardSearch, setCardSearch] = useState('');
 
     const sortedCards = useMemo(() => applyOrder(cards, cardOrder), [cards, cardOrder]);
+    const selectedCard = useMemo(() => cards.find(card => card.id === cardId), [cards, cardId]);
+
+    const recentCards = useMemo(() => {
+        const byId = new Map(sortedCards.map(card => [card.id, card]));
+        return recentCardIds.map(id => byId.get(id)).filter((card): card is Card => Boolean(card)).slice(0, 3);
+    }, [recentCardIds, sortedCards]);
+
+    const cardGroups = useMemo(() => {
+        const query = cardSearch.trim().toLocaleLowerCase();
+        const matches = sortedCards.filter(card => {
+            if (!query) return true;
+            return [card.name, card.bank, card.currency, card.cardType, t(`add_transaction.account_${card.cardType}`)]
+                .some(value => value.toLocaleLowerCase().includes(query));
+        });
+        const recentIds = new Set(query ? [] : recentCards.map(card => card.id));
+        const group = (type: CardType) => matches.filter(card => card.cardType === type && !recentIds.has(card.id));
+        return {
+            recent: query ? [] : recentCards,
+            debit: group('debit'),
+            credit: group('credit'),
+            cash: group('cash'),
+        };
+    }, [cardSearch, recentCards, sortedCards, t]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {activationConstraint: {distance: 5}}),
@@ -126,6 +169,52 @@ const AddTransactionModal: React.FC<Props> = ({
         setCardId(id);
         const card = cards.find(c => c.id === id);
         if (card) setCurrency(card.currency);
+        setShowCardPicker(false);
+        setCardSearch('');
+    };
+
+    const cardIcon = (card: Card) => {
+        if (card.cardType === 'cash') return <HiBanknotes size={18}/>;
+        if (card.cardType === 'credit') return <HiCreditCard size={18}/>;
+        return <HiBuildingLibrary size={18}/>;
+    };
+
+    const accountDisplayAmount = (card: Card) => card.cardType === 'credit'
+        ? Math.max((card.limit ?? card.balance) - card.balance, 0)
+        : card.balance;
+
+    const renderCardOption = (card: Card) => (
+        <button
+            type="button"
+            key={card.id}
+            className={`${styles.accountOption} ${cardId === card.id ? styles.accountOptionActive : ''}`}
+            onClick={() => selectCard(card.id)}
+        >
+            <span className={`${styles.accountIcon} ${styles[`accountIcon_${card.cardType}`]}`}>
+                {cardIcon(card)}
+            </span>
+            <span className={styles.accountMain}>
+                <span className={styles.accountName}>{card.name}</span>
+                <span className={styles.accountMeta}>
+                    {t(`add_transaction.account_${card.cardType}`)}{card.bank ? ` · ${card.bank}` : ''}
+                </span>
+            </span>
+            <span className={styles.accountAmount}>
+                <span>{formatAmount(accountDisplayAmount(card), card.currency)}</span>
+                <small>{t(card.cardType === 'credit' ? 'add_transaction.account_available' : 'add_transaction.account_balance')}</small>
+            </span>
+            {cardId === card.id && <HiCheck className={styles.accountCheck} size={18}/>}
+        </button>
+    );
+
+    const renderCardGroup = (title: string, groupCards: Card[]) => {
+        if (!groupCards.length) return null;
+        return (
+            <section className={styles.accountGroup}>
+                <p className={styles.accountGroupTitle}>{title}</p>
+                <div className={styles.accountGroupList}>{groupCards.map(renderCardOption)}</div>
+            </section>
+        );
     };
 
     const handleSave = async () => {
@@ -186,6 +275,28 @@ const AddTransactionModal: React.FC<Props> = ({
                 </>
             }
         >
+            {launchHint?.visible && (
+                <div className={styles.launchHint} role="status">
+                    <span className={styles.launchHintIcon}><HiSparkles size={20}/></span>
+                    <div className={styles.launchHintCopy}>
+                        <strong>{t('add_transaction.auto_hint_title')}</strong>
+                        <p>{t('add_transaction.auto_hint_text')}</p>
+                        <div className={styles.launchHintActions}>
+                            <button type="button" onClick={launchHint.onOpenSettings}>{t('add_transaction.auto_hint_settings')}</button>
+                            <button type="button" onClick={launchHint.onDismiss}>{t('add_transaction.auto_hint_done')}</button>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        className={styles.launchHintClose}
+                        aria-label={t('common.close')}
+                        onClick={launchHint.onDismiss}
+                    >
+                        <HiXMark size={17}/>
+                    </button>
+                </div>
+            )}
+
             {/* Type toggle */}
             <div className={styles.typeRow}>
                 <button
@@ -218,6 +329,111 @@ const AddTransactionModal: React.FC<Props> = ({
                 )}
             </div>
 
+            {/* Card picker */}
+            {cards.length > 0 && (
+                <div>
+                    <div className={styles.cardLabelRow}>
+                        <p className={styles.fieldLabel}>
+                            {t(type === 'expense' ? 'add_transaction.account_from' : 'add_transaction.account_to')}
+                            {' '}<span className={styles.required}>*</span>
+                        </p>
+                    </div>
+
+                    {showReorder ? (
+                        <div className={styles.reorderPanel}>
+                            <div className={styles.reorderHeader}>
+                                <span><HiArrowsUpDown size={15}/>{t('add_transaction.reorder_accounts')}</span>
+                                <button type="button" onClick={() => setShowReorder(false)}>{t('common.done')}</button>
+                            </div>
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={sortedCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                                    <div className={styles.reorderList}>
+                                        {sortedCards.map(card => (
+                                            <SortableCardItem key={card.id} card={card}/>
+                                        ))}
+                                    </div>
+                                </SortableContext>
+                            </DndContext>
+                        </div>
+                    ) : (
+                        <div className={styles.accountPickerWrap}>
+                            <button
+                                type="button"
+                                className={`${styles.accountSelect} ${showCardPicker ? styles.accountSelectOpen : ''}`}
+                                onClick={() => setShowCardPicker(open => !open)}
+                                aria-expanded={showCardPicker}
+                            >
+                                {selectedCard ? (
+                                    <>
+                                        <span className={`${styles.accountIcon} ${styles[`accountIcon_${selectedCard.cardType}`]}`}>
+                                            {cardIcon(selectedCard)}
+                                        </span>
+                                        <span className={styles.accountMain}>
+                                            <span className={styles.accountName}>{selectedCard.name}</span>
+                                            <span className={styles.accountMeta}>
+                                                {t(`add_transaction.account_${selectedCard.cardType}`)}
+                                                {selectedCard.bank ? ` · ${selectedCard.bank}` : ''} · {selectedCard.currency}
+                                            </span>
+                                        </span>
+                                        <span className={styles.selectedAmount}>
+                                            {formatAmount(accountDisplayAmount(selectedCard), selectedCard.currency)}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className={`${styles.accountIcon} ${styles.accountIconEmpty}`}><HiCreditCard size={18}/></span>
+                                        <span className={styles.accountPlaceholder}>{t('add_transaction.account_select')}</span>
+                                    </>
+                                )}
+                                <HiChevronDown className={`${styles.accountChevron} ${showCardPicker ? styles.accountChevronOpen : ''}`} size={18}/>
+                            </button>
+
+                            {showCardPicker && (
+                                <div className={styles.accountPicker}>
+                                    <label className={styles.accountSearch}>
+                                        <HiMagnifyingGlass size={18}/>
+                                        <input
+                                            type="search"
+                                            value={cardSearch}
+                                            onChange={event => setCardSearch(event.target.value)}
+                                            placeholder={t('add_transaction.account_search')}
+                                        />
+                                        {cardSearch && (
+                                            <button type="button" onClick={() => setCardSearch('')} aria-label={t('common.close')}>
+                                                <HiXMark size={17}/>
+                                            </button>
+                                        )}
+                                    </label>
+
+                                    <div className={styles.accountResults}>
+                                        {renderCardGroup(t('add_transaction.account_recent'), cardGroups.recent)}
+                                        {renderCardGroup(t('add_transaction.account_debit'), cardGroups.debit)}
+                                        {renderCardGroup(t('add_transaction.account_credit'), cardGroups.credit)}
+                                        {renderCardGroup(t('add_transaction.account_cash'), cardGroups.cash)}
+                                        {!cardGroups.recent.length && !cardGroups.debit.length && !cardGroups.credit.length && !cardGroups.cash.length && (
+                                            <p className={styles.accountEmpty}>{t('add_transaction.account_no_results')}</p>
+                                        )}
+                                    </div>
+                                    {cards.length > 1 && (
+                                        <button
+                                            type="button"
+                                            className={styles.accountReorderAction}
+                                            onClick={() => {
+                                                setShowCardPicker(false);
+                                                setShowReorder(true);
+                                            }}
+                                        >
+                                            <HiArrowsUpDown size={15}/>
+                                            {t('add_transaction.reorder_accounts')}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Amount + currency */}
             <div className={styles.amountRow}>
                 <NumberInput
@@ -234,51 +450,6 @@ const AddTransactionModal: React.FC<Props> = ({
                     {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
                 </select>
             </div>
-
-            {/* Card picker */}
-            {cards.length > 0 && (
-                <div>
-                    <div className={styles.cardLabelRow}>
-                        <p className={styles.fieldLabel}>{t('add_transaction.card_label')} <span
-                            className={styles.required}>*</span></p>
-                        {cards.length > 1 && (
-                            <button
-                                className={`${styles.reorderToggle} ${showReorder ? styles.reorderToggleActive : ''}`}
-                                onClick={() => setShowReorder(v => !v)}
-                                type="button"
-                            >
-                                <HiArrowsUpDown size={14}/>
-                            </button>
-                        )}
-                    </div>
-
-                    {showReorder ? (
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                            <SortableContext items={sortedCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                                <div className={styles.reorderList}>
-                                    {sortedCards.map(card => (
-                                        <SortableCardItem key={card.id} card={card}/>
-                                    ))}
-                                </div>
-                            </SortableContext>
-                        </DndContext>
-                    ) : (
-                        <div className={styles.cardRow}>
-                            {sortedCards.map(card => (
-                                <button
-                                    key={card.id}
-                                    className={`${styles.cardChip} ${cardId === card.id ? styles.cardActive : ''}`}
-                                    onClick={() => selectCard(card.id)}
-                                >
-                                    <HiCreditCard size={14}/>
-                                    <span>{card.name}</span>
-                                    <span className={styles.cardCur}>{card.currency}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
 
             {/* Categories */}
             <div>

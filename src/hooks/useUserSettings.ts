@@ -4,6 +4,9 @@ import { qk } from '../api/queryClient';
 import type { PlannedExpenseVisibility, UserSettings } from '../types';
 
 export const DEFAULT_PLANNED_EXPENSE_VISIBILITY: PlannedExpenseVisibility = 'this_month';
+export const DEFAULT_OPEN_TRANSACTION_ON_LAUNCH = true;
+
+const launchPreferenceKey = (userId: string) => `pulim:open-transaction-on-launch:${userId}`;
 
 type SettingsDoc = UserSettings & { id?: string };
 
@@ -29,11 +32,36 @@ export function useUserSettings(userId: string | null) {
     await updateSettings({ plannedExpenseVisibility: value });
   };
 
+  const setOpenTransactionOnLaunch = async (value: boolean) => {
+    if (!userId) return;
+    localStorage.setItem(launchPreferenceKey(userId), value ? 'true' : 'false');
+    qc.setQueryData(qk.settings(uid), (previous: SettingsDoc | undefined) => ({
+      ...(previous ?? {}),
+      openTransactionOnLaunch: value,
+    }));
+    try {
+      const updated = await api.patch<SettingsDoc>('/v1/settings', { openTransactionOnLaunch: value });
+      qc.setQueryData(qk.settings(uid), updated);
+    } catch {
+      // This is a per-device UX preference first; keep the local value if an
+      // older backend has not added the new settings field yet.
+    }
+  };
+
+  const storedLaunchPreference = userId ? localStorage.getItem(launchPreferenceKey(userId)) : null;
+  const openTransactionOnLaunch = storedLaunchPreference === 'true'
+    ? true
+    : storedLaunchPreference === 'false'
+      ? false
+      : settings.openTransactionOnLaunch ?? DEFAULT_OPEN_TRANSACTION_ON_LAUNCH;
+
   return {
     settings,
     loading: q.isLoading,
     updateSettings,
     plannedExpenseVisibility: settings.plannedExpenseVisibility ?? DEFAULT_PLANNED_EXPENSE_VISIBILITY,
     setPlannedExpenseVisibility,
+    openTransactionOnLaunch,
+    setOpenTransactionOnLaunch,
   };
 }

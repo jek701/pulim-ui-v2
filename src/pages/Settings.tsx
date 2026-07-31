@@ -36,7 +36,12 @@ const Settings = () => {
   const { categories, subcategories, addCategory, removeCategory, addSubcategory, removeSubcategory } = useCategories(user?.uid ?? null);
   const { clearAll: clearAllTransactions } = useTransactions(user?.uid ?? null);
   const { setBudget, getBudget } = useBudgets(user?.uid ?? null);
-  const { plannedExpenseVisibility, setPlannedExpenseVisibility } = useUserSettings(user?.uid ?? null);
+  const {
+    plannedExpenseVisibility,
+    setPlannedExpenseVisibility,
+    openTransactionOnLaunch,
+    setOpenTransactionOnLaunch,
+  } = useUserSettings(user?.uid ?? null);
   const { isPremium, isTrial, trialDaysLeft, aiUsed } = useEntitlements();
   const premiumGate = usePremiumGate();
 
@@ -259,6 +264,27 @@ const Settings = () => {
       {/*    </button>*/}
       {/*  )}*/}
       {/*</div>*/}
+
+      {/* App behavior */}
+      <div className={styles.section}>
+        <p className={styles.sectionLabel}>{t('settings.section_behavior')}</p>
+        <div className={`${styles.settingCard} ${styles.preferenceRow}`}>
+          <div className={styles.preferenceCopy}>
+            <p className={styles.preferenceTitle}>{t('settings.auto_transaction_title')}</p>
+            <p className={styles.preferenceHint}>{t('settings.auto_transaction_hint')}</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={openTransactionOnLaunch}
+            aria-label={t('settings.auto_transaction_title')}
+            className={`${styles.preferenceSwitch} ${openTransactionOnLaunch ? styles.preferenceSwitchOn : ''}`}
+            onClick={() => setOpenTransactionOnLaunch(!openTransactionOnLaunch)}
+          >
+            <span className={styles.preferenceThumb} />
+          </button>
+        </div>
+      </div>
 
       {/* Home widgets */}
       <div className={styles.section}>

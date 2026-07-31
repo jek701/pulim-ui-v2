@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiPlus, HiChevronRight } from 'react-icons/hi2';
 import { useApp } from '../context';
@@ -9,6 +9,7 @@ import { formatAmount, formatDate, formatMonth } from '../utils/format';
 import dayjs from '../utils/dayjs';
 import { getBudgetForecast, type BudgetForecast } from '../utils/ai';
 import { useBudgets } from '../hooks/useBudgets';
+import { useUserSettings } from '../hooks/useUserSettings';
 import AddTransactionModal from '../components/AddTransactionModal';
 import ReturnModal from '../components/ReturnModal';
 import PageLoader from '../components/PageLoader';
@@ -21,21 +22,50 @@ import { resolveHomeWidgets, type HomeWidgetId } from '../utils/homeWidgets';
 import styles from './Home.module.css';
 import {detectScheme} from "../main.tsx";
 
+let launchTransactionHandledFor: string | null = null;
+
 const Home = () => {
   const { t, i18n } = useTranslation();
   const theme = detectScheme()
   const { user, profile, setActiveTab, setCategoryFilter } = useApp();
   const { transactions, add, returnTransaction, loading: txLoading } = useTransactions(user?.uid ?? null);
   const { categories, subcategories, loading: catLoading } = useCategories(user?.uid ?? null);
-  const { cards, cardOrder, saveCardOrder } = useCards(user?.uid ?? null);
+  const { cards, cardOrder, saveCardOrder, loading: cardsLoading } = useCards(user?.uid ?? null);
   const { budgets, loading: budgetLoading } = useBudgets(user?.uid ?? null);
+  const { openTransactionOnLaunch, loading: settingsLoading } = useUserSettings(user?.uid ?? null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showLaunchHint, setShowLaunchHint] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
   const [showAskAi, setShowAskAi] = useState(false);
   const [forecast, setForecast] = useState<BudgetForecast | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [forecastError, setForecastError] = useState<string | null>(null);
   const [showAllBudgets, setShowAllBudgets] = useState(false);
+  const launchEffectRan = useRef(false);
+
+  useEffect(() => {
+    if (
+      launchTransactionHandledFor === user?.uid
+      || launchEffectRan.current
+      || !user?.uid
+      || txLoading
+      || catLoading
+      || cardsLoading
+      || settingsLoading
+    ) return;
+
+    launchEffectRan.current = true;
+    launchTransactionHandledFor = user.uid;
+    if (!openTransactionOnLaunch) return;
+
+    setShowAdd(true);
+    setShowLaunchHint(localStorage.getItem(`pulim:auto-transaction-hint:${user.uid}`) !== 'seen');
+  }, [cardsLoading, catLoading, openTransactionOnLaunch, settingsLoading, txLoading, user?.uid]);
+
+  const dismissLaunchHint = () => {
+    if (user?.uid) localStorage.setItem(`pulim:auto-transaction-hint:${user.uid}`, 'seen');
+    setShowLaunchHint(false);
+  };
 
   const [now] = useState(() => new Date());
   const userName = profile?.name?.trim()
@@ -76,6 +106,15 @@ const Home = () => {
       map.get(key)!.push(tx);
     }
     return Array.from(map.entries());
+  }, [transactions]);
+
+  const recentCardIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const transaction of transactions) {
+      if (transaction.cardId && !ids.includes(transaction.cardId)) ids.push(transaction.cardId);
+      if (ids.length === 3) break;
+    }
+    return ids;
   }, [transactions]);
 
   const monthTransactions = useMemo(() => {
@@ -163,7 +202,7 @@ const Home = () => {
     await returnTransaction(originalTxId, { returnAmount, accountId: accountId || undefined, date });
   };
 
-  if (txLoading || catLoading || budgetLoading) return <PageLoader />;
+  if (txLoading || catLoading || cardsLoading || budgetLoading || settingsLoading) return <PageLoader />;
 
   const monthName = dayjs(now).format('MMMM');
 
@@ -440,14 +479,27 @@ const Home = () => {
           subcategories={subcategories}
           cards={cards}
           cardOrder={cardOrder}
+          recentCardIds={recentCardIds}
           onSaveCardOrder={saveCardOrder}
           userId={user?.uid}
           onAdd={async (data: NewTransaction) => {
             // The server adjusts the card balance when cardId is present.
             await add(data);
           }}
-          onClose={() => setShowAdd(false)}
+          onClose={() => {
+            setShowAdd(false);
+            setShowLaunchHint(false);
+          }}
           onReturn={() => { setShowAdd(false); setShowReturn(true); }}
+          launchHint={{
+            visible: showLaunchHint,
+            onDismiss: dismissLaunchHint,
+            onOpenSettings: () => {
+              dismissLaunchHint();
+              setShowAdd(false);
+              setActiveTab('settings');
+            },
+          }}
         />
       )}
 

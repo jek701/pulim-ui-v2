@@ -85,23 +85,38 @@
   margin-bottom: 0;
 }
 
-.reorderToggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+.reorderPanel {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
   background: var(--surface2);
-  color: var(--text3);
-  border: none;
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s;
 }
 
-.reorderToggleActive {
-  background: rgba(124, 58, 237, 0.12);
+.reorderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 9px;
+}
+
+.reorderHeader span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reorderHeader button {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(124, 58, 237, 0.13);
   color: var(--accent2);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .reorderList {
@@ -194,6 +209,317 @@
 .cardCur {
   font-size: 11px;
   opacity: 0.6;
+}
+
+.launchHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid rgba(156, 99, 255, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.17), rgba(168, 85, 247, 0.08));
+  position: relative;
+}
+
+.launchHintIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 11px;
+  color: #fff;
+  background: var(--accent);
+}
+
+.launchHintCopy {
+  flex: 1;
+  min-width: 0;
+  padding-right: 20px;
+}
+
+.launchHintCopy strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.launchHintCopy p {
+  color: var(--text2);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.launchHintActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.launchHintActions button {
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--accent2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.launchHintActions button:last-child {
+  background: var(--accent);
+  color: #fff;
+}
+
+.launchHintClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text3);
+}
+
+.accountPickerWrap {
+  position: relative;
+}
+
+.accountSelect {
+  width: 100%;
+  min-height: 60px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface2);
+  text-align: left;
+  transition: border-color 0.15s, border-radius 0.15s;
+}
+
+.accountSelectOpen {
+  border-color: var(--accent);
+  border-radius: var(--r) var(--r) 8px 8px;
+}
+
+.accountIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+
+.accountIcon_debit {
+  color: #64D2FF;
+  background: rgba(100, 210, 255, 0.12);
+}
+
+.accountIcon_credit {
+  color: #FF9F0A;
+  background: rgba(255, 159, 10, 0.13);
+}
+
+.accountIcon_cash {
+  color: #30D158;
+  background: rgba(48, 209, 88, 0.12);
+}
+
+.accountIconEmpty {
+  color: var(--text3);
+  background: var(--surface3);
+}
+
+.accountMain {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.accountName {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMeta {
+  color: var(--text3);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedAmount {
+  max-width: 34%;
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accountPlaceholder {
+  flex: 1;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+.accountChevron {
+  color: var(--text3);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.accountChevronOpen {
+  transform: rotate(180deg);
+}
+
+.accountPicker {
+  margin-top: 7px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+}
+
+.accountSearch {
+  height: 42px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text3);
+}
+
+.accountSearch input {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.accountSearch input::placeholder {
+  color: var(--text3);
+}
+
+.accountSearch button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+}
+
+.accountResults {
+  max-height: 270px;
+  margin-top: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.accountReorderAction {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-top: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.accountReorderAction:active {
+  color: var(--accent2);
+}
+
+.accountGroup + .accountGroup {
+  margin-top: 10px;
+}
+
+.accountGroupTitle {
+  padding: 2px 6px 6px;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+.accountGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.accountOption {
+  width: 100%;
+  min-height: 54px;
+  padding: 7px 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.accountOption:active,
+.accountOptionActive {
+  background: rgba(124, 58, 237, 0.11);
+}
+
+.accountAmount {
+  max-width: 38%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.accountAmount small {
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.accountCheck {
+  color: var(--accent2);
+  flex-shrink: 0;
+}
+
+.accountEmpty {
+  padding: 24px 12px;
+  color: var(--text3);
+  font-size: 12px;
+  text-align: center;
 }
 
 .required {

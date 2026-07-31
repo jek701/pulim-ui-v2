@@ -64,6 +64,14 @@ const Transactions = () => {
     const [returnTx, setReturnTx] = useState<Transaction | null>(null);
     const [showReturn, setShowReturn] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
+    const recentCardIds = useMemo(() => {
+        const ids: string[] = [];
+        for (const transaction of transactions) {
+            if (transaction.cardId && !ids.includes(transaction.cardId)) ids.push(transaction.cardId);
+            if (ids.length === 3) break;
+        }
+        return ids;
+    }, [transactions]);
     const [summaryMode, setSummaryMode] = useState<'total' | 'byCurrency'>(() => {
         const stored = localStorage.getItem('txSummaryMode');
         return stored === 'byCurrency' ? 'byCurrency' : 'total';
@@ -608,6 +616,7 @@ const Transactions = () => {
                     subcategories={subcategories}
                     cards={cards}
                     cardOrder={cardOrder}
+                    recentCardIds={recentCardIds}
                     onSaveCardOrder={saveCardOrder}
                     onAdd={async (data: NewTransaction) => {
                         // The server adjusts the card balance when cardId is present.
@@ -627,6 +636,7 @@ const Transactions = () => {
                     subcategories={subcategories}
                     cards={cards}
                     cardOrder={cardOrder}
+                    recentCardIds={recentCardIds}
                     onSaveCardOrder={saveCardOrder}
                     initialData={editingTx}
                     onAdd={handleEditSave}
