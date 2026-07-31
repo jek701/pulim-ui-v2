@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import BottomNav from './components/BottomNav';
 import AuthLanguageSelector from './components/AuthLanguageSelector';
 import TelegramLinkBanner from './components/TelegramLinkBanner';
+import PaymentResultModal from './components/PaymentResultModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
 import styles from './App.module.css';
 
@@ -40,6 +41,8 @@ const AppShell = () => {
     profileLoading,
     telegramAuthPending,
     telegramAuthError,
+    paymentResult,
+    dismissPaymentResult,
   } = useApp();
 
   if (authLoading || telegramAuthPending || (user && profileLoading)) {
@@ -65,11 +68,14 @@ const AppShell = () => {
   }
 
   return (
-    <div className={styles.shell}>
-      <TelegramLinkBanner />
-      <PageContent />
-      <BottomNav />
-    </div>
+    <>
+      <div className={styles.shell}>
+        <TelegramLinkBanner />
+        <PageContent />
+        <BottomNav />
+      </div>
+      <PaymentResultModal result={paymentResult} onClose={dismissPaymentResult} />
+    </>
   );
 };
 

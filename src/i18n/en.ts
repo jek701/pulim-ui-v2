@@ -725,6 +725,30 @@ const en = {
   },
 
   // ── Premium ─────────────────────────────────────────────────────────────────
+  payment_result: {
+    checking_title: 'Confirming your payment',
+    checking_desc: 'We are verifying the payment with ATMOS and activating Premium. This usually takes a few seconds.',
+    delayed_title: 'Payment is still processing',
+    delayed_desc: 'We will keep checking automatically. Premium will appear as soon as ATMOS confirms the payment.',
+    success_badge: 'Payment successful',
+    success_title: 'Premium is active!',
+    success_desc: 'Thank you for your purchase. Every Pulim Premium feature is now available to your account.',
+    your_plan: 'Your plan',
+    plan_name: 'Premium for {{months}} months',
+    plan_1: 'Premium for 1 month',
+    plan_3: 'Premium for 3 months',
+    plan_6: 'Premium for 6 months',
+    plan_12: 'Premium for 12 months',
+    active_until: 'Active until',
+    benefits_title: 'You have unlocked',
+    benefit_ai: 'Advanced AI assistant',
+    benefit_accounts: 'Unlimited accounts',
+    benefit_analytics: 'Deep analytics and charts',
+    benefit_planning: 'Planning and financial goals',
+    continue: 'Great, continue',
+    close: 'Close',
+  },
+
   premium: {
     badge: 'Premium',
     title: 'Premium',

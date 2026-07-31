@@ -85,6 +85,14 @@ async function request<T>(
 }
 
 export const paymentApi = {
+  returnUrl(orderId: string, state: string) {
+    if (!PAYMENT_BASE) throw new PaymentApiError(0, 'PAYMENT_NOT_CONFIGURED', 'Payment API is not configured.');
+    const url = new URL(`${PAYMENT_BASE}/v1/checkout/return`);
+    url.searchParams.set('order', orderId);
+    url.searchParams.set('state', state);
+    return url.toString();
+  },
+
   async listPlans(language: 'ru' | 'uz' | 'en'): Promise<PaymentPlan[]> {
     const result = await request<{ plans: PaymentPlan[] }>(
       'GET',

@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { auth } from './firebase';
 import { api } from './api/client';
 import { qk } from './api/queryClient';
-import { paymentApi } from './api/paymentClient';
+import { paymentApi, type CheckoutSession } from './api/paymentClient';
 import type { AuthMethod, Tab, UserProfile } from './types';
 
 interface AppContextType {
@@ -31,7 +31,14 @@ interface AppContextType {
   profile: UserProfile | null;
   profileLoading: boolean;
   saveProfile: (data: Partial<UserProfile>) => Promise<void>;
+  paymentResult: PaymentResult | null;
+  dismissPaymentResult: () => void;
 }
+
+export type PaymentResult =
+  | { phase: 'checking' }
+  | { phase: 'success'; order: CheckoutSession }
+  | { phase: 'delayed'; orderId: string };
 
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -89,6 +96,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const telegramAuthInFlight = useRef(false);
 
   const uid = user?.uid ?? null;
@@ -237,16 +245,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const url = new URL(window.location.href);
     const orderId = url.searchParams.get('order');
     const paymentHint = url.searchParams.get('payment');
+    const returnState = url.searchParams.get('state');
+    if (orderId && returnState && !paymentHint) {
+      window.location.replace(paymentApi.returnUrl(orderId, returnState));
+      return;
+    }
     if (!orderId || !paymentHint) return;
 
     let cancelled = false;
+    setPaymentResult({ phase: 'checking' });
     void (async () => {
       try {
-        let paid = false;
+        let paidOrder: CheckoutSession | null = null;
         for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
           const order = await paymentApi.refreshOrder(orderId);
           if (order.status === 'PAID') {
-            paid = true;
+            paidOrder = order;
             break;
           }
           if (order.status !== 'PENDING_PAYMENT') break;
@@ -255,19 +269,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        if (!paid || cancelled) return;
-        // Give the transactional outbox a short delivery window, then refresh
-        // the Firestore profile projection owned by pulim-api.
-        await new Promise((resolve) => window.setTimeout(resolve, 2_500));
-        if (!cancelled) {
-          await queryClient.invalidateQueries({ queryKey: qk.profile(uid) });
+        if (!paidOrder || cancelled) {
+          if (!cancelled) setPaymentResult({ phase: 'delayed', orderId });
+          return;
+        }
+
+        const entitlementUntil = paidOrder.entitlementEndAt
+          ? Date.parse(paidOrder.entitlementEndAt)
+          : null;
+        setPaymentResult({ phase: 'success', order: paidOrder });
+
+        // The authenticated payment API result is provider-verified. Reflect it
+        // immediately in the local profile cache, then keep polling the main API
+        // until the durable Firestore projection catches up through the outbox.
+        if (entitlementUntil && Number.isFinite(entitlementUntil)) {
+          queryClient.setQueryData<UserProfile & { id?: string }>(qk.profile(uid), (current) => current ? ({
+            ...current,
+            isPremium: true,
+            subscription: {
+              ...current.subscription,
+              tier: 'premium',
+              isTrial: false,
+              source: 'atmos',
+              premiumUntil: entitlementUntil,
+              lastOrderId: paidOrder.orderId,
+            },
+          }) : current);
+        }
+
+        for (let attempt = 0; attempt < 12 && !cancelled; attempt += 1) {
+          try {
+            const durableProfile = await api.get<UserProfile & { id: string }>(
+              `/v1/profile?billingRefresh=${Date.now()}`,
+            );
+            const durableUntil = durableProfile.subscription?.premiumUntil;
+            if (durableProfile.isPremium === true
+              && typeof durableUntil === 'number'
+              && durableUntil > Date.now()) {
+              queryClient.setQueryData(qk.profile(uid), durableProfile);
+              break;
+            }
+          } catch (profileError) {
+            console.warn('[billing] waiting for profile projection:', profileError);
+          }
+          if (attempt < 11) {
+            await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+          }
         }
       } catch (err) {
         console.error('[billing] payment status refresh failed:', err);
+        if (!cancelled) setPaymentResult({ phase: 'delayed', orderId });
       } finally {
         if (!cancelled) {
           url.searchParams.delete('payment');
           url.searchParams.delete('order');
+          url.searchParams.delete('state');
           window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
         }
       }
@@ -330,6 +386,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     void saveProfile({ telegramLinkPromptDismissed: true });
   };
 
+  const dismissPaymentResult = () => setPaymentResult(null);
+
   const currentTgChatId = getTgUser()?.id;
   const telegramAlreadyLinked = authProvider === 'telegram'
     || (currentTgChatId != null && (profile?.telegramChatIds?.includes(currentTgChatId) ?? false));
@@ -360,6 +418,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeTab, setActiveTab,
       categoryFilter, setCategoryFilter,
       profile, profileLoading, saveProfile,
+      paymentResult, dismissPaymentResult,
     }}>
       {children}
     </AppContext.Provider>
