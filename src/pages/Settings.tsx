@@ -90,12 +90,19 @@ const Settings = () => {
     return (
       <div style={{
         position: 'fixed',
-        inset: 0,
+        top: 'var(--app-viewport-top)',
+        right: 0,
+        bottom: 'auto',
+        left: 0,
+        height: 'var(--app-height)',
         zIndex: 200,
         background: 'var(--bg)',
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 'var(--tg-top)',
+        paddingTop: 'var(--app-content-top)',
+        paddingRight: 'var(--app-content-right)',
+        paddingBottom: 'var(--app-content-bottom)',
+        paddingLeft: 'var(--app-content-left)',
       }}>
         <Onboarding editing onDone={() => setEditingProfile(false)} />
       </div>

@@ -298,16 +298,6 @@
   color: var(--text);
 }
 
-.dateInput {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--text);
-}
-
 .toggleRow {
   display: flex;
   align-items: center;

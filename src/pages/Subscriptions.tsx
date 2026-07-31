@@ -13,7 +13,7 @@ import { NumberInput } from '../components/NumberInput';
 import Modal from '../components/Modal';
 import { Input, Select } from '../components/FormField';
 import PageLoader from '../components/PageLoader';
-import { formatAmount } from '../utils/format';
+import { formatAmount, fromDateInput, toDateInput } from '../utils/format';
 import dayjs from '../utils/dayjs';
 import EmojiInput from '../components/EmojiInput';
 import styles from './Subscriptions.module.css';
@@ -169,7 +169,7 @@ const Subscriptions = () => {
 
   if (loading) return <PageLoader />;
 
-  const dateInputValue = new Date(form.nextBillingDate).toISOString().split('T')[0];
+  const dateInputValue = toDateInput(form.nextBillingDate);
 
   const CYCLES: { value: BillingCycle; label: string }[] = [
     { value: 'monthly', label: t('subscriptions.cycle_monthly') },
@@ -418,15 +418,12 @@ const Subscriptions = () => {
             options={CYCLES.map(c => ({ value: c.value, label: c.label }))}
           />
 
-          <div>
-            <label className={styles.fieldLabel}>{t('subscriptions.next_billing')}</label>
-            <input
-              className={styles.dateInput}
-              type="date"
-              value={dateInputValue}
-              onChange={e => set('nextBillingDate', new Date(e.target.value).getTime())}
-            />
-          </div>
+          <Input
+            label={t('subscriptions.next_billing')}
+            type="date"
+            value={dateInputValue}
+            onChange={e => set('nextBillingDate', fromDateInput(e.target.value))}
+          />
 
           <Input
             label={t('subscriptions.note_label')}

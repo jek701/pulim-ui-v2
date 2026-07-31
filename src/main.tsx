@@ -34,15 +34,22 @@ type TelegramWebApp = {
 // Telegram Mini App bootstrap
 const tg = (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
 const telegramApp = tg && (tg.initData || (tg.platform && tg.platform !== 'unknown')) ? tg : undefined;
+let fullscreenRequested = Boolean(telegramApp?.isFullscreen);
 if (telegramApp) {
   document.documentElement.classList.add('telegram-mini-app');
   telegramApp.ready();
   telegramApp.expand();
   try {
-    if (!telegramApp.isFullscreen && (!telegramApp.isVersionAtLeast || telegramApp.isVersionAtLeast('8.0'))) {
-      telegramApp.requestFullscreen?.();
+    if (
+      !telegramApp.isFullscreen
+      && telegramApp.requestFullscreen
+      && (!telegramApp.isVersionAtLeast || telegramApp.isVersionAtLeast('8.0'))
+    ) {
+      fullscreenRequested = true;
+      telegramApp.requestFullscreen();
     }
   } catch {
+    fullscreenRequested = false;
     // Older clients still get the tallest non-fullscreen viewport via expand().
   }
 }
@@ -93,6 +100,10 @@ const syncViewportMetrics = () => {
   const viewportTop = window.visualViewport?.offsetTop ?? 0;
   const root = document.documentElement.style;
 
+  document.documentElement.toggleAttribute(
+    'data-tg-fullscreen',
+    fullscreenRequested || Boolean(telegramApp?.isFullscreen),
+  );
   root.setProperty('--app-height', `${height}px`);
   root.setProperty('--app-stable-height', `${stableHeight}px`);
   root.setProperty('--app-viewport-top', `${viewportTop}px`);
@@ -108,8 +119,14 @@ if (telegramApp) {
   telegramApp.onEvent('viewportChanged', syncViewportMetrics);
   telegramApp.onEvent('safeAreaChanged', syncViewportMetrics);
   telegramApp.onEvent('contentSafeAreaChanged', syncViewportMetrics);
-  telegramApp.onEvent('fullscreenChanged', syncViewportMetrics);
-  telegramApp.onEvent('fullscreenFailed', syncViewportMetrics);
+  telegramApp.onEvent('fullscreenChanged', () => {
+    fullscreenRequested = Boolean(telegramApp.isFullscreen);
+    syncViewportMetrics();
+  });
+  telegramApp.onEvent('fullscreenFailed', () => {
+    fullscreenRequested = false;
+    syncViewportMetrics();
+  });
 }
 
 createRoot(document.getElementById('root')!).render(
