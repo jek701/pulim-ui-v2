@@ -20,6 +20,7 @@ import InteractiveFinanceChart, {
 import PageLoader from '../components/PageLoader';
 import type { Currency } from '../types';
 import { formatAmount } from '../utils/format';
+import { formatWithMinus } from '../utils/money';
 import dayjs from '../utils/dayjs';
 import styles from './Charts.module.css';
 
@@ -57,8 +58,13 @@ const Charts = () => {
       && transaction.source !== 'transfer';
   }), [activeCurrency, transactions, viewDate]);
 
-  const totalIncome = monthTxs.filter(item => item.type === 'income').reduce((sum, item) => sum + item.amount, 0);
-  const totalExpense = monthTxs.filter(item => item.type === 'expense').reduce((sum, item) => sum + item.amount, 0);
+  // Refunds (`type: 'income'`, `source: 'return'`) offset spending rather than
+  // counting as income — otherwise the chart shows revenue that never existed.
+  const totalIncome = monthTxs
+    .filter(item => item.type === 'income' && item.source !== 'return')
+    .reduce((sum, item) => sum + item.amount, 0);
+  const totalExpense = monthTxs
+    .reduce((sum, item) => sum + (item.source === 'return' ? -item.amount : item.type === 'expense' ? item.amount : 0), 0);
   const currencyBudgets = budgets.filter(budget => budget.currency === activeCurrency);
   const incomeBudget = currencyBudgets.find(budget => budget.categoryId === '__income__')?.amount ?? 0;
   const expenseBudget = currencyBudgets
@@ -194,9 +200,12 @@ const Charts = () => {
           <div><p>{incomeBudget > 0 ? t('charts.label_budget') : t('charts.label_income')}</p><strong className={styles.income}>{formatAmount(view !== 'both' && incomeBudget > 0 ? incomeBudget : totalIncome, activeCurrency)}</strong></div>
         )}
         {view !== 'income' && (
-          <div><p>{expenseBudget > 0 ? t('charts.label_budget') : t('charts.label_expenses')}</p><strong className={styles.expense}>{formatAmount(view !== 'both' && expenseBudget > 0 ? expenseBudget : totalExpense, activeCurrency)}</strong></div>
+          <div><p>{expenseBudget > 0 ? t('charts.label_budget') : t('charts.label_expenses')}</p><strong className={styles.expense}>{formatWithMinus(view !== 'both' && expenseBudget > 0 ? expenseBudget : totalExpense, activeCurrency)}</strong></div>
         )}
-        <div><p>{view === 'both' ? t('charts.label_net') : t('charts.label_rate')}</p><strong>{formatAmount(view === 'both' ? Math.abs(totalIncome - totalExpense) : Math.round((view === 'income' ? totalIncome : totalExpense) / Math.max(1, daysElapsed)), activeCurrency)}</strong></div>
+        {/* A negative net must show its sign — colour alone reads as a surplus. */}
+        <div><p>{view === 'both' ? t('charts.label_net') : t('charts.label_rate')}</p><strong>{view === 'both'
+          ? formatWithMinus(totalIncome - totalExpense, activeCurrency)
+          : formatAmount(Math.round((view === 'income' ? totalIncome : totalExpense) / Math.max(1, daysElapsed)), activeCurrency)}</strong></div>
         </div>
       </section>
 

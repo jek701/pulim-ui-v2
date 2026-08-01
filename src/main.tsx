@@ -3,48 +3,17 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import "./global.css"
 import './i18n/index'
-
-type TelegramInset = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};
-
-type TelegramWebApp = {
-  initData?: string;
-  platform?: string;
-  colorScheme?: 'light' | 'dark';
-  version?: string;
-  isFullscreen?: boolean;
-  viewportHeight?: number;
-  viewportStableHeight?: number;
-  safeAreaInset?: TelegramInset;
-  contentSafeAreaInset?: TelegramInset;
-  ready: () => void;
-  expand: () => void;
-  requestFullscreen?: () => void;
-  isVersionAtLeast?: (version: string) => boolean;
-  setHeaderColor: (color: string) => void;
-  setBackgroundColor: (color: string) => void;
-  setBottomBarColor?: (color: string) => void;
-  onEvent: (event: string, callback: (...args: unknown[]) => void) => void;
-};
+import { telegramApp, tgAtLeast, type TelegramInset } from './utils/telegram'
+import { detectScheme } from './utils/theme'
 
 // Telegram Mini App bootstrap
-const tg = (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
-const telegramApp = tg && (tg.initData || (tg.platform && tg.platform !== 'unknown')) ? tg : undefined;
 let fullscreenRequested = Boolean(telegramApp?.isFullscreen);
 if (telegramApp) {
   document.documentElement.classList.add('telegram-mini-app');
   telegramApp.ready();
   telegramApp.expand();
   try {
-    if (
-      !telegramApp.isFullscreen
-      && telegramApp.requestFullscreen
-      && (!telegramApp.isVersionAtLeast || telegramApp.isVersionAtLeast('8.0'))
-    ) {
+    if (!telegramApp.isFullscreen && telegramApp.requestFullscreen && tgAtLeast('8.0')) {
       fullscreenRequested = true;
       telegramApp.requestFullscreen();
     }
@@ -61,18 +30,18 @@ const applyTheme = (scheme: 'light' | 'dark') => {
   const bg = THEME_BG[scheme];
   if (telegramApp) {
     try {
-      telegramApp.setHeaderColor(bg);
-      telegramApp.setBackgroundColor(bg);
-      if (!telegramApp.isVersionAtLeast || telegramApp.isVersionAtLeast('7.10')) {
+      // Both colour setters landed in 6.1; calling them on older clients only
+      // produces "… is not supported in version 6.0" console warnings.
+      if (tgAtLeast('6.1')) {
+        telegramApp.setHeaderColor(bg);
+        telegramApp.setBackgroundColor(bg);
+      }
+      if (tgAtLeast('7.10')) {
         telegramApp.setBottomBarColor?.(bg);
       }
     } catch { /* ignore */ }
   }
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
-};
-export const detectScheme = (): 'light' | 'dark' => {
-  if (telegramApp?.colorScheme === 'light' || telegramApp?.colorScheme === 'dark') return telegramApp.colorScheme;
-  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 };
 applyTheme(detectScheme());
 if (telegramApp) telegramApp.onEvent('themeChanged', () => applyTheme(detectScheme()));
@@ -115,15 +84,16 @@ syncViewportMetrics();
 window.addEventListener('resize', syncViewportMetrics);
 window.visualViewport?.addEventListener('resize', syncViewportMetrics);
 window.visualViewport?.addEventListener('scroll', syncViewportMetrics);
-if (telegramApp) {
-  telegramApp.onEvent('viewportChanged', syncViewportMetrics);
-  telegramApp.onEvent('safeAreaChanged', syncViewportMetrics);
-  telegramApp.onEvent('contentSafeAreaChanged', syncViewportMetrics);
-  telegramApp.onEvent('fullscreenChanged', () => {
-    fullscreenRequested = Boolean(telegramApp.isFullscreen);
+const tg = telegramApp;
+if (tg) {
+  tg.onEvent('viewportChanged', syncViewportMetrics);
+  tg.onEvent('safeAreaChanged', syncViewportMetrics);
+  tg.onEvent('contentSafeAreaChanged', syncViewportMetrics);
+  tg.onEvent('fullscreenChanged', () => {
+    fullscreenRequested = Boolean(tg.isFullscreen);
     syncViewportMetrics();
   });
-  telegramApp.onEvent('fullscreenFailed', () => {
+  tg.onEvent('fullscreenFailed', () => {
     fullscreenRequested = false;
     syncViewportMetrics();
   });

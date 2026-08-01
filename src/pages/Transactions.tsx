@@ -20,7 +20,10 @@ import {useCards} from '../hooks/useCards';
 import {useBudgets} from '../hooks/useBudgets';
 import {useEntitlements} from '../hooks/useEntitlements';
 import {usePremiumGate, PremiumBadge} from '../components/PremiumLock';
-import {formatAmount, formatDate, formatTime, formatMonth} from '../utils/format';
+import {formatAmount, formatDate, formatFullDate, formatTime, formatMonth} from '../utils/format';
+import {formatSignedAmount, formatWithMinus} from '../utils/money';
+import {categoryDisplayName} from '../utils/categoryName';
+import {useConfirm} from '../components/ConfirmDialog';
 import dayjs from '../utils/dayjs';
 import AddTransactionModal from '../components/AddTransactionModal';
 import ReturnModal from '../components/ReturnModal';
@@ -62,6 +65,7 @@ const Transactions = () => {
     const {budgets} = useBudgets(user?.uid ?? null);
     const {isPremium} = useEntitlements();
     const premiumGate = usePremiumGate();
+    const {confirm, node: confirmNode} = useConfirm();
     const [filters, setFilters] = useState<ActiveFilters>(defaultFilters);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [showHistoryIntro, setShowHistoryIntro] = useState(true);
@@ -280,7 +284,11 @@ const Transactions = () => {
             if (tx.currency === BASE_CURRENCY) valueInBase = tx.amount;
             else if (typeof tx.baseAmount === 'number') valueInBase = tx.baseAmount;
             else { hasUnconverted = true; continue; }
-            if (tx.type === 'income') income += valueInBase;
+            // A refund is money coming back from a purchase, not earnings. Counting it
+            // as income invented revenue the user never received and left the expense
+            // figure at its pre-refund value.
+            if (tx.source === 'return') expense -= valueInBase;
+            else if (tx.type === 'income') income += valueInBase;
             else if (tx.type === 'expense') expense += valueInBase;
         }
         return {income, expense, hasUnconverted};
@@ -350,8 +358,25 @@ const Transactions = () => {
         }));
 
     const handleDelete = async (transaction: Transaction) => {
-        if (!confirm(t('common.delete') + '?')) return;
-        // The server reverses any balance impact (including both legs of a transfer) atomically.
+        const linkedReturns = transactions.filter(tx => tx.linkedTransactionId === transaction.id);
+        const category = getCategory(transaction.categoryId);
+        const label = transaction.source === 'return'
+            ? t('return.history_label')
+            : transaction.sourceLabel ?? (category ? categoryDisplayName(category, t) : t('common.transaction'));
+        const card = cards.find(c => c.id === transaction.cardId);
+
+        const ok = await confirm({
+            title: t('transactions.confirm_delete_title'),
+            message: `${label} · ${formatSignedAmount(transaction.type === 'income' ? transaction.amount : -transaction.amount, transaction.currency)} · ${formatFullDate(transaction.date, locale)}`,
+            detail: card ? t('transactions.confirm_delete_balance', { card: card.name }) : undefined,
+            warning: linkedReturns.length > 0
+                ? t('transactions.confirm_delete_returns', { count: linkedReturns.length })
+                : undefined,
+            confirmLabel: t('common.delete'),
+        });
+        if (!ok) return;
+        // The server reverses any balance impact (both transfer legs, and any linked
+        // refunds) atomically.
         await remove(transaction.id);
     };
 
@@ -492,7 +517,7 @@ const Transactions = () => {
                 <div className={styles.summaryItem}>
                     <p className={styles.summaryLabel}>{t('common.expenses')}</p>
                     <p className={`${styles.summaryExpense} ${!displayHasAnyFilter && expenseBudget > 0 && summaryTotals.expense > expenseBudget ? styles.summaryOver : ''}`}>
-                        {formatAmount(summaryTotals.expense)}
+                        {formatWithMinus(summaryTotals.expense)}
                     </p>
                     {!displayHasAnyFilter && expenseBudget > 0 &&
                         <p className={styles.summaryBudget}>/ {formatAmount(expenseBudget)}</p>}
@@ -501,7 +526,7 @@ const Transactions = () => {
                 <div className={styles.summaryItem}>
                     <p className={styles.summaryLabel}>{t('common.net')}</p>
                     <p className={summaryTotals.income - summaryTotals.expense >= 0 ? styles.summaryIncome : styles.summaryExpense}>
-                        {formatAmount(Math.abs(summaryTotals.income - summaryTotals.expense))}
+                        {formatWithMinus(summaryTotals.income - summaryTotals.expense)}
                     </p>
                 </div>
             </div>
@@ -912,6 +937,7 @@ const Transactions = () => {
                 />
             )}
             {premiumGate.node}
+            {confirmNode}
         </div>
     );
 };

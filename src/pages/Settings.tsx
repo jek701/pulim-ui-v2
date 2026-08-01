@@ -578,21 +578,33 @@ const Settings = () => {
     );
   };
 
-  const renderBudgetCategory = (category: Category) => (
-    <div className={styles.budgetItem} key={category.id}>
-      <span className={styles.budgetIcon}>{category.icon}</span>
-      <span className={styles.budgetName}>{getCategoryDisplayName(category)}</span>
-      <BudgetInput
-        key={getBudget(category.id)?.amount ?? category.id}
-        className={styles.budgetInput}
-        placeholder={isPremium ? '0' : '🔒'}
-        initialValue={getBudget(category.id)?.amount}
-        onSave={value => { if (!isPremium) { premiumGate.open('budgets'); return; } if (value >= 0) setBudget(category.id, value, 'UZS'); }}
-        onClick={(event: React.MouseEvent) => { if (!isPremium) { event.stopPropagation(); premiumGate.open('budgets'); } }}
-      />
+  /**
+   * One budget row. On the free plan the field is genuinely locked rather than
+   * accepting input it will never save, and the paywall opens on interaction.
+   */
+  const renderBudgetRow = (budgetId: string, icon: string, label: string) => (
+    <div className={styles.budgetItem} key={budgetId}>
+      <span className={styles.budgetIcon} aria-hidden="true">{icon}</span>
+      <span className={styles.budgetName}>{label}</span>
+      <div className={styles.budgetInputWrap}>
+        <BudgetInput
+          key={getBudget(budgetId)?.amount ?? budgetId}
+          className={`${styles.budgetInput} ${!isPremium ? styles.budgetInputLocked : ''}`}
+          placeholder="0"
+          aria-label={t('settings.budget_field_label', { category: label })}
+          initialValue={getBudget(budgetId)?.amount}
+          locked={!isPremium}
+          onLockedActivate={() => premiumGate.open('budgets')}
+          onSave={value => { if (value >= 0) setBudget(budgetId, value, 'UZS'); }}
+        />
+        {!isPremium && <HiLockClosed className={styles.budgetLockIcon} size={13} aria-hidden="true" />}
+      </div>
       <span className={styles.budgetCurrency}>UZS</span>
     </div>
   );
+
+  const renderBudgetCategory = (category: Category) =>
+    renderBudgetRow(category.id, category.icon, getCategoryDisplayName(category));
 
   const renderCategories = () => (
     <>
@@ -644,33 +656,8 @@ const Settings = () => {
         {!isPremium && <div className={styles.premiumNotice}><PremiumBadge />{t('settings.budgets_premium_hint')}</div>}
 
         <div className={styles.budgetList}>
-          <div className={styles.budgetItem}>
-            <span className={styles.budgetIcon}>💰</span>
-            <span className={styles.budgetName}>{t('settings.label_salary')}</span>
-            <BudgetInput
-              key={getBudget('__income__')?.amount ?? 'income'}
-              className={styles.budgetInput}
-              placeholder={isPremium ? '0' : '🔒'}
-              initialValue={getBudget('__income__')?.amount}
-              onSave={value => { if (!isPremium) { premiumGate.open('budgets'); return; } if (value >= 0) setBudget('__income__', value, 'UZS'); }}
-              onClick={(event: React.MouseEvent) => { if (!isPremium) { event.preventDefault(); premiumGate.open('budgets'); } }}
-            />
-            <span className={styles.budgetCurrency}>UZS</span>
-          </div>
-
-          <div className={styles.budgetItem}>
-            <span className={styles.budgetIcon}>💳</span>
-            <span className={styles.budgetName}>{t('settings.label_debt_payments')}</span>
-            <BudgetInput
-              key={getBudget('__debts__')?.amount ?? '__debts__'}
-              className={styles.budgetInput}
-              placeholder={isPremium ? '0' : '🔒'}
-              initialValue={getBudget('__debts__')?.amount}
-              onSave={value => { if (!isPremium) { premiumGate.open('budgets'); return; } if (value >= 0) setBudget('__debts__', value, 'UZS'); }}
-              onClick={(event: React.MouseEvent) => { if (!isPremium) { event.preventDefault(); premiumGate.open('budgets'); } }}
-            />
-            <span className={styles.budgetCurrency}>UZS</span>
-          </div>
+          {renderBudgetRow('__income__', '💰', t('settings.label_salary'))}
+          {renderBudgetRow('__debts__', '💳', t('settings.label_debt_payments'))}
 
           {expenseCategories.map(renderBudgetCategory)}
 

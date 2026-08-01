@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { formatAmountInput, normalizeAmountInput } from '../utils/money';
 
 /**
- * Controlled text input that displays numbers with comma formatting (1,000,000)
- * while exposing the raw numeric string (no commas) via onChange.
+ * Controlled text input that displays numbers with space-grouped thousands while
+ * exposing the raw numeric string (plain digits, `.` decimal point) via onChange.
+ * Parsing/formatting rules live in `utils/money.ts`.
  */
 
 type NumberInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'> & {
@@ -11,29 +13,17 @@ type NumberInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value
   allowNegative?: boolean;
 };
 
-const formatDisplay = (raw: string): string => {
-  if (!raw) return '';
-  const negative = raw.startsWith('-');
-  const unsigned = negative ? raw.slice(1) : raw;
-  if (!unsigned) return negative ? '-' : '';
-  const [int, dec] = unsigned.split('.');
-  const intFormatted = Number(int || '0').toLocaleString('en-US');
-  const formatted = dec !== undefined ? `${intFormatted}.${dec}` : intFormatted;
-  return negative ? `-${formatted}` : formatted;
-};
-
 export const NumberInput: React.FC<NumberInputProps> = ({ value, onChange, allowNegative = false, ...props }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/,/g, '');
-    const pattern = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/;
-    if (raw === '' || pattern.test(raw)) onChange(raw);
+    const raw = normalizeAmountInput(e.target.value, allowNegative);
+    if (raw !== null) onChange(raw);
   };
 
   return (
     <input
       type="text"
       inputMode="decimal"
-      value={formatDisplay(value)}
+      value={formatAmountInput(value)}
       onChange={handleChange}
       {...props}
     />
@@ -42,34 +32,56 @@ export const NumberInput: React.FC<NumberInputProps> = ({ value, onChange, allow
 
 /**
  * Uncontrolled budget input for Settings — manages its own raw string state,
- * calls onSave(parsedNumber) on blur. Re-initializes when `resetKey` changes.
+ * calls onSave(parsedNumber) on blur.
+ *
+ * `locked` is for premium-gated rows: the field must not pretend to accept input.
+ * It used to format typed digits and show them as if saved, so the value looked
+ * persisted until a reload silently dropped it.
  */
 type BudgetInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'defaultValue' | 'onBlur' | 'type'> & {
   initialValue?: number;
   onSave: (value: number) => void;
+  locked?: boolean;
+  onLockedActivate?: () => void;
 };
 
-export const BudgetInput: React.FC<BudgetInputProps> = ({ initialValue, onSave, ...props }) => {
+export const BudgetInput: React.FC<BudgetInputProps> = ({
+  initialValue,
+  onSave,
+  locked = false,
+  onLockedActivate,
+  ...props
+}) => {
   const [raw, setRaw] = useState(initialValue ? String(initialValue) : '');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const stripped = e.target.value.replace(/,/g, '');
-    if (stripped === '' || /^\d*\.?\d*$/.test(stripped)) setRaw(stripped);
+    if (locked) return;
+    const next = normalizeAmountInput(e.target.value);
+    if (next !== null) setRaw(next);
   };
 
   const handleBlur = () => {
+    if (locked) return;
     const v = parseFloat(raw);
     if (v > 0) onSave(v);
     else if (raw === '') onSave(0);
   };
 
+  const activateLock = () => onLockedActivate?.();
+
   return (
     <input
       type="text"
       inputMode="decimal"
-      value={formatDisplay(raw)}
+      value={formatAmountInput(raw)}
       onChange={handleChange}
       onBlur={handleBlur}
+      readOnly={locked}
+      aria-disabled={locked || undefined}
+      onPointerDown={locked ? (event => { event.preventDefault(); activateLock(); }) : undefined}
+      onKeyDown={locked ? (event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activateLock(); }
+      }) : undefined}
       {...props}
     />
   );

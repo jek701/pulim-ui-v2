@@ -14,6 +14,7 @@ import Modal from '../components/Modal';
 import { Input, Select } from '../components/FormField';
 import PageLoader from '../components/PageLoader';
 import { formatAmount, fromDateInput, toDateInput } from '../utils/format';
+import { BASE_CURRENCY, getRateToBase } from '../utils/nbuRates';
 import dayjs from '../utils/dayjs';
 import EmojiInput from '../components/EmojiInput';
 import styles from './Subscriptions.module.css';
@@ -145,27 +146,56 @@ const Subscriptions = () => {
   const active = subscriptions.filter(s => s.isActive);
   const inactive = subscriptions.filter(s => !s.isActive);
 
-  const totalMonthly = useMemo(
-    () => active.reduce((sum, s) => sum + toMonthly(s.amount, s.cycle), 0),
-    [active]
-  );
-
   const upcomingThisWeek = useMemo(
     () => active.filter(s => { const d = daysUntil(s.nextBillingDate); return d >= 0 && d <= 7; }),
     [active]
   );
 
-  const uzsTotalMonthly = useMemo(
-    () => Math.round(active.filter(s => s.currency === 'UZS').reduce((sum, s) => sum + toMonthly(s.amount, s.cycle), 0)),
-    [active]
-  );
+  /** Monthly cost per currency — the raw figures, never summed across currencies. */
+  const monthlyByCurrency = useMemo(() => {
+    const totals = new Map<Currency, number>();
+    for (const s of active) {
+      totals.set(s.currency, (totals.get(s.currency) ?? 0) + toMonthly(s.amount, s.cycle));
+    }
+    return totals;
+  }, [active]);
+
+  /**
+   * The header total used to add USD straight onto UZS and label the result "UZS"
+   * (99,999,999,999 USD showed as 99,999,999,999 UZS). Convert through NBU rates
+   * first; if a rate is missing we say so rather than printing a fake number.
+   */
+  const [totalMonthlyUZS, setTotalMonthlyUZS] = useState<number | null>(null);
+  const [hasUnconvertedTotal, setHasUnconvertedTotal] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let sum = 0;
+      let missing = false;
+      for (const [currency, amount] of monthlyByCurrency) {
+        if (currency === BASE_CURRENCY) { sum += amount; continue; }
+        const rate = await getRateToBase(currency);
+        if (rate == null) { missing = true; continue; }
+        sum += amount * rate;
+      }
+      if (cancelled) return;
+      setTotalMonthlyUZS(Math.round(sum));
+      setHasUnconvertedTotal(missing);
+    })();
+    return () => { cancelled = true; };
+  }, [monthlyByCurrency]);
+
+  const isMultiCurrency = monthlyByCurrency.size > 1 || !monthlyByCurrency.has(BASE_CURRENCY);
 
   const setBudgetRef = useRef(setBudget);
   setBudgetRef.current = setBudget;
   useEffect(() => {
-    if (loading || !user?.uid) return;
-    setBudgetRef.current('__subscription__', uzsTotalMonthly, 'UZS');
-  }, [uzsTotalMonthly, loading, user?.uid]);
+    // Budgets are kept in UZS, so feed the converted total — the previous UZS-only
+    // filter made foreign-currency subscriptions vanish from the budget entirely.
+    if (loading || !user?.uid || totalMonthlyUZS == null) return;
+    setBudgetRef.current('__subscription__', totalMonthlyUZS, 'UZS');
+  }, [totalMonthlyUZS, loading, user?.uid]);
 
   if (loading) return <PageLoader />;
 
@@ -196,7 +226,21 @@ const Subscriptions = () => {
       <div className={styles.summary}>
         <div className={styles.summaryMain}>
           <p className={styles.summaryLabel}>{t('subscriptions.monthly_total')}</p>
-          <p className={styles.summaryAmount}>{formatAmount(Math.round(totalMonthly), 'UZS')}</p>
+          <p className={styles.summaryAmount}>
+            {totalMonthlyUZS == null
+              ? '…'
+              : `${isMultiCurrency ? '≈ ' : ''}${formatAmount(totalMonthlyUZS, 'UZS')}`}
+          </p>
+          {isMultiCurrency && (
+            <p className={styles.summaryBreakdown}>
+              {Array.from(monthlyByCurrency.entries())
+                .map(([currency, amount]) => formatAmount(Math.round(amount), currency))
+                .join(' + ')}
+            </p>
+          )}
+          {hasUnconvertedTotal && (
+            <p className={styles.summaryNote}>{t('subscriptions.total_unconverted_note')}</p>
+          )}
         </div>
         <div className={styles.summarySide}>
           <div className={styles.summaryPill}>

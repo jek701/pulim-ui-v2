@@ -21,13 +21,11 @@ import type { NewTransaction } from '../hooks/useTransactions';
 import type { Currency } from '../types';
 import { resolveHomeWidgets, type HomeWidgetId } from '../utils/homeWidgets';
 import styles from './Home.module.css';
-import {detectScheme} from "../main.tsx";
 
 let launchTransactionHandledFor: string | null = null;
 
 const Home = () => {
   const { t, i18n } = useTranslation();
-  const theme = detectScheme()
   const { user, profile, setActiveTab, setCategoryFilter } = useApp();
   const { transactions, add, returnTransaction, loading: txLoading } = useTransactions(user?.uid ?? null);
   const { categories, subcategories, loading: catLoading } = useCategories(user?.uid ?? null);
@@ -82,8 +80,17 @@ const Home = () => {
       const d = new Date(t.date);
       return d.getMonth() === m && d.getFullYear() === y && t.currency === 'UZS';
     });
-    const income  = uzs.filter(t => t.type === 'income'  && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
-    const expense = uzs.filter(t => t.type === 'expense' && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
+    // Refunds are stored as `type: 'income'` with `source: 'return'`. They are money
+    // coming back from a purchase, so they reduce spending instead of counting as
+    // income — otherwise the dashboard shows earnings the user never received.
+    let income = 0;
+    let expense = 0;
+    for (const t of uzs) {
+      if (t.source === 'transfer') continue;
+      if (t.source === 'return') expense -= t.amount;
+      else if (t.type === 'income') income += t.amount;
+      else expense += t.amount;
+    }
     return { income, expense, balance: income - expense };
   }, [now, transactions]);
 
@@ -131,9 +138,10 @@ const Home = () => {
     return budgets
       .filter(b => b.categoryId !== '__income__' && b.amount > 0)
       .map(b => {
+        // Refunds carry the original expense's categoryId, so they offset its budget.
         const spent = monthTransactions
-          .filter(t => t.type === 'expense' && t.categoryId === b.categoryId && t.currency === 'UZS')
-          .reduce((s, t) => s + t.amount, 0);
+          .filter(t => t.categoryId === b.categoryId && t.currency === 'UZS' && t.source !== 'transfer')
+          .reduce((s, t) => s + (t.source === 'return' ? -t.amount : t.type === 'expense' ? t.amount : 0), 0);
         const cat = categories.find(c => c.id === b.categoryId);
         return { budget: b, cat, spent, pct: Math.min((spent / b.amount) * 100, 100) };
       })
@@ -161,22 +169,20 @@ const Home = () => {
     .reduce((s, t) => s + t.amount, 0);
   const daysElapsed = now.getDate();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const totalSpentUZS = monthTransactions
-    .filter(t => t.type === 'expense' && t.currency === 'UZS' && t.source !== 'transfer')
-    .reduce((s, t) => s + t.amount, 0);
+  // Same net-of-refunds figure the summary shows, so the forecast cannot disagree
+  // with the number printed right above it.
+  const totalSpentUZS = monthStats.expense;
   const dailyRate = daysElapsed > 0 ? totalSpentUZS / daysElapsed : 0;
   const projectedTotal = Math.round(dailyRate * daysInMonth);
   const totalBudget = budgets.filter(b => b.categoryId !== '__income__').reduce((s, b) => s + b.amount, 0);
   const expenseBudgetRatio = totalBudget > 0 ? Math.min(monthStats.expense / totalBudget, 1) : 0;
-  const expenseSummaryColor = (() => {
-    if (theme === 'light') return "black"
-    else {
-      const start = { r: 255, g: 255, b: 255 };
-      const end = { r: 255, g: 107, b: 107 };
-      const mix = (from: number, to: number) => Math.round(from + (to - from) * expenseBudgetRatio);
-      return `rgb(${mix(start.r, end.r)}, ${mix(start.g, end.g)}, ${mix(start.b, end.b)})`;
-    }
-  })();
+  // Shade the figure towards the expense colour as the budget fills up. Mixing theme
+  // variables keeps it readable in both themes — the previous hard-coded rgb() was
+  // computed once from a non-reactive theme read and turned black on a dark surface.
+  // Browsers without color-mix drop the declaration and fall back to the stylesheet's
+  // `color: var(--text)`.
+  const expenseSummaryColor =
+    `color-mix(in srgb, var(--expense) ${Math.round(expenseBudgetRatio * 100)}%, var(--text))`;
 
   const handleForecast = async () => {
     setForecastLoading(true);
