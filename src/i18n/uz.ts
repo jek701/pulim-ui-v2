@@ -427,7 +427,10 @@ const uz = {
 
     // ── Return ───────────────────────────────────────────────────────────────────
     return: {
-        remaining_left: '{{amount}} qoldi',
+        merged_count_one: '{{count}} ta qaytarish',
+        merged_count_other: '{{count}} ta qaytarish',
+        comment_label: 'Eslatma',
+        comment_placeholder: 'Kim va nima uchun qaytardi',
         no_transactions: 'Amaliyotlar topilmadi',
         modal_title: 'Qaytarishni yozish',
         amount_label: 'Qaytarish summasi ({{currency}})',
@@ -444,7 +447,6 @@ const uz = {
         err_no_account: 'Hisobni tanlang',
         history_label: 'Qaytarish',
         history_from: 'dan: {{name}}',
-        returned_badge: '−{{amount}} qaytarildi',
     },
 
     // ── Add Transaction Modal ────────────────────────────────────────────────────

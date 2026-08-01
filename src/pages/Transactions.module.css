@@ -289,16 +289,21 @@
     overflow: hidden;
 }
 
+/* A purchase plus any refunds merged into it. The separator lives here rather than
+   on .txRow so an expanded row and its refunds read as one block. */
+.txGroupItem {
+    border-bottom: 1px solid var(--border);
+}
+
+.txGroupItem:last-child {
+    border-bottom: none;
+}
+
 .txRow {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-}
-
-.txRow:last-child {
-    border-bottom: none;
 }
 
 .txIcon {
@@ -343,22 +348,6 @@
     text-overflow: ellipsis;
 }
 
-/* The refund note is structured information, not free text — it must never be
-   clipped. Reusing .txComment truncated it to "−50,00…" at 375px, which carries
-   no meaning at all. Wraps instead. */
-.txRefundNote {
-    display: inline-block;
-    margin-top: 4px;
-    padding: 2px 7px;
-    border-radius: var(--r-sm);
-    background: var(--income-bg);
-    color: var(--income);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.35;
-    white-space: normal;
-}
-
 .txRight {
     display: flex;
     align-items: center;
@@ -366,9 +355,26 @@
     flex-shrink: 0;
 }
 
+/* Amount and, for a partially refunded expense, the original figure beneath it.
+   Both live in the right column, which is already sized for numbers — the earlier
+   refund badge sat in the middle column and stretched the whole row. */
+.txAmountBox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+}
+
 .txAmount {
     font-size: 14px;
     font-weight: 600;
+    white-space: nowrap;
+}
+
+.txAmountOriginal {
+    font-size: 11px;
+    color: var(--text3);
+    white-space: nowrap;
 }
 
 .inc {
@@ -824,4 +830,52 @@
     color: var(--text2);
     font-size: 12px;
     line-height: 1.35;
+}
+
+
+/* ─ Merged same-day refunds ─────────────────────────────────────────────────
+   A refund made on the same day as its purchase is folded into that row; this
+   toggle reveals the individual refunds with their own edit/delete actions. */
+.refundToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 3px;
+    padding: 0;
+    background: none;
+    color: var(--income);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.refundChevron {
+    transition: transform 0.18s ease;
+}
+
+.refundChevronOpen {
+    transform: rotate(180deg);
+}
+
+.refundRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 10px 16px;
+    background: var(--surface2);
+}
+
+.refundBranch {
+    flex-shrink: 0;
+    width: 18px;
+    color: var(--text3);
+    font-size: 13px;
+}
+
+.refundName {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
 }

@@ -19,6 +19,8 @@ export interface ReturnInput {
   returnAmount: number;
   accountId?: string;
   date?: number;
+  /** Free-text note, e.g. who refunded the money. */
+  comment?: string;
 }
 
 export function useTransactions(userId: string | null) {

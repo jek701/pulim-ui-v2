@@ -429,7 +429,12 @@ const ru = {
 
   // ── Return ───────────────────────────────────────────────────────────────────
   return: {
-    remaining_left: 'осталось {{amount}}',
+    merged_count_one: '{{count}} возврат',
+    merged_count_few: '{{count}} возврата',
+    merged_count_many: '{{count}} возвратов',
+    merged_count_other: '{{count}} возвратов',
+    comment_label: 'Заметка',
+    comment_placeholder: 'Кто вернул и за что',
     no_transactions: 'Операции не найдены',
     modal_title: 'Записать возврат',
     amount_label: 'Сумма возврата ({{currency}})',
@@ -446,7 +451,6 @@ const ru = {
     err_no_account: 'Выберите счёт',
     history_label: 'Возврат',
     history_from: 'от: {{name}}',
-    returned_badge: '−{{amount}} возвращено',
   },
 
   // ── Add Transaction Modal ────────────────────────────────────────────────────

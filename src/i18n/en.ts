@@ -427,7 +427,10 @@ const en = {
 
   // ── Return ───────────────────────────────────────────────────────────────────
   return: {
-    remaining_left: '{{amount}} left',
+    merged_count_one: '{{count}} refund',
+    merged_count_other: '{{count}} refunds',
+    comment_label: 'Note',
+    comment_placeholder: 'Who refunded it, and why',
     no_transactions: 'No transactions found',
     modal_title: 'Record Return',
     amount_label: 'Return amount ({{currency}})',
@@ -444,7 +447,6 @@ const en = {
     err_no_account: 'Select account',
     history_label: 'Return',
     history_from: 'from: {{name}}',
-    returned_badge: '−{{amount}} returned',
   },
 
   // ── Add Transaction Modal ────────────────────────────────────────────────────

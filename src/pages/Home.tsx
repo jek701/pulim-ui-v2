@@ -207,9 +207,9 @@ const Home = () => {
     return t('home.greeting_evening');
   };
 
-  const handleReturn = async (returnAmount: number, originalTxId: string, accountId: string, date: number) => {
+  const handleReturn = async (returnAmount: number, originalTxId: string, accountId: string, date: number, comment?: string) => {
     // Atomic server-side return (income transaction + returnedAmount + balance).
-    await returnTransaction(originalTxId, { returnAmount, accountId: accountId || undefined, date });
+    await returnTransaction(originalTxId, { returnAmount, accountId: accountId || undefined, date, comment });
   };
 
   if (txLoading || catLoading || cardsLoading || budgetLoading || settingsLoading) return <PageLoader />;
@@ -447,6 +447,10 @@ const Home = () => {
                     const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : cat?.icon ?? '📦';
                     const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? '#636366';
                     const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || t('common.transaction'));
+                    // Same rule as History: a partially refunded expense shows what was
+                    // actually spent, so the dashboard and the list never disagree.
+                    const refunded = tx.type === 'expense' ? (tx.returnedAmount ?? 0) : 0;
+                    const effectiveAmount = tx.amount - refunded;
                     return (
                       <div key={tx.id} className={styles.txRow}>
                         <div className={styles.txIcon} style={{ background: color + '22' }}>
@@ -462,8 +466,11 @@ const Home = () => {
                                 ? tx.toAmount && tx.toCurrency && tx.toCurrency !== tx.currency
                                     ? `${formatAmount(tx.amount, tx.currency)} → ${formatAmount(tx.toAmount, tx.toCurrency)}`
                                     : formatAmount(tx.amount, tx.currency)
-                                : `${tx.type === 'income' ? '+' : '−'}${formatAmount(tx.amount, tx.currency)}`}
+                                : `${tx.type === 'income' ? '+' : '−'}${formatAmount(effectiveAmount, tx.currency)}`}
                           </p>
+                          {refunded > 0 && (
+                            <p className={styles.txAmountOriginal}><s>−{formatAmount(tx.amount, tx.currency)}</s></p>
+                          )}
                         </div>
                       </div>
                     );

@@ -13,7 +13,7 @@ interface Props {
   categories: Category[];
   cards: Card[];
   preselectedTx?: Transaction;
-  onSave: (returnAmount: number, originalTxId: string, accountId: string, date: number) => Promise<void>;
+  onSave: (returnAmount: number, originalTxId: string, accountId: string, date: number, comment?: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -31,6 +31,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
   const [accountId, setAccountId] = useState(cards[0]?.id ?? '');
   const [date, setDate] = useState(toDateInput(Date.now()));
   const [filterDate, setFilterDate] = useState(toDateInput(Date.now()));
+  const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -84,7 +85,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
     setSaving(true);
     setError('');
     try {
-      await onSave(amount, selectedTxId, accountId, new Date(date).getTime());
+      await onSave(amount, selectedTxId, accountId, new Date(date).getTime(), comment.trim() || undefined);
       onClose();
     } catch (err: unknown) {
       setError((err as { message?: string }).message ?? t('common.error_save'));
@@ -125,6 +126,15 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
         />
         {exceeds && <p className={styles.errorInline}>{t('return.err_exceeds')}</p>}
       </div>
+
+      {/* Who refunded the money / why */}
+      <Input
+        label={t('return.comment_label')}
+        placeholder={t('return.comment_placeholder')}
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        maxLength={200}
+      />
 
       {/* Original transaction picker */}
       <div>

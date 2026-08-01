@@ -297,6 +297,14 @@
 .txAmount {
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Original figure of a partially refunded expense, shown under the effective one. */
+.txAmountOriginal {
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
 }
 
 .inc { color: var(--income); }

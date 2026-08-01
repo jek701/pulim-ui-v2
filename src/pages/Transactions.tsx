@@ -11,7 +11,8 @@ import {
     HiArrowUturnLeft,
     HiAdjustmentsHorizontal,
     HiXMark,
-    HiQuestionMarkCircle
+    HiQuestionMarkCircle,
+    HiChevronDown
 } from 'react-icons/hi2';
 import {useApp} from '../context';
 import {EMPTY_HISTORY_FILTERS, type HistoryFilters} from '../utils/historyFilters';
@@ -55,6 +56,8 @@ const Transactions = () => {
     const categoryName = useCategoryName();
     const {confirm, node: confirmNode} = useConfirm();
     const [showFilterPanel, setShowFilterPanel] = useState(false);
+    // Which purchase currently has its merged refunds expanded.
+    const [expandedRefundsFor, setExpandedRefundsFor] = useState<string | null>(null);
     const [showHistoryIntro, setShowHistoryIntro] = useState(true);
     const [historyTourRunning, setHistoryTourRunning] = useState(false);
     const [historyDemoStage, setHistoryDemoStage] = useState(0);
@@ -251,16 +254,39 @@ const Transactions = () => {
         });
     }, [sourceTransactions, activePageFilters, viewDate]);
 
+    /**
+     * Day groups, with same-day refunds folded into the purchase they belong to.
+     *
+     * A refund that lands on the same day as its original is really one event —
+     * showing both as siblings duplicated the number and read as unrelated rows.
+     * A refund on a *different* day keeps its own row: the money moved that day, and
+     * hiding it would leave the balance changing with nothing in the history to
+     * explain it (and the month summary nets it against that month, not the
+     * purchase's month).
+     */
     const grouped = useMemo(() => {
         const todayStr = t('common.today_label');
         const yesterdayStr = t('common.yesterday_label');
         const map = new Map<string, Transaction[]>();
+        const dayKey = (tx: Transaction) => formatDate(tx.date, locale, todayStr, yesterdayStr);
+        const visible = new Set(filteredTxs.map(tx => tx.id));
+        const mergedInto = new Map<string, Transaction[]>();
+
         for (const tx of filteredTxs) {
-            const key = formatDate(tx.date, locale, todayStr, yesterdayStr);
+            if (tx.source !== 'return' || !tx.linkedTransactionId) continue;
+            const original = filteredTxs.find(candidate => candidate.id === tx.linkedTransactionId);
+            if (!original || dayKey(original) !== dayKey(tx)) continue;
+            visible.delete(tx.id);
+            mergedInto.set(original.id, [...(mergedInto.get(original.id) ?? []), tx]);
+        }
+
+        for (const tx of filteredTxs) {
+            if (!visible.has(tx.id)) continue;
+            const key = dayKey(tx);
             if (!map.has(key)) map.set(key, []);
             map.get(key)!.push(tx);
         }
-        return Array.from(map.entries());
+        return {groups: Array.from(map.entries()), mergedInto};
     }, [filteredTxs, locale, t]);
 
     const summaryTotals = useMemo(() => {
@@ -374,9 +400,9 @@ const Transactions = () => {
         await update(editingTx!.id, data);
     };
 
-    const handleReturn = async (returnAmount: number, originalTxId: string, accountId: string, date: number) => {
+    const handleReturn = async (returnAmount: number, originalTxId: string, accountId: string, date: number, comment?: string) => {
         // Atomic: records the income transaction, bumps returnedAmount, and adjusts the account balance.
-        await returnTransaction(originalTxId, { returnAmount, accountId: accountId || undefined, date });
+        await returnTransaction(originalTxId, { returnAmount, accountId: accountId || undefined, date, comment });
     };
 
     const getCategoryLabel = (id: string) => {
@@ -567,7 +593,7 @@ const Transactions = () => {
 
             {/* List view */}
             {viewMode === 'list' && (
-                grouped.length === 0 ? (
+                grouped.groups.length === 0 ? (
                     <div className={styles.empty}>
                         <div className={styles.emptyIcon}>{hasAnyFilter ? '🔍' : '📭'}</div>
                         <p className={styles.emptyTitle}>
@@ -584,9 +610,26 @@ const Transactions = () => {
                     </div>
                 ) : (
                     <div className={styles.groups}>
-                        {grouped.map(([dateLabel, txs]) => {
-                            const dayIncome = txs.filter(t => t.type === 'income' && t.currency === 'UZS' && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
-                            const dayExpense = txs.filter(t => t.type === 'expense' && t.currency === 'UZS' && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
+                        {grouped.groups.map(([dateLabel, txs]) => {
+                            // Mirrors summaryTotals: base-currency values (so a USD row still
+                            // counts via baseAmount), transfers excluded, refunds netted off
+                            // spending. Restricting this to `currency === 'UZS'` used to leave
+                            // foreign-currency days with no total at all.
+                            let dayIncome = 0;
+                            let dayExpense = 0;
+                            // Merged refunds no longer appear in `txs`, but they still moved
+                            // money today, so fold them back in for the day total.
+                            const dayTxs = txs.flatMap(tx => [tx, ...(grouped.mergedInto.get(tx.id) ?? [])]);
+                            for (const t of dayTxs) {
+                                if (t.source === 'transfer') continue;
+                                const valueInBase = t.currency === BASE_CURRENCY
+                                    ? t.amount
+                                    : typeof t.baseAmount === 'number' ? t.baseAmount : null;
+                                if (valueInBase === null) continue;
+                                if (t.source === 'return') dayExpense -= valueInBase;
+                                else if (t.type === 'income') dayIncome += valueInBase;
+                                else dayExpense += valueInBase;
+                            }
                             const dayNet = dayIncome - dayExpense;
                             const hasDayBaseActivity = dayIncome !== 0 || dayExpense !== 0;
                             return (
@@ -606,10 +649,24 @@ const Transactions = () => {
                                             const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : tx.source === 'subscription' ? '📡' : cat?.icon ?? '📦';
                                             const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? '#636366';
                                             const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || t('common.transaction'));
-                                            const remaining = tx.type === 'expense' ? tx.amount - (tx.returnedAmount ?? 0) : null;
+                                            // A partially refunded expense shows what was actually spent; the
+                                            // original figure stays visible, struck through, underneath. This
+                                            // matches the month summary, which already nets refunds off expenses.
+                                            const refunded = tx.type === 'expense' ? (tx.returnedAmount ?? 0) : 0;
+                                            const effectiveAmount = tx.amount - refunded;
+                                            // A refund row names the purchase it came from, so the pair reads as
+                                            // one story without duplicating the numbers.
+                                            const refundOrigin = isReturn && tx.linkedTransactionId
+                                                ? transactions.find(candidate => candidate.id === tx.linkedTransactionId)
+                                                : undefined;
+                                            const refundOriginName = refundOrigin
+                                                ? (refundOrigin.sourceLabel || categoryName(getCategory(refundOrigin.categoryId)))
+                                                : '';
+                                            const mergedRefunds = grouped.mergedInto.get(tx.id) ?? [];
+                                            const isExpanded = expandedRefundsFor === tx.id;
                                             return (
+                                                <div key={tx.id} className={styles.txGroupItem}>
                                                 <div
-                                                    key={tx.id}
                                                     className={styles.txRow}
                                                     data-history-tour={tx.id === 'demo-01' ? 'list' : undefined}
                                                 >
@@ -622,21 +679,39 @@ const Transactions = () => {
                                                             <span className={styles.txTime}>{formatTime(tx.createdAt, locale)}</span>
                                                         </p>
                                                         {tx.comment && <p className={styles.txComment}>{tx.comment}</p>}
-                                                        {tx.type === 'expense' && (tx.returnedAmount ?? 0) > 0 && (
-                                                            <p className={styles.txRefundNote}>
-                                                                {t('return.returned_badge', {amount: formatAmount(tx.returnedAmount!, tx.currency)})}
-                                                                {remaining !== null && remaining > 0 && ` · ${t('return.remaining_left', {amount: formatAmount(remaining, tx.currency)})}`}
-                                                            </p>
+                                                        {isReturn && refundOriginName && (
+                                                            <p className={styles.txComment}>{refundOriginName}</p>
+                                                        )}
+                                                        {mergedRefunds.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                className={styles.refundToggle}
+                                                                aria-expanded={isExpanded}
+                                                                onClick={() => setExpandedRefundsFor(isExpanded ? null : tx.id)}
+                                                            >
+                                                                {t('return.merged_count', {count: mergedRefunds.length})}
+                                                                <HiChevronDown
+                                                                    size={13}
+                                                                    className={`${styles.refundChevron} ${isExpanded ? styles.refundChevronOpen : ''}`}
+                                                                />
+                                                            </button>
                                                         )}
                                                     </div>
                                                     <div className={styles.txRight}>
-                                                        <p className={`${styles.txAmount} ${tx.source === 'transfer' ? styles.transfer : tx.type === 'income' ? styles.inc : styles.exp}`}>
-                                                            {tx.source === 'transfer'
-                                                                ? tx.toAmount && tx.toCurrency && tx.toCurrency !== tx.currency
-                                                                    ? `${formatAmount(tx.amount, tx.currency)} → ${formatAmount(tx.toAmount, tx.toCurrency)}`
-                                                                    : formatAmount(tx.amount, tx.currency)
-                                                                : `${tx.type === 'income' ? '+' : '−'}${formatAmount(tx.amount, tx.currency)}`}
-                                                        </p>
+                                                        <div className={styles.txAmountBox}>
+                                                            <p className={`${styles.txAmount} ${tx.source === 'transfer' ? styles.transfer : tx.type === 'income' ? styles.inc : styles.exp}`}>
+                                                                {tx.source === 'transfer'
+                                                                    ? tx.toAmount && tx.toCurrency && tx.toCurrency !== tx.currency
+                                                                        ? `${formatAmount(tx.amount, tx.currency)} → ${formatAmount(tx.toAmount, tx.toCurrency)}`
+                                                                        : `⇄ ${formatAmount(tx.amount, tx.currency)}`
+                                                                    : `${tx.type === 'income' ? '+' : '−'}${formatAmount(effectiveAmount, tx.currency)}`}
+                                                            </p>
+                                                            {refunded > 0 && (
+                                                                <p className={styles.txAmountOriginal}>
+                                                                    <s>−{formatAmount(tx.amount, tx.currency)}</s>
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                         <div className={styles.txActions}>
                                                             {tx.type === 'expense' && !isReturn && tx.source !== 'transfer' && (
                                                                 <button className={styles.returnBtn}
@@ -657,6 +732,36 @@ const Transactions = () => {
                                                             </button>
                                                         </div>
                                                     </div>
+                                                </div>
+                                                {isExpanded && mergedRefunds.map(refund => (
+                                                    <div key={refund.id} className={styles.refundRow}>
+                                                        <span className={styles.refundBranch} aria-hidden="true">↳</span>
+                                                        <div className={styles.txMid}>
+                                                            <p className={styles.refundName}>
+                                                                {t('return.history_label')}
+                                                                <span className={styles.txTime}>{formatTime(refund.createdAt, locale)}</span>
+                                                            </p>
+                                                            {refund.comment && <p className={styles.txComment}>{refund.comment}</p>}
+                                                        </div>
+                                                        <div className={styles.txRight}>
+                                                            <p className={`${styles.txAmount} ${styles.inc}`}>
+                                                                +{formatAmount(refund.amount, refund.currency)}
+                                                            </p>
+                                                            <div className={styles.txActions}>
+                                                                <button className={styles.editBtn}
+                                                                        aria-label={t('common.edit')}
+                                                                        onClick={() => setEditingTx(refund)}>
+                                                                    <HiPencil size={13}/>
+                                                                </button>
+                                                                <button className={styles.delBtn}
+                                                                        aria-label={t('common.delete')}
+                                                                        onClick={() => handleDelete(refund)}>
+                                                                    <HiTrash size={13}/>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                                 </div>
                                             );
                                         })}
