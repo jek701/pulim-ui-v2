@@ -23,7 +23,7 @@ const TAB_PREFETCH: Record<Tab, { key: (uid: string) => readonly unknown[]; path
 };
 
 const BottomNav = () => {
-  const { activeTab, setActiveTab, user } = useApp();
+  const { activeTab, setActiveTab, user, requestTabReset } = useApp();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
@@ -53,7 +53,7 @@ const BottomNav = () => {
           aria-current={activeTab === id ? 'page' : undefined}
           onPointerDown={() => prefetch(id)}
           onFocus={() => prefetch(id)}
-          onClick={() => setActiveTab(id)}
+          onClick={() => (id === activeTab ? requestTabReset() : setActiveTab(id))}
         >
           <span className={styles.icon}><Icon size={20} /></span>
           <span>{label}</span>

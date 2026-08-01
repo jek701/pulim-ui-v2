@@ -75,6 +75,13 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
   );
 
   const total = chartCards.reduce((sum, card) => sum + getAvailableAmount(card), 0);
+  // "Total available" mixes real money with unused credit, so on a card-heavy
+  // account it reads several times larger than the balance on the Home card the
+  // user just tapped. Split the two so the headline figure is the user's own money.
+  const ownMoneyTotal = chartCards
+    .filter(card => card.cardType !== 'credit')
+    .reduce((sum, card) => sum + getAvailableAmount(card), 0);
+  const creditAvailableTotal = total - ownMoneyTotal;
   const magnitudeTotal = chartCards.reduce((sum, card) => sum + Math.abs(getAvailableAmount(card)), 0);
 
   const segments = useMemo(() => {
@@ -242,12 +249,17 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                       </>
                     ) : (
                       <>
-                        <small>{t('home.balance_details_total')}</small>
+                        <small>{t('home.balance_details_own_money')}</small>
                         <strong className={styles.centerTotal}>
-                          <span>{formatCenterAmount(total)}</span>
+                          <span>{formatCenterAmount(ownMoneyTotal)}</span>
                           <span className={styles.centerCurrency}>{activeCurrency}</span>
                         </strong>
-                        <em>{t('home.balance_details_tap_segment')}</em>
+                        {creditAvailableTotal > 0 && (
+                          <em>{t('home.balance_details_plus_credit', {
+                            amount: `${formatCenterAmount(creditAvailableTotal)} ${activeCurrency}`,
+                          })}</em>
+                        )}
+                        {creditAvailableTotal <= 0 && <em>{t('home.balance_details_tap_segment')}</em>}
                       </>
                     )}
                   </motion.div>

@@ -63,7 +63,7 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
 
   const selectedPlan = plans.find((plan) => plan.code === selectedCode) ?? plans[0];
   const formatPrice = (amountMinor: number) => (
-    `${new Intl.NumberFormat(language).format(amountMinor / 100)} UZS`
+    `${new Intl.NumberFormat(language, { maximumFractionDigits: 0 }).format(Math.round(amountMinor / 100))} UZS`
   );
 
   const selectPlan = (code: PaymentPlanCode) => {

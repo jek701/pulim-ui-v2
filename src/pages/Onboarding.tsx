@@ -55,20 +55,40 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
   const progress = (step / TOTAL_STEPS) * 100;
 
   // ── Salary sources ──────────────────────────────────────────────────────
-  const canAddSource = srcName.trim() !== '' && parseInt(srcDay) >= 1 && parseInt(srcDay) <= 31;
+  const dayValue = parseInt(srcDay, 10);
+  const dayOutOfRange = srcDay.trim() !== '' && !(dayValue >= 1 && dayValue <= 31);
+  const canAddSource = srcName.trim() !== '' && dayValue >= 1 && dayValue <= 31;
 
   const addSource = () => {
     if (!canAddSource) return;
-    const s: SalarySource = {
+    commitPendingSource();
+  };
+
+  /** Moves the half-filled form row into the list. Returns the resulting list. */
+  const commitPendingSource = (): SalarySource[] => {
+    const source: SalarySource = {
       id: Date.now().toString(),
       name: srcName.trim(),
       day: parseInt(srcDay),
       amount: parseFloat(srcAmtStr.replace(/,/g, '')) || undefined,
     };
-    setSources(prev => [...prev, s]);
+    const next = [...sources, source];
+    setSources(next);
     setSrcName('');
     setSrcDay('');
     setSrcAmtStr('');
+    return next;
+  };
+
+  /**
+   * A filled-in but uncommitted row should not block the wizard. Continuing
+   * commits it, so "Next" is enabled whenever the user has actually entered a
+   * source — previously the form looked complete while Next stayed dead with no
+   * explanation, and the only way forward was a button labelled "+ Add source".
+   */
+  const goToStep2 = () => {
+    if (canAddSource) commitPendingSource();
+    setStep(2);
   };
 
   const removeSource = (id: string) => setSources(prev => prev.filter(s => s.id !== id));
@@ -152,7 +172,9 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
                   <span className={styles.memberMeta}>
                     {t('onboarding.source_day_meta', { day: s.day })}{s.amount ? ` · ${formatAmount(s.amount)}` : ''}
                   </span>
-                  <button className={styles.removeBtn} onClick={() => removeSource(s.id)}>×</button>
+                  <button className={styles.removeBtn} aria-label={t('common.delete')} onClick={() => removeSource(s.id)}>
+                    <span className={styles.removeBtnCircle} aria-hidden="true">×</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -163,6 +185,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
               className={styles.textInput}
               placeholder={t('onboarding.salary_name_placeholder')}
               value={srcName}
+              maxLength={60}
               onChange={e => setSrcName(e.target.value)}
             />
             <div className={styles.rowFields}>
@@ -185,6 +208,9 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
                 <span className={styles.currency}>UZS</span>
               </div>
             </div>
+            {dayOutOfRange && (
+              <p className={styles.fieldError} role="alert">{t('onboarding.salary_day_error')}</p>
+            )}
             <button className={styles.addMemberBtn} onClick={addSource} disabled={!canAddSource}>
               {t('onboarding.salary_add')}
             </button>
@@ -193,7 +219,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
           <div className={styles.spacer} />
           <div className={styles.navRow}>
             {editing && <button className={styles.backBtn} onClick={onDone}>{t('common.cancel')}</button>}
-            <button className={styles.nextBtn} onClick={() => setStep(2)} disabled={sources.length === 0}>
+            <button className={styles.nextBtn} onClick={goToStep2} disabled={sources.length === 0 && !canAddSource}>
               {t('common.next')}
             </button>
           </div>
@@ -240,7 +266,9 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
                 <div key={m.id} className={styles.memberRow}>
                   <span className={styles.memberName}>{m.name}</span>
                   <span className={styles.memberMeta}>{t(`onboarding.relation_${m.relation}`)}{m.birthday ? ` · ${m.birthday}` : ''}</span>
-                  <button className={styles.removeBtn} onClick={() => removeMember(m.id)}>×</button>
+                  <button className={styles.removeBtn} aria-label={t('common.delete')} onClick={() => removeMember(m.id)}>
+                    <span className={styles.removeBtnCircle} aria-hidden="true">×</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -251,6 +279,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
               className={styles.textInput}
               placeholder={t('onboarding.family_name_placeholder')}
               value={memberName}
+              maxLength={60}
               onChange={e => setMemberName(e.target.value)}
             />
             <select

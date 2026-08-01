@@ -84,6 +84,7 @@ const en = {
     filters: 'Filters',
     transfer: 'Transfer between accounts',
     help: 'Help',
+    emoji_placeholder: 'Type any emoji…',
     action_irreversible: 'This cannot be undone.',
     from: 'From',
     to: 'To',
@@ -210,6 +211,7 @@ const en = {
 
   // ── Onboarding ───────────────────────────────────────────────────────────────
   onboarding: {
+    salary_day_error: 'Enter a day between 1 and 31.',
     source_day_meta: 'day {{day}}',
     title: "Let's set up your financial profile",
     subtitle: 'Answer a few quick questions so the AI can give you more accurate insights and predictions — taking into account your salary schedule, family events, and personal goals.',
@@ -275,6 +277,8 @@ const en = {
     balance_details_title: 'Your money',
     balance_details_subtitle: 'Balances and available credit across all accounts',
     balance_details_total: 'Total available',
+    balance_details_own_money: 'Your money',
+    balance_details_plus_credit: '+ {{amount}} available credit',
     balance_details_accounts: '{{count}} accounts shown',
     balance_details_chart_label: 'Available money distribution by account',
     balance_details_distribution: 'Distribution',
@@ -723,7 +727,8 @@ const en = {
     monthly_total: 'Monthly total',
     confirm_delete: 'Delete this subscription?',
     total_unconverted_note: 'Some currencies could not be converted — the total is incomplete.',
-    pill_active: 'active',
+    pill_active_one: 'active',
+    pill_active_other: 'active',
     pill_due_soon: '⚡ due soon',
     section_active: 'Active',
     section_paused: 'Paused',
@@ -857,7 +862,7 @@ const en = {
     label_subscriptions: 'Subscriptions (auto)',
     section_danger: 'Danger Zone',
     btn_clear_transactions: 'Clear All Transactions',
-    confirm_clear_transactions: 'Delete ALL transactions? This cannot be undone.',
+    confirm_clear_transactions: 'Every transaction you have recorded will be deleted.',
     modal_new_subcategory: 'New Subcategory',
     modal_edit_subcategory: 'Edit Subcategory',
     subcategory_under: 'Under: {{name}}',
@@ -971,7 +976,7 @@ const en = {
     payment_error: 'Payment is temporarily unavailable. Please try again.',
     banner_title: 'Unlock more with Premium',
     banner_desc: 'Get full access to every feature in the app.',
-    ai_usage_banner: 'You used {{used}} of {{limit}} free AI messages in this 30-day period',
+    ai_usage_banner: '{{used}} of {{limit}} free AI messages used',
     locked_short: 'Premium only',
     ai_limit_reached: 'You\'ve reached your free AI message limit. Premium includes a much higher fair-use allowance.',
 

@@ -84,6 +84,7 @@ const uz = {
         filters: 'Filtrlar',
         transfer: 'Hisoblar orasida o‘tkazma',
         help: 'Yordam',
+        emoji_placeholder: 'Istalgan emoji kiriting…',
         action_irreversible: 'Bu amalni bekor qilib bo‘lmaydi.',
         from: 'Qayerdan',
         to: 'Qayerga',
@@ -210,6 +211,7 @@ const uz = {
 
     // ── Onboarding ───────────────────────────────────────────────────────────────
     onboarding: {
+        salary_day_error: '1 dan 31 gacha bo‘lgan kunni kiriting.',
         source_day_meta: '{{day}}-kun',
         title: 'Moliyaviy profilingizni sozlaymiz',
         subtitle: 'Bir nechta savolga javob bering — shunda AI maoshingiz jadvali, oilaviy voqealar va maqsadlaringizni hisobga olib aniqroq prognoz beradi.',
@@ -275,6 +277,8 @@ const uz = {
         balance_details_title: 'Sizning pulingiz',
         balance_details_subtitle: 'Barcha hisoblar bo‘yicha balans va mavjud kredit',
         balance_details_total: 'Jami mavjud',
+        balance_details_own_money: 'O‘z pulingiz',
+        balance_details_plus_credit: '+ {{amount}} mavjud kredit',
         balance_details_accounts: '{{count}} ta hisob ko‘rsatildi',
         balance_details_chart_label: 'Mavjud pulning hisoblar bo‘yicha taqsimoti',
         balance_details_distribution: 'Taqsimot',
@@ -723,7 +727,8 @@ const uz = {
         monthly_total: 'Oyiga',
         confirm_delete: 'Bu obuna o‘chirilsinmi?',
         total_unconverted_note: 'Ba’zi valyutalarni konvertatsiya qilib bo‘lmadi — yakun to‘liq emas.',
-        pill_active: 'faol',
+        pill_active_one: 'faol',
+        pill_active_other: 'faol',
         pill_due_soon: '⚡ yaqinda',
         section_active: 'Faol',
         section_paused: 'To‘xtatilgan',
@@ -857,7 +862,7 @@ const uz = {
         label_subscriptions: 'Obunalar (avto)',
         section_danger: 'Xavfli zona',
         btn_clear_transactions: 'Barcha tranzaksiyalarni tozalash',
-        confirm_clear_transactions: 'BARCHA tranzaksiyalar o‘chirilsinmi? Buni ortga qaytarib bo‘lmaydi.',
+        confirm_clear_transactions: 'Siz kiritgan barcha amaliyotlar o‘chiriladi.',
         modal_new_subcategory: 'Yangi ichki kategoriya',
         modal_edit_subcategory: 'Ichki kategoriyani o‘zgartirish',
         subcategory_under: 'Bo‘lim: {{name}}',
@@ -970,7 +975,7 @@ const uz = {
         payment_error: 'To‘lov vaqtincha mavjud emas. Qayta urinib ko‘ring.',
         banner_title: 'Premium bilan ko‘proq imkoniyatlar',
         banner_desc: 'Ilovaning barcha funksiyalariga to‘liq kirish.',
-        ai_usage_banner: '30 kunlik davrda {{limit}} ta bepul AI xabardan {{used}} tasi ishlatildi',
+        ai_usage_banner: '{{limit}} tadan {{used}} ta AI xabari ishlatilgan',
         locked_short: 'Faqat Premium',
         ai_limit_reached: 'Bepul AI xabarlar limiti tugadi. Premiumda yuqori fair-use limiti mavjud.',
 

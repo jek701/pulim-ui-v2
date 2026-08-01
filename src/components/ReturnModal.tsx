@@ -5,6 +5,7 @@ import Modal from './Modal';
 import { NumberInput } from './NumberInput';
 import { formatAmount, formatDate, toDateInput } from '../utils/format';
 import type { Transaction, Category, Card } from '../types';
+import { useCategoryName } from '../utils/categoryName';
 import styles from './ReturnModal.module.css';
 import {Input} from "./FormField.tsx";
 
@@ -19,6 +20,7 @@ interface Props {
 
 const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, preselectedTx, onSave, onClose }) => {
   const { t, i18n } = useTranslation();
+  const categoryName = useCategoryName();
 
   const expenses = transactions.filter(tx => tx.type === 'expense' && tx.source !== 'return');
 
@@ -49,7 +51,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
   const getTxName = (tx: Transaction) => {
     if (tx.sourceLabel) return tx.sourceLabel;
     const cat = categories.find(c => c.id === tx.categoryId);
-    return cat?.name ?? 'Unknown';
+    return categoryName(cat) || t('common.transaction');
   };
 
   const getTxIcon = (tx: Transaction) => {

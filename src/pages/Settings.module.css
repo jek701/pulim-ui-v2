@@ -49,6 +49,9 @@
   display: flex;
   align-items: center;
   gap: 11px;
+  /* Lets the action pill drop to its own row instead of squeezing the copy into
+     a column too narrow for the usage sentence. */
+  flex-wrap: wrap;
   border: 1px solid rgba(124, 58, 237, 0.22);
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(236, 72, 153, 0.07));
@@ -79,7 +82,7 @@
 }
 
 .premiumCopy {
-  min-width: 0;
+  min-width: 140px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -328,6 +331,8 @@
   color: var(--text3);
 }
 
+/* The 48x28 track is the visual; the hit area is padded out to the 44px minimum
+   without changing how the switch looks. */
 .preferenceSwitch {
   width: 48px;
   height: 28px;
@@ -335,6 +340,10 @@
   border-radius: 14px;
   background: var(--surface3);
   position: relative;
+  box-sizing: content-box;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  background-clip: padding-box;
   flex-shrink: 0;
   transition: background 0.2s ease;
 }

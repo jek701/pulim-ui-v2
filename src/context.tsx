@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { getRedirectResult, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,6 +32,9 @@ interface AppContextType {
   /** History filters live here so switching tabs no longer silently clears them. */
   historyFilters: HistoryFilters;
   setHistoryFilters: React.Dispatch<React.SetStateAction<HistoryFilters>>;
+  /** Bumped when the active tab is tapped again; sections reset to their root. */
+  tabResetNonce: number;
+  requestTabReset: () => void;
   profile: UserProfile | null;
   profileLoading: boolean;
   saveProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -100,6 +103,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [historyFilters, setHistoryFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
+  const [tabResetNonce, setTabResetNonce] = useState(0);
+  const requestTabReset = useCallback(() => setTabResetNonce(value => value + 1), []);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const telegramAuthInFlight = useRef(false);
@@ -423,6 +428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeTab, setActiveTab,
       categoryFilter, setCategoryFilter,
       historyFilters, setHistoryFilters,
+      tabResetNonce, requestTabReset,
       profile, profileLoading, saveProfile,
       paymentResult, dismissPaymentResult,
     }}>

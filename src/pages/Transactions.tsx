@@ -207,7 +207,7 @@ const Transactions = () => {
             make('demo-12', 27, 500_000, 'expense', 'demo-shopping', 'demo-cash', {subcategoryId: 'demo-groceries'}),
             make('demo-13', 28, 750_000, 'expense', 'demo-shopping', 'demo-tbc', {currency: 'USD', amount: 62, baseAmount: 750_000, fxRate: 12_096}),
             make('demo-14', 29, 1_500_000, 'expense', 'demo-shopping', 'demo-tbc', {source: 'transfer', toCardId: 'demo-cash'}),
-        ];
+        ].sort((left, right) => right.date - left.date);
     }, [t, viewDate.month, viewDate.year]);
 
     const demoBudgets = useMemo<Budget[]>(() => [
@@ -366,11 +366,13 @@ const Transactions = () => {
             : [...current.subcategoryIds, id],
     }));
 
-    const toggleCard = (id: string) =>
+    const toggleCard = (id: string) => {
+        if (!isPremium) { premiumGate.open('filters'); return; }
         setFilters(f => ({
             ...f,
             cardIds: f.cardIds.includes(id) ? f.cardIds.filter(x => x !== id) : [...f.cardIds, id]
         }));
+    };
 
     const handleDelete = async (transaction: Transaction) => {
         const linkedReturns = transactions.filter(tx => tx.linkedTransactionId === transaction.id);
@@ -918,6 +920,8 @@ const Transactions = () => {
                                             <button
                                                 key={card.id}
                                                 className={`${styles.filterListItem} ${active ? styles.filterListItemActive : ''}`}
+                                                tabIndex={isPremium ? undefined : -1}
+                                                aria-hidden={isPremium ? undefined : true}
                                                 onClick={() => toggleCard(card.id)}
                                             >
                                                 <span>{card.name}</span>
@@ -933,7 +937,7 @@ const Transactions = () => {
                                             position: 'absolute', inset: 0, top: 28,
                                             background: 'transparent', border: 'none', cursor: 'pointer',
                                         }}
-                                        aria-label="Premium filter"
+                                        aria-label={t('premium.unlock_with_premium')}
                                     />
                                 )}
                             </div>

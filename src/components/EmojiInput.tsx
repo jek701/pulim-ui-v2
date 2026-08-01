@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './EmojiInput.module.css';
 
 interface Props {
@@ -15,7 +16,9 @@ const getFirstEmoji = (str: string): string => {
   return seg[0]?.segment ?? '';
 };
 
-const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, placeholder = 'Type any emoji…', compactSuggestions = false }) => {
+const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, placeholder, compactSuggestions = false }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('common.emoji_placeholder');
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -41,7 +44,7 @@ const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, plac
         <input
           ref={inputRef}
           className={styles.hiddenInput}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={e => handleChange(e.target.value)}

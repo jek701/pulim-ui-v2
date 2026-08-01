@@ -132,7 +132,7 @@ const SubpageHeader = ({title, subtitle, icon, onBack}: SubpageHeaderProps) => {
 
 const Settings = () => {
     const {t, i18n} = useTranslation();
-    const {user, profile, saveProfile, linkedAuthMethods, activeTab, setActiveTab} = useApp();
+    const {user, profile, saveProfile, linkedAuthMethods, activeTab, setActiveTab, tabResetNonce} = useApp();
     const [view, setView] = useState<SettingsView>('home');
     const pageRef = useRef<HTMLDivElement>(null);
     const [editingProfile, setEditingProfile] = useState(false);
@@ -174,6 +174,12 @@ const Settings = () => {
         || user?.phoneNumber
         || '';
     const accountInitial = accountName.trim().charAt(0).toUpperCase() || '#';
+    // With no profile name set, accountName already falls back to the email, so
+    // repeating it as the subtitle printed the same address twice.
+    const rawContact = user?.phoneNumber ?? user?.email ?? '';
+    const profileContact = rawContact && rawContact !== accountName
+        ? rawContact
+        : t('settings.personal_account');
     const setFormField = <K extends keyof NewCategory>(key: K, value: NewCategory[K]) =>
         setCatForm(form => ({...form, [key]: value}));
 
@@ -274,6 +280,14 @@ const Settings = () => {
         if (activeTab !== 'settings') setActiveTab('settings');
     }, [activeTab, setActiveTab]);
 
+    // Tapping the Settings tab while already inside a subpage returns to the hub.
+    const firstResetNonce = useRef(tabResetNonce);
+    useLayoutEffect(() => {
+        if (tabResetNonce === firstResetNonce.current) return;
+        setView('home');
+        setEditingProfile(false);
+    }, [tabResetNonce]);
+
     if (editingProfile) {
         return (
             <div className={styles.profileEditor}>
@@ -323,8 +337,7 @@ const Settings = () => {
                     <span className={styles.profileAvatar}>{accountInitial}</span>
                     <span className={styles.profileInfo}>
             <span className={styles.profileEmail}>{accountName}</span>
-            <span
-                className={styles.profileContact}>{user?.phoneNumber ?? user?.email ?? t('settings.personal_account')}</span>
+            {profileContact && <span className={styles.profileContact}>{profileContact}</span>}
           </span>
                     <HiChevronRight className={styles.menuChevron} size={18}/>
                 </button>
@@ -434,8 +447,7 @@ const Settings = () => {
                     <span className={styles.profileAvatar}>{accountInitial}</span>
                     <span className={styles.profileInfo}>
             <span className={styles.profileEmail}>{accountName}</span>
-            <span
-                className={styles.profileContact}>{user?.phoneNumber ?? user?.email ?? t('settings.personal_account')}</span>
+            {profileContact && <span className={styles.profileContact}>{profileContact}</span>}
           </span>
                 </div>
             </div>

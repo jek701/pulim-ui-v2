@@ -258,7 +258,7 @@ const Subscriptions = () => {
         </div>
         <div className={styles.summarySide}>
           <div className={styles.summaryPill}>
-            <span>{active.length} {t('subscriptions.pill_active')}</span>
+            <span>{active.length} {t('subscriptions.pill_active', {count: active.length})}</span>
           </div>
           {upcomingThisWeek.length > 0 && (
             <div className={`${styles.summaryPill} ${styles.pillWarn}`}>

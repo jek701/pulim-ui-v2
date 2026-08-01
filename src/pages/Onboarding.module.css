@@ -156,22 +156,45 @@
   background: var(--surface);
   border-radius: var(--r-sm);
   padding: 10px 14px;
+  min-width: 0;
+  overflow: hidden;
 }
 
+/* Without min-width/ellipsis a long unbroken name grew the flex item past the
+   viewport and carried the delete button off-screen with it — the row could not
+   be removed at all. */
 .memberName {
   font-size: 14px;
   font-weight: 500;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .memberMeta {
   font-size: 12px;
   color: var(--text3);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
+/* 44px hit area, 28px visual circle. */
 .removeBtn {
-  width: 24px;
-  height: 24px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -8px -8px -8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+}
+
+.removeBtnCircle {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--surface2);
   color: var(--text3);
@@ -326,4 +349,10 @@
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 500;
+}
+
+.fieldError {
+  font-size: 12px;
+  color: var(--expense);
+  line-height: 1.35;
 }
