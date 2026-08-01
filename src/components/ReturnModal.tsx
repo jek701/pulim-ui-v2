@@ -18,7 +18,7 @@ interface Props {
 }
 
 const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, preselectedTx, onSave, onClose }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const expenses = transactions.filter(tx => tx.type === 'expense' && tx.source !== 'return');
 
@@ -71,7 +71,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
   const groupedExpenses = (() => {
     const map = new Map<string, typeof filteredExpenses>();
     for (const tx of filteredExpenses) {
-      const key = formatDate(tx.date);
+      const key = formatDate(tx.date, i18n.language, t('common.today_label'), t('common.yesterday_label'));
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(tx);
     }
@@ -142,7 +142,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
         </div>
         <div className={styles.txList}>
           {groupedExpenses.length === 0 ? (
-            <p className={styles.emptyTx}>No transactions found</p>
+            <p className={styles.emptyTx}>{t('return.no_transactions')}</p>
           ) : (
             groupedExpenses.map(([dateLabel, txs]) => (
               <div key={dateLabel}>

@@ -11,6 +11,7 @@ const en = {
 
   // ── Calendar ────────────────────────────────────────────────────────────────
   calendar: {
+    planned_name_placeholder: 'e.g. Credit payment',
     title: 'Calendar',
     add_planned: 'Add planned',
     planned_title: 'Planned Expenses',
@@ -202,6 +203,7 @@ const en = {
 
   // ── Onboarding ───────────────────────────────────────────────────────────────
   onboarding: {
+    source_day_meta: 'day {{day}}',
     title: "Let's set up your financial profile",
     subtitle: 'Answer a few quick questions so the AI can give you more accurate insights and predictions — taking into account your salary schedule, family events, and personal goals.',
     step_salary: '📅 When you get paid',
@@ -418,6 +420,8 @@ const en = {
 
   // ── Return ───────────────────────────────────────────────────────────────────
   return: {
+    remaining_left: '{{amount}} left',
+    no_transactions: 'No transactions found',
     modal_title: 'Record Return',
     amount_label: 'Return amount ({{currency}})',
     pick_transaction: 'Original transaction',
@@ -431,7 +435,7 @@ const en = {
     err_exceeds: 'Return amount exceeds remaining balance',
     err_no_tx: 'Select original transaction',
     err_no_account: 'Select account',
-    history_label: '↩ Return',
+    history_label: 'Return',
     history_from: 'from: {{name}}',
     returned_badge: '−{{amount}} returned',
   },
@@ -597,6 +601,8 @@ const en = {
   // ── Debts ────────────────────────────────────────────────────────────────────
   debts: {
     heading: 'Debts',
+    due_label: 'Due',
+    pay_partial: 'Pay partial',
     tab_i_owe: 'I Owe',
     tab_owe_me: 'Owe Me',
     tab_active: 'Active',
@@ -693,6 +699,10 @@ const en = {
 
   // ── Subscriptions ────────────────────────────────────────────────────────────
   subscriptions: {
+    cycle_short_monthly: '/mo',
+    cycle_short_yearly: '/yr',
+    cycle_short_weekly: '/wk',
+    per_month_short: '{{amount}}/mo',
     heading: 'Subscriptions',
     monthly_total: 'Monthly total',
     total_unconverted_note: 'Some currencies could not be converted — the total is incomplete.',
@@ -950,7 +960,7 @@ const en = {
     headline_ai_title: 'Advanced AI assistant',
     headline_ai_subtitle: 'Ask anything about your finances with a stronger model and a high fair-use allowance.',
     headline_cards_title: 'All your accounts in one place',
-    headline_cards_subtitle: 'Add unlimited debit, credit, and cash accounts — track every dirham.',
+    headline_cards_subtitle: 'Add unlimited debit, credit, and cash accounts — track every so‘m.',
     headline_credit_cash_subtitle: 'Credit and cash accounts are a Premium feature. Upgrade to track them all.',
     headline_cats_title: 'Custom categories',
     headline_cats_subtitle: 'Create your own categories and tailor them to how you actually spend.',

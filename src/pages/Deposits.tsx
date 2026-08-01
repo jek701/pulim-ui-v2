@@ -378,7 +378,7 @@ const WithdrawModal = ({ deposit, accounts, onClose, onConfirm }: {
 // ── Main Page ───────────────────────────────────────────────────────────────
 
 const Deposits = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: number }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useApp();
   const { deposits, loading, add, remove, collectInterest, closeDeposit, replenish, withdraw } = useDeposits(user?.uid ?? null);
   const { cards } = useCards(user?.uid ?? null);
@@ -511,7 +511,7 @@ const Deposits = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: n
                   )}
                   <div>
                     <p className={styles.amtLabel}>{t('deposits.label_matures')}</p>
-                    <p className={styles.amtVal}>{formatFullDate(d.endDate)}</p>
+                    <p className={styles.amtVal}>{formatFullDate(d.endDate, i18n.language)}</p>
                   </div>
                 </div>
 
@@ -560,7 +560,7 @@ const Deposits = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: n
               <div className={styles.depositTop}>
                 <div className={styles.depositInfo}>
                   <p className={styles.depositBank}>{d.bank}</p>
-                  <p className={styles.depositMeta}>{d.interestRate}% · {formatFullDate(d.startDate)} – {formatFullDate(d.endDate)}</p>
+                  <p className={styles.depositMeta}>{d.interestRate}% · {formatFullDate(d.startDate, i18n.language)} – {formatFullDate(d.endDate, i18n.language)}</p>
                 </div>
                 <span className={styles.closedBadge}>{t('deposits.badge_closed')}</span>
               </div>

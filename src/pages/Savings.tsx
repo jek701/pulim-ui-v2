@@ -222,7 +222,7 @@ const ContributeModal = ({
 
 // ── Main Page ───────────────────────────────────────────────
 const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: number }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useApp();
   const { goals, loading, add, contribute, remove } = useSavingsGoals(user?.uid ?? null);
   const { cards } = useCards(user?.uid ?? null);
@@ -342,7 +342,7 @@ const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: nu
                 <div className={styles.goalFooter}>
                   <div>
                     <p className={styles.amtLabel}>{t('savings.label_deadline')}</p>
-                    <p className={styles.deadlineVal}>{formatFullDate(goal.deadline)}</p>
+                    <p className={styles.deadlineVal}>{formatFullDate(goal.deadline, i18n.language)}</p>
                   </div>
                   {dailyNeeded > 0 && (
                     <div style={{ textAlign: 'right' }}>

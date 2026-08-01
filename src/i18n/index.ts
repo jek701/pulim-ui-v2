@@ -14,7 +14,9 @@ i18n.use(initReactI18next).init({
     uz: { translation: uz }
   },
   lng: saved,
-  fallbackLng: 'ru',
+  // English, not Russian: a Russian fallback made missing `uz` keys look like a
+  // deliberate mixed-language UI instead of a gap, so they went unnoticed.
+  fallbackLng: 'en',
   interpolation: { escapeValue: false },
 });
 

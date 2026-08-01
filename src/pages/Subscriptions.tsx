@@ -14,6 +14,7 @@ import Modal from '../components/Modal';
 import { Input, Select } from '../components/FormField';
 import PageLoader from '../components/PageLoader';
 import { formatAmount, fromDateInput, toDateInput } from '../utils/format';
+import { CURRENCIES } from '../utils/currencies';
 import { BASE_CURRENCY, getRateToBase } from '../utils/nbuRates';
 import dayjs from '../utils/dayjs';
 import EmojiInput from '../components/EmojiInput';
@@ -36,7 +37,6 @@ const PRESET_SERVICES = [
 
 const ICONS = ['🎬','🎵','📺','🍎','☁️','🤖','🔷','📦','🏰','✈️','📝','🅰️','🎮','📡','💊','🏋️','📰','🔒','💻','🌐'];
 
-const CURRENCIES_LIST: Currency[] = ['UZS','USD','EUR','RUB'];
 
 const toMonthly = (amount: number, cycle: BillingCycle) => {
   if (cycle === 'weekly')  return (amount * 52) / 12;
@@ -201,6 +201,8 @@ const Subscriptions = () => {
 
   const dateInputValue = toDateInput(form.nextBillingDate);
 
+  const cycleShort = (cycle: BillingCycle) => t(`subscriptions.cycle_short_${cycle}`);
+
   const CYCLES: { value: BillingCycle; label: string }[] = [
     { value: 'monthly', label: t('subscriptions.cycle_monthly') },
     { value: 'yearly',  label: t('subscriptions.cycle_yearly')  },
@@ -275,9 +277,9 @@ const Subscriptions = () => {
                     <div className={styles.info}>
                       <p className={styles.name}>{s.name}</p>
                       <p className={styles.meta}>
-                        {formatAmount(s.amount, s.currency)} / {s.cycle}
+                        {formatAmount(s.amount, s.currency)} {cycleShort(s.cycle)}
                         {s.cycle !== 'monthly' && (
-                          <span className={styles.normalized}> · {formatAmount(Math.round(toMonthly(s.amount, s.cycle)))}/mo</span>
+                          <span className={styles.normalized}> · {t('subscriptions.per_month_short', {amount: formatAmount(Math.round(toMonthly(s.amount, s.cycle)))})}</span>
                         )}
                       </p>
                     </div>
@@ -317,7 +319,7 @@ const Subscriptions = () => {
                   <div className={styles.iconWrap}>{s.icon}</div>
                   <div className={styles.info}>
                     <p className={styles.name}>{s.name}</p>
-                    <p className={styles.meta}>{formatAmount(s.amount, s.currency)} / {s.cycle}</p>
+                    <p className={styles.meta}>{formatAmount(s.amount, s.currency)} {cycleShort(s.cycle)}</p>
                   </div>
                 </div>
                 <div className={styles.actions}>
@@ -364,7 +366,7 @@ const Subscriptions = () => {
               <span className={styles.paySubIcon}>{s.icon}</span>
               <div>
                 <p className={styles.paySubName}>{s.name}</p>
-                <p className={styles.paySubMeta}>{formatAmount(s.amount, s.currency)} / {s.cycle}</p>
+                <p className={styles.paySubMeta}>{formatAmount(s.amount, s.currency)} {cycleShort(s.cycle)}</p>
               </div>
             </div>
             <label className={styles.payCardLabel}>{t('subscriptions.pay_modal_label')}</label>
@@ -455,7 +457,7 @@ const Subscriptions = () => {
               label={t('common.currency')}
               value={form.currency}
               onChange={e => set('currency', e.target.value as Currency)}
-              options={CURRENCIES_LIST.map(c => ({ value: c, label: c }))}
+              options={CURRENCIES.map(c => ({ value: c.code, label: c.code }))}
             />
           </div>
 

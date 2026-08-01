@@ -22,7 +22,7 @@ import {useEntitlements} from '../hooks/useEntitlements';
 import {usePremiumGate, PremiumBadge} from '../components/PremiumLock';
 import {formatAmount, formatDate, formatFullDate, formatTime, formatMonth} from '../utils/format';
 import {formatSignedAmount, formatWithMinus} from '../utils/money';
-import {categoryDisplayName} from '../utils/categoryName';
+import {categoryDisplayName, useCategoryName} from '../utils/categoryName';
 import {useConfirm} from '../components/ConfirmDialog';
 import dayjs from '../utils/dayjs';
 import AddTransactionModal from '../components/AddTransactionModal';
@@ -65,6 +65,7 @@ const Transactions = () => {
     const {budgets} = useBudgets(user?.uid ?? null);
     const {isPremium} = useEntitlements();
     const premiumGate = usePremiumGate();
+    const categoryName = useCategoryName();
     const {confirm, node: confirmNode} = useConfirm();
     const [filters, setFilters] = useState<ActiveFilters>(defaultFilters);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
@@ -98,7 +99,9 @@ const Transactions = () => {
     const now = new Date();
     const [viewDate, setViewDate] = useState({month: now.getMonth(), year: now.getFullYear()});
     const {t, i18n} = useTranslation();
-    const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+    // Pass the app language straight through — hard-coding ru/en here sent Uzbek
+    // users down the English branch.
+    const locale = i18n.language;
     const historyTourStorageKey = `pulim:history-onboarding:v2:${user?.uid ?? 'guest'}`;
     const shouldShowHistoryIntro = showHistoryIntro
         && localStorage.getItem(historyTourStorageKey) !== 'seen';
@@ -616,7 +619,7 @@ const Transactions = () => {
                                             const cat = getCategory(tx.categoryId);
                                             const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : tx.source === 'subscription' ? '📡' : cat?.icon ?? '📦';
                                             const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? '#636366';
-                                            const name = isReturn ? t('return.history_label') : (tx.sourceLabel ?? cat?.name ?? 'Unknown');
+                                            const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || t('common.transaction'));
                                             const remaining = tx.type === 'expense' ? tx.amount - (tx.returnedAmount ?? 0) : null;
                                             return (
                                                 <div
@@ -636,7 +639,7 @@ const Transactions = () => {
                                                         {tx.type === 'expense' && (tx.returnedAmount ?? 0) > 0 && (
                                                             <p className={styles.txComment}>
                                                                 {t('return.returned_badge', {amount: formatAmount(tx.returnedAmount!, tx.currency)})}
-                                                                {remaining !== null && remaining > 0 && ` · ${formatAmount(remaining, tx.currency)} left`}
+                                                                {remaining !== null && remaining > 0 && ` · ${t('return.remaining_left', {amount: formatAmount(remaining, tx.currency)})}`}
                                                             </p>
                                                         )}
                                                     </div>
@@ -755,7 +758,7 @@ const Transactions = () => {
                                                         className={`${styles.filterListItem} ${catActive ? styles.filterListItemActive : ''}`}
                                                         onClick={() => toggleCategory(cat.id)}
                                                     >
-                                                        <span>{cat.icon} {cat.name}</span>
+                                                        <span>{cat.icon} {categoryName(cat)}</span>
                                                         {catActive && <span className={styles.checkMark}>✓</span>}
                                                     </button>
                                                     {subcategories

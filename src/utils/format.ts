@@ -1,7 +1,16 @@
 import type { Currency } from '../types';
 import dayjs from './dayjs';
 
-const localeOf = (l: string) => (l && l.startsWith('ru') ? 'ru' : 'en');
+/**
+ * BCP-47 tag (or i18n language) → dayjs locale id. `uz` used to fall through to
+ * English, so Uzbek screens showed English month and day names.
+ */
+const localeOf = (l: string) => {
+  if (!l) return 'en';
+  if (l.startsWith('ru')) return 'ru';
+  if (l.startsWith('uz')) return 'uz-latn';
+  return 'en';
+};
 
 type FormatMoneyOptions = {
   withCurrency?: boolean;

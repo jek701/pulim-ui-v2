@@ -28,7 +28,7 @@ const EMPTY_FORM = (): NewDebt => ({
 });
 
 const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: number }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useApp();
   const { debts, add, togglePaid, pay, remove, loading } = useDebts(user?.uid ?? null);
   const { cards } = useCards(user?.uid ?? null);
@@ -184,7 +184,7 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
                     <p className={styles.debtPerson}>{debt.person}</p>
                     {debt.comment && <p className={styles.debtComment}>{debt.comment}</p>}
                     {debt.dueDate && (
-                      <p className={styles.debtDue}>Due: {formatFullDate(debt.dueDate)}</p>
+                      <p className={styles.debtDue}>{t('debts.due_label')}: {formatFullDate(debt.dueDate, i18n.language)}</p>
                     )}
                   </div>
                   <div className={styles.debtActions}>
@@ -192,7 +192,7 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
                       <button
                         className={styles.payBtn}
                         onClick={() => { setPayingDebt(debt); setPayAmount(''); setPayCardId(cards[0]?.id ?? ''); }}
-                        title="Pay partial"
+                        title={t('debts.pay_partial')}
                       >
                         <HiMinus size={15} />
                       </button>

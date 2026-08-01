@@ -11,6 +11,7 @@ const uz = {
 
     // ── Calendar ────────────────────────────────────────────────────────────────
     calendar: {
+        planned_name_placeholder: 'Masalan, kredit to‘lovi',
         title: 'Kalendar',
         add_planned: 'Qo‘shish',
         planned_title: 'Rejalashtirilgan xarajatlar',
@@ -202,6 +203,7 @@ const uz = {
 
     // ── Onboarding ───────────────────────────────────────────────────────────────
     onboarding: {
+        source_day_meta: '{{day}}-kun',
         title: 'Moliyaviy profilingizni sozlaymiz',
         subtitle: 'Bir nechta savolga javob bering — shunda AI maoshingiz jadvali, oilaviy voqealar va maqsadlaringizni hisobga olib aniqroq prognoz beradi.',
         step_salary: '📅 Qachon maosh olasiz',
@@ -300,6 +302,8 @@ const uz = {
         exchange_rates_title: 'Valyuta kurslari',
         exchange_rates_source: 'Manba: O‘zbekiston MB (cbu.uz)',
         exchange_rates_error: 'Kurslarni yuklab bo‘lmadi',
+        ask_ai_title: 'Moliyangiz haqida AI’dan so‘rang',
+        ask_ai_subtitle: 'So‘nggi 90 kun bo‘yicha tahlil oling',
     },
 
     ask_ai: {
@@ -416,6 +420,8 @@ const uz = {
 
     // ── Return ───────────────────────────────────────────────────────────────────
     return: {
+        remaining_left: '{{amount}} qoldi',
+        no_transactions: 'Amaliyotlar topilmadi',
         modal_title: 'Qaytarishni yozish',
         amount_label: 'Qaytarish summasi ({{currency}})',
         pick_transaction: 'Asl tranzaksiya',
@@ -429,7 +435,7 @@ const uz = {
         err_exceeds: 'Summa qoldiqdan oshib ketdi',
         err_no_tx: 'Asl tranzaksiyani tanlang',
         err_no_account: 'Hisobni tanlang',
-        history_label: '↩ Qaytarish',
+        history_label: 'Qaytarish',
         history_from: 'dan: {{name}}',
         returned_badge: '−{{amount}} qaytarildi',
     },
@@ -529,7 +535,18 @@ const uz = {
         modal_edit_balance: 'Balansni o‘zgartirish',
         modal_edit_account: 'Hisobni o‘zgartirish',
         new_balance_label: 'Yangi balans ({{currency}})',
+        new_left_label: 'Sarflash uchun mavjud ({{currency}})',
+        new_left_hint: 'Kreditdan qancha mablag‘ sarflash uchun qolganini ko‘rsatadi. Qarzni to‘laganingizda bu qiymatni oshiring.',
         btn_set_balance: 'Balansni o‘rnatish',
+        label_debt: 'Qarz',
+        refill_btn: 'To‘lash',
+        refill_title: '{{name}} qarzini to‘lash',
+        refill_from: 'Qaysi hisobdan',
+        refill_amount: 'Summa ({{currency}})',
+        refill_hint: 'Maksimal: {{max}}',
+        refill_max: 'Maks',
+        refill_confirm: 'To‘lovni tasdiqlash',
+        refill_no_source: '{{currency}} valyutasida to‘lov qilish uchun debet/naqd hisobingiz yo‘q. Avval hisob qo‘shing yoki mablag‘ o‘tkazing.',
     },
 
     // ── Cash ────────────────────────────────────────────────────────────────────
@@ -584,6 +601,8 @@ const uz = {
     // ── Debts ────────────────────────────────────────────────────────────────────
     debts: {
         heading: 'Qarzlar',
+        due_label: 'Muddat',
+        pay_partial: 'Qismli to‘lov',
         tab_i_owe: 'Men qarzdorman',
         tab_owe_me: 'Menga qarzdor',
         tab_active: 'Faol',
@@ -680,6 +699,10 @@ const uz = {
 
     // ── Subscriptions ────────────────────────────────────────────────────────────
     subscriptions: {
+        cycle_short_monthly: '/oy',
+        cycle_short_yearly: '/yil',
+        cycle_short_weekly: '/hafta',
+        per_month_short: '{{amount}}/oy',
         heading: 'Obunalar',
         monthly_total: 'Oyiga',
         total_unconverted_note: 'Ba’zi valyutalarni konvertatsiya qilib bo‘lmadi — yakun to‘liq emas.',

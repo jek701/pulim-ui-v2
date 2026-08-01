@@ -20,6 +20,7 @@ import BalanceDetails from '../components/BalanceDetails';
 import type { NewTransaction } from '../hooks/useTransactions';
 import type { Currency } from '../types';
 import { resolveHomeWidgets, type HomeWidgetId } from '../utils/homeWidgets';
+import { useCategoryName } from '../utils/categoryName';
 import styles from './Home.module.css';
 
 let launchTransactionHandledFor: string | null = null;
@@ -105,17 +106,18 @@ const Home = () => {
   }, [cards]);
 
   const getCategory = (id: string) => categories.find(c => c.id === id);
+  const categoryName = useCategoryName();
 
   const recentGrouped = useMemo(() => {
     const items = transactions.slice(0, 15);
     const map = new Map<string, typeof transactions>();
     for (const tx of items) {
-      const key = formatDate(tx.date);
+      const key = formatDate(tx.date, i18n.language, t('common.today_label'), t('common.yesterday_label'));
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(tx);
     }
     return Array.from(map.entries());
-  }, [transactions]);
+  }, [transactions, i18n.language, t]);
 
   const recentCardIds = useMemo(() => {
     const ids: string[] = [];
@@ -283,7 +285,7 @@ const Home = () => {
               >
                 <div className={styles.budgetRowTop}>
                   <span className={styles.budgetCatIcon}>{cat!.icon}</span>
-                  <span className={styles.budgetCatName}>{cat!.name}</span>
+                  <span className={styles.budgetCatName}>{categoryName(cat!)}</span>
                   <span className={`${styles.budgetAmt} ${over ? styles.budgetOver : ''}`}>
                     {formatAmount(spent)} / {formatAmount(budget.amount)}
                   </span>
@@ -444,7 +446,7 @@ const Home = () => {
                     const cat = getCategory(tx.categoryId);
                     const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : cat?.icon ?? '📦';
                     const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? '#636366';
-                    const name = isReturn ? t('return.history_label') : (tx.sourceLabel ?? cat?.name ?? 'Unknown');
+                    const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || t('common.transaction'));
                     return (
                       <div key={tx.id} className={styles.txRow}>
                         <div className={styles.txIcon} style={{ background: color + '22' }}>
@@ -482,7 +484,7 @@ const Home = () => {
           <p className={styles.greeting}>{greeting()}</p>
           <h1 className={styles.name}>{userName}</h1>
         </div>
-        <span className={styles.monthPill}>{formatMonth(now)}</span>
+        <span className={styles.monthPill}>{formatMonth(now, i18n.language)}</span>
       </div>
 
       {widgets.filter(w => w.enabled).map(w => (

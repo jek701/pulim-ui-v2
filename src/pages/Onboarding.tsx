@@ -1,27 +1,25 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../context';
 import { NumberInput } from '../components/NumberInput';
+import { formatAmount } from '../utils/format';
 import type { FamilyMember, FamilyRelation, SalarySource } from '../types';
 import styles from './Onboarding.module.css';
 
+// Labels are i18n key suffixes; the `onboarding.*` strings already existed in all
+// three locales, the screen simply never used them.
 const GOALS = [
-  { id: 'emergency_fund', label: 'Build emergency fund', icon: '🛡️' },
-  { id: 'pay_debts',      label: 'Pay off debts faster', icon: '💳' },
-  { id: 'save_vacation',  label: 'Save for vacation',    icon: '✈️' },
-  { id: 'buy_home',       label: 'Buy a home',           icon: '🏠' },
-  { id: 'reduce_spending',label: 'Reduce daily spending', icon: '📉' },
-  { id: 'save_education', label: 'Save for education',   icon: '🎓' },
-  { id: 'invest',         label: 'Start investing',      icon: '📈' },
-  { id: 'retirement',     label: 'Save for retirement',  icon: '🏖️' },
+  { id: 'emergency_fund',  key: 'goal_emergency', icon: '🛡️' },
+  { id: 'pay_debts',       key: 'goal_debts',     icon: '💳' },
+  { id: 'save_vacation',   key: 'goal_vacation',  icon: '✈️' },
+  { id: 'buy_home',        key: 'goal_home',      icon: '🏠' },
+  { id: 'reduce_spending', key: 'goal_reduce',    icon: '📉' },
+  { id: 'save_education',  key: 'goal_education', icon: '🎓' },
+  { id: 'invest',          key: 'goal_invest',    icon: '📈' },
+  { id: 'retirement',      key: 'goal_retirement', icon: '🏖️' },
 ];
 
-const RELATIONS: { value: FamilyRelation; label: string }[] = [
-  { value: 'spouse',  label: 'Spouse / Partner' },
-  { value: 'child',   label: 'Child' },
-  { value: 'parent',  label: 'Parent' },
-  { value: 'sibling', label: 'Sibling' },
-  { value: 'other',   label: 'Other' },
-];
+const RELATIONS: FamilyRelation[] = ['spouse', 'child', 'parent', 'sibling', 'other'];
 
 interface Props {
   editing?: boolean;
@@ -29,6 +27,7 @@ interface Props {
 }
 
 const Onboarding = ({ editing = false, onDone }: Props) => {
+  const { t } = useTranslation();
   const { profile, saveProfile } = useApp();
 
   const [step, setStep] = useState(editing ? 1 : 0);
@@ -109,7 +108,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
       onDone?.();
     } catch (e: unknown) {
       console.error('[Onboarding] saveProfile error:', e);
-      setSaveError((e as { message?: string }).message ?? 'Failed to save. Please try again.');
+      setSaveError((e as { message?: string }).message ?? t('common.error_save'));
     } finally {
       setSaving(false);
     }
@@ -127,27 +126,23 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
       {step === 0 && (
         <div className={styles.slide}>
           <div className={styles.introEmoji}>🧠</div>
-          <h1 className={styles.introTitle}>Let's set up your financial profile</h1>
-          <p className={styles.introText}>
-            Answer a few quick questions so the AI can give you more accurate insights and predictions — taking into account your salary schedule, family events, and personal goals.
-          </p>
-          <p className={styles.introBullet}>📅 When you get paid</p>
-          <p className={styles.introBullet}>👨‍👩‍👧 Family birthdays & events</p>
-          <p className={styles.introBullet}>🎯 Your financial goals</p>
+          <h1 className={styles.introTitle}>{t('onboarding.title')}</h1>
+          <p className={styles.introText}>{t('onboarding.subtitle')}</p>
+          <p className={styles.introBullet}>{t('onboarding.step_salary')}</p>
+          <p className={styles.introBullet}>{t('onboarding.step_family')}</p>
+          <p className={styles.introBullet}>{t('onboarding.step_goals')}</p>
           <div className={styles.spacer} />
-          <button className={styles.nextBtn} onClick={() => setStep(1)}>Get Started</button>
+          <button className={styles.nextBtn} onClick={() => setStep(1)}>{t('onboarding.btn_start')}</button>
         </div>
       )}
 
       {/* Step 1: Salary sources */}
       {step === 1 && (
         <div className={styles.slide}>
-          <p className={styles.stepLabel}>Step 1 of {TOTAL_STEPS - 1}</p>
+          <p className={styles.stepLabel}>{t('onboarding.step_of', { current: 1, total: TOTAL_STEPS - 1 })}</p>
           <div className={styles.stepEmoji}>💰</div>
-          <h2 className={styles.stepTitle}>Income sources</h2>
-          <p className={styles.stepDesc}>
-            Add all your income sources. Knowing your paydays helps the AI tell post-salary spending from end-of-month tightening.
-          </p>
+          <h2 className={styles.stepTitle}>{t('onboarding.salary_heading')}</h2>
+          <p className={styles.stepDesc}>{t('onboarding.salary_desc')}</p>
 
           {sources.length > 0 && (
             <div className={styles.memberList}>
@@ -155,7 +150,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
                 <div key={s.id} className={styles.memberRow}>
                   <span className={styles.memberName}>{s.name}</span>
                   <span className={styles.memberMeta}>
-                    day {s.day}{s.amount ? ` · ${s.amount.toLocaleString()} UZS` : ''}
+                    {t('onboarding.source_day_meta', { day: s.day })}{s.amount ? ` · ${formatAmount(s.amount)}` : ''}
                   </span>
                   <button className={styles.removeBtn} onClick={() => removeSource(s.id)}>×</button>
                 </div>
@@ -166,7 +161,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
           <div className={styles.addMemberForm}>
             <input
               className={styles.textInput}
-              placeholder='Source name (e.g. "Main job")'
+              placeholder={t('onboarding.salary_name_placeholder')}
               value={srcName}
               onChange={e => setSrcName(e.target.value)}
             />
@@ -176,14 +171,14 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
                 type="number"
                 min={1}
                 max={31}
-                placeholder="Pay day"
+                placeholder={t('onboarding.salary_day_placeholder')}
                 value={srcDay}
                 onChange={e => setSrcDay(e.target.value)}
               />
               <div className={styles.amountRow}>
                 <NumberInput
                   className={styles.amountInput}
-                  placeholder="Amount (opt.)"
+                  placeholder={t('onboarding.salary_amount_placeholder')}
                   value={srcAmtStr}
                   onChange={setSrcAmtStr}
                 />
@@ -191,15 +186,15 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
               </div>
             </div>
             <button className={styles.addMemberBtn} onClick={addSource} disabled={!canAddSource}>
-              + Add source
+              {t('onboarding.salary_add')}
             </button>
           </div>
 
           <div className={styles.spacer} />
           <div className={styles.navRow}>
-            {editing && <button className={styles.backBtn} onClick={onDone}>Cancel</button>}
+            {editing && <button className={styles.backBtn} onClick={onDone}>{t('common.cancel')}</button>}
             <button className={styles.nextBtn} onClick={() => setStep(2)} disabled={sources.length === 0}>
-              Next
+              {t('common.next')}
             </button>
           </div>
         </div>
@@ -208,15 +203,13 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
       {/* Step 2: Personal */}
       {step === 2 && (
         <div className={styles.slide}>
-          <p className={styles.stepLabel}>Step 2 of {TOTAL_STEPS - 1}</p>
+          <p className={styles.stepLabel}>{t('onboarding.step_of', { current: 2, total: TOTAL_STEPS - 1 })}</p>
           <div className={styles.stepEmoji}>🎂</div>
-          <h2 className={styles.stepTitle}>Your birthday</h2>
-          <p className={styles.stepDesc}>
-            We'll remind you to plan for birthday expenses and personalize insights.
-          </p>
+          <h2 className={styles.stepTitle}>{t('onboarding.birthday_heading')}</h2>
+          <p className={styles.stepDesc}>{t('onboarding.birthday_desc')}</p>
 
           <div className={styles.field}>
-            <label className={styles.label}>Birthday (optional)</label>
+            <label className={styles.label}>{t('onboarding.birthday_label')}</label>
             <input
               className={styles.dateInput}
               type="date"
@@ -227,8 +220,8 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
 
           <div className={styles.spacer} />
           <div className={styles.navRow}>
-            <button className={styles.backBtn} onClick={() => setStep(1)}>Back</button>
-            <button className={styles.nextBtn} onClick={() => setStep(3)}>Next</button>
+            <button className={styles.backBtn} onClick={() => setStep(1)}>{t('common.back')}</button>
+            <button className={styles.nextBtn} onClick={() => setStep(3)}>{t('common.next')}</button>
           </div>
         </div>
       )}
@@ -236,19 +229,17 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
       {/* Step 3: Family */}
       {step === 3 && (
         <div className={styles.slide}>
-          <p className={styles.stepLabel}>Step 3 of {TOTAL_STEPS - 1}</p>
+          <p className={styles.stepLabel}>{t('onboarding.step_of', { current: 3, total: TOTAL_STEPS - 1 })}</p>
           <div className={styles.stepEmoji}>👨‍👩‍👧</div>
-          <h2 className={styles.stepTitle}>Family members</h2>
-          <p className={styles.stepDesc}>
-            Add family members so the AI can anticipate birthday expenses and seasonal spending.
-          </p>
+          <h2 className={styles.stepTitle}>{t('onboarding.family_heading')}</h2>
+          <p className={styles.stepDesc}>{t('onboarding.family_desc')}</p>
 
           {members.length > 0 && (
             <div className={styles.memberList}>
               {members.map(m => (
                 <div key={m.id} className={styles.memberRow}>
                   <span className={styles.memberName}>{m.name}</span>
-                  <span className={styles.memberMeta}>{m.relation}{m.birthday ? ` · ${m.birthday}` : ''}</span>
+                  <span className={styles.memberMeta}>{t(`onboarding.relation_${m.relation}`)}{m.birthday ? ` · ${m.birthday}` : ''}</span>
                   <button className={styles.removeBtn} onClick={() => removeMember(m.id)}>×</button>
                 </div>
               ))}
@@ -258,7 +249,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
           <div className={styles.addMemberForm}>
             <input
               className={styles.textInput}
-              placeholder="Name"
+              placeholder={t('onboarding.family_name_placeholder')}
               value={memberName}
               onChange={e => setMemberName(e.target.value)}
             />
@@ -267,7 +258,7 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
               value={memberRelation}
               onChange={e => setMemberRelation(e.target.value as FamilyRelation)}
             >
-              {RELATIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              {RELATIONS.map(r => <option key={r} value={r}>{t(`onboarding.relation_${r}`)}</option>)}
             </select>
             <input
               className={styles.dateInput}
@@ -276,14 +267,14 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
               onChange={e => setMemberBirthday(e.target.value)}
             />
             <button className={styles.addMemberBtn} onClick={addMember} disabled={!memberName.trim()}>
-              + Add member
+              {t('onboarding.family_add')}
             </button>
           </div>
 
           <div className={styles.spacer} />
           <div className={styles.navRow}>
-            <button className={styles.backBtn} onClick={() => setStep(2)}>Back</button>
-            <button className={styles.nextBtn} onClick={() => setStep(4)}>Next</button>
+            <button className={styles.backBtn} onClick={() => setStep(2)}>{t('common.back')}</button>
+            <button className={styles.nextBtn} onClick={() => setStep(4)}>{t('common.next')}</button>
           </div>
         </div>
       )}
@@ -291,12 +282,10 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
       {/* Step 4: Goals */}
       {step === 4 && (
         <div className={styles.slide}>
-          <p className={styles.stepLabel}>Step 4 of {TOTAL_STEPS - 1}</p>
+          <p className={styles.stepLabel}>{t('onboarding.step_of', { current: 4, total: TOTAL_STEPS - 1 })}</p>
           <div className={styles.stepEmoji}>🎯</div>
-          <h2 className={styles.stepTitle}>Financial goals</h2>
-          <p className={styles.stepDesc}>
-            Select all that apply. The AI will tailor advice toward your goals.
-          </p>
+          <h2 className={styles.stepTitle}>{t('onboarding.goals_heading')}</h2>
+          <p className={styles.stepDesc}>{t('onboarding.goals_desc')}</p>
 
           <div className={styles.goalGrid}>
             {GOALS.map(g => (
@@ -306,15 +295,15 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
                 onClick={() => toggleGoal(g.id)}
               >
                 <span className={styles.goalIcon}>{g.icon}</span>
-                <span className={styles.goalLabel}>{g.label}</span>
+                <span className={styles.goalLabel}>{t(`onboarding.${g.key}`)}</span>
               </button>
             ))}
           </div>
 
           <div className={styles.spacer} />
           <div className={styles.navRow}>
-            <button className={styles.backBtn} onClick={() => setStep(3)}>Back</button>
-            <button className={styles.nextBtn} onClick={() => setStep(5)}>Next</button>
+            <button className={styles.backBtn} onClick={() => setStep(3)}>{t('common.back')}</button>
+            <button className={styles.nextBtn} onClick={() => setStep(5)}>{t('common.next')}</button>
           </div>
         </div>
       )}
@@ -323,25 +312,21 @@ const Onboarding = ({ editing = false, onDone }: Props) => {
       {step === 5 && (
         <div className={styles.slide}>
           <div className={styles.introEmoji}>✅</div>
-          <h2 className={styles.stepTitle}>One more tip</h2>
-          <p className={styles.stepDesc}>
-            For the best analysis, <strong>always add a comment</strong> when recording transactions.
-          </p>
+          <h2 className={styles.stepTitle}>{t('onboarding.tip_heading')}</h2>
+          <p className={styles.stepDesc}>{t('onboarding.tip_desc')}</p>
           <div className={styles.tipCard}>
-            <p className={styles.tipRow}>✍️ <span>"Bought groceries for the week"</span></p>
-            <p className={styles.tipRow}>🎁 <span>"Gift for mom's birthday"</span></p>
-            <p className={styles.tipRow}>🍽️ <span>"Dinner with colleagues"</span></p>
+            <p className={styles.tipRow}>✍️ <span>{t('onboarding.tip_example1')}</span></p>
+            <p className={styles.tipRow}>🎁 <span>{t('onboarding.tip_example2')}</span></p>
+            <p className={styles.tipRow}>🍽️ <span>{t('onboarding.tip_example3')}</span></p>
           </div>
-          <p className={styles.tipNote}>
-            Comments let the AI understand one-time vs. recurring expenses, spot patterns, and make smarter predictions.
-          </p>
+          <p className={styles.tipNote}>{t('onboarding.tip_footer')}</p>
 
           <div className={styles.spacer} />
           {saveError && <p className={styles.saveError}>{saveError}</p>}
           <div className={styles.navRow}>
-            <button className={styles.backBtn} onClick={() => setStep(4)}>Back</button>
+            <button className={styles.backBtn} onClick={() => setStep(4)}>{t('common.back')}</button>
             <button className={styles.nextBtn} onClick={handleFinish} disabled={saving}>
-              {saving ? 'Saving…' : editing ? 'Save Profile' : 'Done!'}
+              {saving ? t('common.saving') : editing ? t('onboarding.btn_save') : t('onboarding.btn_done')}
             </button>
           </div>
         </div>

@@ -11,6 +11,7 @@ const ru = {
 
   // ── Calendar ────────────────────────────────────────────────────────────────
   calendar: {
+    planned_name_placeholder: 'Напр. платёж по кредиту',
     title: 'Календарь',
     add_planned: 'Добавить',
     planned_title: 'Плановые расходы',
@@ -202,6 +203,7 @@ const ru = {
 
   // ── Onboarding ───────────────────────────────────────────────────────────────
   onboarding: {
+    source_day_meta: '{{day}}-е число',
     title: 'Настроим ваш финансовый профиль',
     subtitle: 'Ответьте на несколько вопросов, чтобы ИИ мог давать более точные прогнозы с учётом вашего графика зарплаты, семейных событий и целей.',
     step_salary: '📅 Когда вы получаете зарплату',
@@ -358,6 +360,7 @@ const ru = {
     confirm_delete_returns_one: 'Связанный возврат тоже будет удалён.',
     confirm_delete_returns_few: 'Связанные возвраты ({{count}}) тоже будут удалены.',
     confirm_delete_returns_many: 'Связанные возвраты ({{count}}) тоже будут удалены.',
+    confirm_delete_returns_other: 'Связанные возвраты ({{count}}) тоже будут удалены.',
     filter_tour_replay: 'Как работают фильтры',
     filter_tour_demo_badge: 'Демо',
     filter_tour_intro_title: 'Быстро найдём нужные операции',
@@ -419,6 +422,8 @@ const ru = {
 
   // ── Return ───────────────────────────────────────────────────────────────────
   return: {
+    remaining_left: 'осталось {{amount}}',
+    no_transactions: 'Операции не найдены',
     modal_title: 'Записать возврат',
     amount_label: 'Сумма возврата ({{currency}})',
     pick_transaction: 'Исходная транзакция',
@@ -432,7 +437,7 @@ const ru = {
     err_exceeds: 'Сумма превышает остаток',
     err_no_tx: 'Выберите исходную транзакцию',
     err_no_account: 'Выберите счёт',
-    history_label: '↩ Возврат',
+    history_label: 'Возврат',
     history_from: 'от: {{name}}',
     returned_badge: '−{{amount}} возвращено',
   },
@@ -598,6 +603,8 @@ const ru = {
   // ── Debts ────────────────────────────────────────────────────────────────────
   debts: {
     heading: 'Долги',
+    due_label: 'Срок',
+    pay_partial: 'Частичный платёж',
     tab_i_owe: 'Я должен',
     tab_owe_me: 'Должны мне',
     tab_active: 'Активные',
@@ -694,6 +701,10 @@ const ru = {
 
   // ── Subscriptions ────────────────────────────────────────────────────────────
   subscriptions: {
+    cycle_short_monthly: '/мес.',
+    cycle_short_yearly: '/год',
+    cycle_short_weekly: '/нед.',
+    per_month_short: '{{amount}}/мес.',
     heading: 'Подписки',
     monthly_total: 'В месяц',
     total_unconverted_note: 'Некоторые валюты не удалось сконвертировать — итог неполный.',

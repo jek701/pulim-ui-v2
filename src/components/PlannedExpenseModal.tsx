@@ -123,7 +123,7 @@ const PlannedExpenseModal: React.FC<Props> = ({ initial, onSave, onClose }) => {
           label={t('common.name')}
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="e.g. Credit payment"
+          placeholder={t('calendar.planned_name_placeholder')}
         />
 
         <div className={styles.amountRow}>

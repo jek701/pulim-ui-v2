@@ -36,6 +36,7 @@ import type {NewTransaction} from '../hooks/useTransactions';
 import {CURRENCIES} from '../utils/currencies';
 import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
 import {formatAmount, toDateInput} from '../utils/format';
+import {useCategoryName} from '../utils/categoryName';
 import styles from './AddTransactionModal.module.css';
 
 function applyOrder(cards: Card[], order: string[]): Card[] {
@@ -106,6 +107,7 @@ const AddTransactionModal: React.FC<Props> = ({
                                                   recentCardIds = [], launchHint,
                                               }) => {
     const {t} = useTranslation();
+    const categoryName = useCategoryName();
     const editing = !!initialData;
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type ?? 'expense');
     const [amount, setAmount] = useState(initialData ? String(initialData.amount) : '');
@@ -468,7 +470,7 @@ const AddTransactionModal: React.FC<Props> = ({
               <span className={styles.catIcon} style={{background: cat.color + '22'}}>
                 {cat.icon}
               </span>
-                            <span className={styles.catName}>{cat.name}</span>
+                            <span className={styles.catName}>{categoryName(cat)}</span>
                         </button>
                     ))}
                 </div>

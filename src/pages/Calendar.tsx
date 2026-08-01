@@ -15,6 +15,7 @@ import type {NewPlannedExpense} from '../hooks/usePlannedExpenses';
 import PlannedExpenseModal from '../components/PlannedExpenseModal';
 import {formatAmount, formatMoney} from '../utils/format';
 import {plannedAppliesToDay} from '../utils/recurrence';
+import {useCategoryName} from '../utils/categoryName';
 import dayjs from '../utils/dayjs';
 import type {PlannedExpense, PlannedExpenseVisibility, Subscription, Debt, Transaction} from '../types';
 import styles from './Calendar.module.css';
@@ -300,6 +301,7 @@ const Calendar = () => {
         : null;
 
     const getCategory = (id: string) => categories.find(c => c.id === id);
+    const categoryName = useCategoryName();
 
     const visiblePlannedExpenses = useMemo(() => {
         if (!plannedVisibilityRange) return [];
@@ -510,7 +512,7 @@ const Calendar = () => {
                                 const cat = getCategory(tx.categoryId);
                                 const isTransfer = tx.source === 'transfer';
                                 const icon = isTransfer ? '🔄' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : cat?.icon ?? '📦';
-                                const name = tx.sourceLabel ?? cat?.name ?? 'Unknown';
+                                const name = tx.sourceLabel || categoryName(cat) || t('common.transaction');
                                 return (
                                     <div key={tx.id} className={styles.txRow}>
                                         <span className={styles.txIcon}>{icon}</span>
