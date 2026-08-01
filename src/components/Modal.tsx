@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HiXMark } from 'react-icons/hi2';
+import { useTranslation } from 'react-i18next';
 import { useModalClose } from '../hooks/useModalClose';
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss';
 import styles from './Modal.module.css';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const Modal: React.FC<Props> = ({ title, onClose, children, footer }) => {
+  const { t } = useTranslation();
   const { isClosing, requestClose } = useModalClose(onClose);
   const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
 
@@ -43,7 +45,7 @@ const Modal: React.FC<Props> = ({ title, onClose, children, footer }) => {
             <div className={styles.handle} />
             <div className={styles.header}>
               <h2>{title}</h2>
-              <button className={styles.close} onClick={requestClose}><HiXMark size={20} /></button>
+              <button className={styles.close} aria-label={t('common.close')} onClick={requestClose}><HiXMark size={20} /></button>
             </div>
           </div>
           <div className={styles.body}>{children}</div>

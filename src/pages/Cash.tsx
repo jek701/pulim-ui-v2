@@ -5,6 +5,7 @@ import { useApp } from '../context';
 import { useCards } from '../hooks/useCards';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate } from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import { formatAmount } from '../utils/format';
 import { CURRENCIES } from '../utils/currencies';
 import type { Currency } from '../types';
@@ -20,6 +21,7 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
   const { cards, add, update, remove, loading } = useCards(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
   const wallets = cards.filter(c => c.cardType === 'cash');
 
   const [showAdd, setShowAdd] = useState(false);
@@ -128,7 +130,15 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
               <button className={styles.editBalBtn} onClick={() => openEditWallet(w)} aria-label={t('common.edit')}>
                 <HiPencil size={14} />
               </button>
-              <button className={styles.delBtn} onClick={() => confirm(t('cash.confirm_delete')) && remove(w.id)}>
+              <button className={styles.delBtn} aria-label={t('common.delete')} onClick={async () => {
+                const ok = await confirm({
+                  title: t('cash.confirm_delete'),
+                  message: `${w.name} · ${formatAmount(w.balance, w.currency)}`,
+                  warning: t('common.action_irreversible'),
+                  confirmLabel: t('common.delete'),
+                });
+                if (ok) remove(w.id);
+              }}>
                 <HiTrash size={15} />
               </button>
             </div>
@@ -204,6 +214,7 @@ const Cash = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numbe
         </Modal>
       )}
       {premiumGate.node}
+      {confirmNode}
     </>
   );
 

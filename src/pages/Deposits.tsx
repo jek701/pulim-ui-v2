@@ -7,6 +7,7 @@ import type { NewDeposit } from '../hooks/useDeposits';
 import { useCards } from '../hooks/useCards';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumBanner } from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import { formatAmount, formatFullDate } from '../utils/format';
 import { CURRENCIES } from '../utils/currencies';
 import type { Currency, CapitalizationType, Deposit, Card } from '../types';
@@ -384,6 +385,7 @@ const Deposits = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: n
   const { cards } = useCards(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
 
   const [showAdd, setShowAdd]           = useState(false);
   const [closing, setClosing]           = useState<Deposit | null>(null);
@@ -492,7 +494,15 @@ const Deposits = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: n
                           {t('deposits.days_left', { n: days })}
                         </span>
                     }
-                    <button className={styles.delBtn} onClick={() => confirm(t('deposits.confirm_delete')) && remove(d.id)}>
+                    <button className={styles.delBtn} aria-label={t('common.delete')} onClick={async () => {
+                      const ok = await confirm({
+                        title: t('deposits.confirm_delete'),
+                        message: `${d.bank} · ${formatAmount(d.amount, d.currency)}`,
+                        warning: t('common.action_irreversible'),
+                        confirmLabel: t('common.delete'),
+                      });
+                      if (ok) remove(d.id);
+                    }}>
                       <HiTrash size={14} />
                     </button>
                   </div>
@@ -579,6 +589,7 @@ const Deposits = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: n
       {replenishing && <ReplenishModal deposit={replenishing} accounts={cards} onClose={() => setReplenishing(null)} onConfirm={(accId, amt) => handleReplenish(replenishing, accId, amt)} />}
       {withdrawing  && <WithdrawModal deposit={withdrawing} accounts={cards} onClose={() => setWithdrawing(null)} onConfirm={(accId, amt) => handleWithdraw(withdrawing, accId, amt)} />}
       {premiumGate.node}
+      {confirmNode}
     </>
   );
 

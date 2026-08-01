@@ -343,6 +343,22 @@
     text-overflow: ellipsis;
 }
 
+/* The refund note is structured information, not free text — it must never be
+   clipped. Reusing .txComment truncated it to "−50,00…" at 375px, which carries
+   no meaning at all. Wraps instead. */
+.txRefundNote {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 7px;
+    border-radius: var(--r-sm);
+    background: var(--income-bg);
+    color: var(--income);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: normal;
+}
+
 .txRight {
     display: flex;
     align-items: center;

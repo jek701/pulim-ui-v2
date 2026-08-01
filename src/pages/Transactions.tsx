@@ -438,9 +438,9 @@ const Transactions = () => {
 
             {/* Month nav */}
             <div className={styles.monthNav}>
-                <button onClick={prevMonth}><HiChevronLeft size={20}/></button>
+                <button aria-label={t('common.prev_month')} onClick={prevMonth}><HiChevronLeft size={20}/></button>
                 <span>{monthLabel}</span>
-                <button onClick={nextMonth}><HiChevronRight size={20}/></button>
+                <button aria-label={t('common.next_month')} onClick={nextMonth}><HiChevronRight size={20}/></button>
                 <button
                     className={styles.historyTourHelpBtn}
                     onClick={startHistoryTour}
@@ -637,7 +637,7 @@ const Transactions = () => {
                                                         </p>
                                                         {tx.comment && <p className={styles.txComment}>{tx.comment}</p>}
                                                         {tx.type === 'expense' && (tx.returnedAmount ?? 0) > 0 && (
-                                                            <p className={styles.txComment}>
+                                                            <p className={styles.txRefundNote}>
                                                                 {t('return.returned_badge', {amount: formatAmount(tx.returnedAmount!, tx.currency)})}
                                                                 {remaining !== null && remaining > 0 && ` · ${t('return.remaining_left', {amount: formatAmount(remaining, tx.currency)})}`}
                                                             </p>
@@ -660,10 +660,12 @@ const Transactions = () => {
                                                                 </button>
                                                             )}
                                                             <button className={styles.editBtn}
+                                                                    aria-label={t('common.edit')}
                                                                     onClick={() => setEditingTx(tx)}>
                                                                 <HiPencil size={13}/>
                                                             </button>
                                                             <button className={styles.delBtn}
+                                                                    aria-label={t('common.delete')}
                                                                     onClick={() => handleDelete(tx)}>
                                                                 <HiTrash size={13}/>
                                                             </button>
@@ -702,7 +704,7 @@ const Transactions = () => {
                                             {t('transactions.filter_clear_all')}
                                         </button>
                                     )}
-                                    <button className={styles.closePanelBtn} onClick={closeFilterPanel} disabled={historyTourRunning}>
+                                    <button className={styles.closePanelBtn} aria-label={t('common.close')} onClick={closeFilterPanel} disabled={historyTourRunning}>
                                         <HiXMark size={20}/>
                                     </button>
                                 </div>

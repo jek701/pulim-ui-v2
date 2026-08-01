@@ -326,9 +326,9 @@ const Calendar = () => {
             {/* Header */}
             <div className={styles.header}>
                 <div className={styles.monthNav}>
-                    <button onClick={prevMonth}><HiChevronLeft size={20}/></button>
+                    <button aria-label={t('common.prev_month')} onClick={prevMonth}><HiChevronLeft size={20}/></button>
                     <h1 aria-live="polite">{monthLabel}</h1>
-                    <button onClick={nextMonth}><HiChevronRight size={20}/></button>
+                    <button aria-label={t('common.next_month')} onClick={nextMonth}><HiChevronRight size={20}/></button>
                 </div>
                 <button className={styles.addBtn} onClick={() => requestAddPlanned()}>
                     <HiPlus size={16}/>

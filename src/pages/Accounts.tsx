@@ -176,7 +176,7 @@ const Accounts = () => {
       <div className={styles.header}>
         <h1>{t('accounts.heading')}</h1>
         {cards.length >= 2 && (
-          <button className={styles.transferBtn} onClick={openTransfer}>
+          <button className={styles.transferBtn} aria-label={t('common.transfer')} onClick={openTransfer}>
             <HiArrowsRightLeft size={18} />
           </button>
         )}

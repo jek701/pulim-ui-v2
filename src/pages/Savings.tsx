@@ -7,6 +7,7 @@ import type { NewSavingsGoal } from '../hooks/useSavingsGoals';
 import { useCards } from '../hooks/useCards';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumBanner } from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import type { SavingsGoal, Currency, Card } from '../types';
 import { CURRENCIES } from '../utils/currencies';
 import { formatAmount, formatFullDate } from '../utils/format';
@@ -228,6 +229,7 @@ const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: nu
   const { cards } = useCards(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
   const [contributing, setContributing] = useState<SavingsGoal | null>(null);
 
@@ -239,8 +241,14 @@ const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: nu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTrigger]);
 
-  const handleDelete = (id: string) => {
-    if (confirm(t('savings.confirm_delete'))) remove(id);
+  const handleDelete = async (goal: SavingsGoal) => {
+    const ok = await confirm({
+      title: t('savings.confirm_delete'),
+      message: `${goal.name} · ${formatAmount(goal.savedAmount, goal.currency)} / ${formatAmount(goal.targetAmount, goal.currency)}`,
+      warning: t('common.action_irreversible'),
+      confirmLabel: t('common.delete'),
+    });
+    if (ok) remove(goal.id);
   };
 
   const handleContribute = async (goal: SavingsGoal, amount: number, cardId: string) => {
@@ -315,7 +323,7 @@ const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: nu
                     <p className={styles.goalName}>{goal.name}</p>
                     <p className={`${styles.goalTime} ${overdue ? styles.overdue : ''}`}>{timeLabel}</p>
                   </div>
-                  <button className={styles.deleteBtn} onClick={() => handleDelete(goal.id)}>
+                  <button className={styles.deleteBtn} aria-label={t('common.delete')} onClick={() => handleDelete(goal)}>
                     <HiTrash size={14} />
                   </button>
                 </div>
@@ -353,7 +361,7 @@ const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: nu
                 </div>
 
                 {!done && (
-                  <button className={styles.contributeBtn} onClick={() => setContributing(goal)}>
+                  <button className={styles.contributeBtn} aria-label={t('savings.btn_contribute')} onClick={() => setContributing(goal)}>
                     <HiPlusCircle size={16} />
                     {t('savings.btn_contribute')}
                   </button>
@@ -377,6 +385,7 @@ const Savings = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: nu
         />
       )}
       {premiumGate.node}
+      {confirmNode}
     </>
   );
 

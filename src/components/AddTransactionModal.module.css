@@ -26,10 +26,17 @@
   color: #fff;
 }
 
+/* "Return" opens a different modal, it is not a third selectable type. It used to
+   carry a permanent accent border, so with Expense selected two of the three
+   segments looked active at once. Neutral by default; accent only on press. */
 .returnBtn {
+  background: transparent;
+  color: var(--text2);
+}
+
+.returnBtn:active {
   background: var(--surface);
   color: var(--accent);
-  border: 1.5px solid var(--accent);
 }
 
 .amountRow {

@@ -17,6 +17,7 @@ import { useApp } from '../context';
 import { useEntitlements } from '../hooks/useEntitlements';
 import PremiumModal from './PremiumModal';
 import { PremiumBadge } from './PremiumLock';
+import { useConfirm } from './ConfirmDialog';
 import dayjs from '../utils/dayjs';
 import styles from './AskAIChat.module.css';
 import { useModalClose } from '../hooks/useModalClose';
@@ -32,6 +33,7 @@ interface Props {
 
 const AskAIChat = ({ onClose }: Props) => {
   const { t, i18n } = useTranslation();
+  const { confirm, node: confirmNode } = useConfirm();
   const { isClosing, requestClose } = useModalClose(onClose);
   const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
   const { user } = useApp();
@@ -128,7 +130,12 @@ const AskAIChat = ({ onClose }: Props) => {
 
   const deleteChat = async (chatId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(t('ask_ai.confirm_delete'))) return;
+    const ok = await confirm({
+      title: t('ask_ai.confirm_delete'),
+      warning: t('common.action_irreversible'),
+      confirmLabel: t('common.delete'),
+    });
+    if (!ok) return;
     await remove(chatId);
     if (activeChatId === chatId) startNewChat();
   };
@@ -439,6 +446,7 @@ const AskAIChat = ({ onClose }: Props) => {
         </div>
       </div>
       {showPremium && <PremiumModal feature="ai_chat" onClose={() => setShowPremium(false)} />}
+      {confirmNode}
     </div>,
     document.body,
   );

@@ -4,11 +4,12 @@ import { HiPlus, HiTrash, HiPencil, HiCheck, HiCreditCard } from 'react-icons/hi
 import { useApp } from '../context';
 import { useSubscriptions } from '../hooks/useSubscriptions';
 import type { NewSubscription } from '../hooks/useSubscriptions';
-import type { BillingCycle, Currency } from '../types';
+import type { BillingCycle, Currency, Subscription } from '../types';
 import { useCards } from '../hooks/useCards';
 import { useBudgets } from '../hooks/useBudgets';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumBanner } from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import { NumberInput } from '../components/NumberInput';
 import Modal from '../components/Modal';
 import { Input, Select } from '../components/FormField';
@@ -69,6 +70,7 @@ const Subscriptions = () => {
   const { setBudget } = useBudgets(user?.uid ?? null);
   const { isPremium, canUse } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -80,6 +82,8 @@ const Subscriptions = () => {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payCardId, setPayCardId] = useState('');
   const [payConfirming, setPayConfirming] = useState(false);
+
+  const cycleShort = (cycle: BillingCycle) => t(`subscriptions.cycle_short_${cycle}`);
 
   const set = <K extends keyof NewSubscription>(k: K, v: NewSubscription[K]) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -124,6 +128,16 @@ const Subscriptions = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = async (s: Subscription) => {
+    const ok = await confirm({
+      title: t('subscriptions.confirm_delete'),
+      message: `${s.icon} ${s.name} · ${formatAmount(s.amount, s.currency)} ${cycleShort(s.cycle)}`,
+      warning: t('common.action_irreversible'),
+      confirmLabel: t('common.delete'),
+    });
+    if (ok) remove(s.id);
   };
 
   const handleMarkPaid = (id: string) => {
@@ -200,8 +214,6 @@ const Subscriptions = () => {
   if (loading) return <PageLoader />;
 
   const dateInputValue = toDateInput(form.nextBillingDate);
-
-  const cycleShort = (cycle: BillingCycle) => t(`subscriptions.cycle_short_${cycle}`);
 
   const CYCLES: { value: BillingCycle; label: string }[] = [
     { value: 'monthly', label: t('subscriptions.cycle_monthly') },
@@ -293,10 +305,10 @@ const Subscriptions = () => {
                       <button className={styles.paidBtn} title={t('subscriptions.mark_paid_title')} onClick={() => handleMarkPaid(s.id)}>
                         <HiCheck size={13} />
                       </button>
-                      <button className={styles.editBtn} onClick={() => openEdit(s.id)}>
+                      <button className={styles.editBtn} aria-label={t('common.edit')} onClick={() => openEdit(s.id)}>
                         <HiPencil size={13} />
                       </button>
-                      <button className={styles.delBtn} onClick={() => confirm(t('common.delete') + '?') && remove(s.id)}>
+                      <button className={styles.delBtn} aria-label={t('common.delete')} onClick={() => handleDelete(s)}>
                         <HiTrash size={13} />
                       </button>
                     </div>
@@ -326,7 +338,7 @@ const Subscriptions = () => {
                   <button className={styles.editBtn} onClick={() => openEdit(s.id)}>
                     <HiPencil size={13} />
                   </button>
-                  <button className={styles.delBtn} onClick={() => confirm(t('common.delete') + '?') && remove(s.id)}>
+                  <button className={styles.delBtn} aria-label={t('common.delete')} onClick={() => handleDelete(s)}>
                     <HiTrash size={13} />
                   </button>
                 </div>
@@ -494,6 +506,7 @@ const Subscriptions = () => {
         </Modal>
       )}
       {premiumGate.node}
+      {confirmNode}
     </div>
   );
 };

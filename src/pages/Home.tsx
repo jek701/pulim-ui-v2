@@ -492,7 +492,7 @@ const Home = () => {
       ))}
 
       {/* FAB */}
-      <button className={styles.fab} onClick={() => setShowAdd(true)}>
+      <button className={styles.fab} aria-label={t('common.add_transaction')} onClick={() => setShowAdd(true)}>
         <HiPlus size={26} />
       </button>
 

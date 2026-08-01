@@ -14,6 +14,7 @@ import {Input, Select} from '../components/FormField';
 import {NumberInput} from '../components/NumberInput';
 import PageLoader from '../components/PageLoader';
 import {PremiumBanner, usePremiumGate} from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import styles from './Cards.module.css';
 
 const EMPTY_FORM = (): NewCard => ({
@@ -36,6 +37,7 @@ const Cards = ({embedded, filterType, addTrigger}: {
     const {user} = useApp();
     const {isPremium} = useEntitlements();
     const premiumGate = usePremiumGate();
+    const { confirm, node: confirmNode } = useConfirm();
     const {cards: allCards, add, update, remove, refill, loading} = useCards(user?.uid ?? null);
     const cards = allCards
         .filter(c => c.cardType !== 'cash' && (!filterType || c.cardType === filterType))
@@ -293,7 +295,16 @@ const Cards = ({embedded, filterType, addTrigger}: {
                                             <HiPencil size={15}/>
                                         </button>
                                         <button className={styles.delBtn}
-                                                onClick={() => confirm(t('cards.confirm_delete')) && remove(card.id)}>
+                                                aria-label={t('common.delete')}
+                                                onClick={async () => {
+                                                    const ok = await confirm({
+                                                        title: t('cards.confirm_delete'),
+                                                        message: `${card.name} · ${formatAmount(card.balance, card.currency)}`,
+                                                        warning: t('common.action_irreversible'),
+                                                        confirmLabel: t('common.delete'),
+                                                    });
+                                                    if (ok) remove(card.id);
+                                                }}>
                                             <HiTrash size={16}/>
                                         </button>
                                     </div>
@@ -677,6 +688,7 @@ const Cards = ({embedded, filterType, addTrigger}: {
                 </Modal>
             )}
             {premiumGate.node}
+            {confirmNode}
         </>
     );
 

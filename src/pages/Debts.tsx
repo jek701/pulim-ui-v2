@@ -7,6 +7,7 @@ import type { NewDebt } from '../hooks/useDebts';
 import { useCards } from '../hooks/useCards';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumBanner } from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import { formatAmount, formatFullDate, toDateInput } from '../utils/format';
 import { CURRENCIES } from '../utils/currencies';
 import type { Currency, DebtDirection, CommissionType, Debt } from '../types';
@@ -34,6 +35,7 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
   const { cards } = useCards(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
   const [tab, setTab] = useState<DebtDirection>('i_owe');
 
   useEffect(() => {
@@ -212,7 +214,15 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
                     >
                       {debt.isPaid ? <HiArrowPath size={15} /> : <HiCheck size={15} />}
                     </button>
-                    <button className={styles.delBtn} onClick={() => confirm(t('debts.confirm_delete')) && remove(debt.id)}>
+                    <button className={styles.delBtn} aria-label={t('common.delete')} onClick={async () => {
+                      const ok = await confirm({
+                        title: t('debts.confirm_delete'),
+                        message: `${debt.person} · ${formatAmount(debt.amount, debt.currency)}`,
+                        warning: t('common.action_irreversible'),
+                        confirmLabel: t('common.delete'),
+                      });
+                      if (ok) remove(debt.id);
+                    }}>
                       <HiTrash size={15} />
                     </button>
                   </div>
@@ -392,6 +402,7 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
         </Modal>
       )}
       {premiumGate.node}
+      {confirmNode}
     </>
   );
 

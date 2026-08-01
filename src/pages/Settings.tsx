@@ -31,6 +31,7 @@ import { useBudgets } from '../hooks/useBudgets';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { usePremiumGate, PremiumBadge } from '../components/PremiumLock';
+import { useConfirm } from '../components/ConfirmDialog';
 import dayjs from '../utils/dayjs';
 import type { NewCategory } from '../hooks/useCategories';
 import type { Category, CategoryType, Subcategory } from '../types';
@@ -156,6 +157,7 @@ const Settings = () => {
   } = useUserSettings(user?.uid ?? null);
   const { isPremium, isTrial, trialDaysLeft, aiUsed } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
 
   const [catTab, setCatTab] = useState<'expense' | 'income'>('expense');
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
@@ -561,14 +563,27 @@ const Settings = () => {
                   <button className={styles.subEditBtn} type="button" aria-label={t('common.edit')} onClick={() => openEditSubcategory(subcategory)}>
                     <HiPencil size={13} />
                   </button>
-                  <button className={styles.subDeleteBtn} type="button" aria-label={t('common.delete')} onClick={() => confirm(t('settings.confirm_delete_subcategory')) && removeSubcategory(subcategory.id)}>
+                  <button className={styles.subDeleteBtn} type="button" aria-label={t('common.delete')} onClick={async () => {
+                    const ok = await confirm({
+                      title: t('settings.confirm_delete_subcategory'),
+                      message: subcategory.name,
+                      confirmLabel: t('common.delete'),
+                    });
+                    if (ok) removeSubcategory(subcategory.id);
+                  }}>
                     <HiTrash size={13} />
                   </button>
                 </span>
               </div>
             ))}
-            <button className={styles.deleteCategoryBtn} type="button" onClick={() => {
-              if (confirm(t('settings.confirm_delete_category'))) removeCategory(category.id);
+            <button className={styles.deleteCategoryBtn} type="button" onClick={async () => {
+              const ok = await confirm({
+                title: t('settings.confirm_delete_category'),
+                message: `${category.icon} ${getCategoryDisplayName(category)}`,
+                detail: subs.length > 0 ? t('settings.confirm_delete_category_subs', { count: subs.length }) : undefined,
+                confirmLabel: t('common.delete'),
+              });
+              if (ok) removeCategory(category.id);
             }}>
               <HiTrash size={13} />{t('settings.delete_category_action')}
             </button>
@@ -695,7 +710,13 @@ const Settings = () => {
             className={styles.dangerBtn}
             type="button"
             onClick={async () => {
-              if (!confirm(t('settings.confirm_clear_transactions'))) return;
+              const ok = await confirm({
+                title: t('settings.btn_clear_transactions'),
+                message: t('settings.confirm_clear_transactions'),
+                warning: t('common.action_irreversible'),
+                confirmLabel: t('settings.btn_clear_transactions'),
+              });
+              if (!ok) return;
               await clearAllTransactions();
             }}
           >
@@ -836,6 +857,8 @@ const Settings = () => {
       )}
 
       {premiumGate.node}
+
+      {confirmNode}
     </div>
   );
 };

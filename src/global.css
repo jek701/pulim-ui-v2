@@ -20,7 +20,10 @@
   --expense-bg: rgba(255, 69, 58, 0.12);
   --text: #FFFFFF;
   --text2: #ABABAB;
-  --text3: #636366;
+  /* #636366 only reached 2.14:1 on --surface2 and 3.02:1 on --bg, far below the
+     WCAG AA 4.5:1 needed at the 11–13px sizes this colour is used at. #9A9A9F
+     measures 6.45 on --bg, 5.53 on --surface, 4.57 on --surface2. */
+  --text3: #9A9A9F;
   --border: rgba(255, 255, 255, 0.08);
   --nav-bg: rgba(14, 14, 16, 0.94);
   --overlay: rgba(0, 0, 0, 0.65);
@@ -73,7 +76,9 @@
   --expense-bg: rgba(220, 53, 58, 0.12);
   --text: #0B0B0F;
   --text2: #5C5C66;
-  --text3: #8E8E93;
+  /* #8E8E93 measured 2.92:1 on --bg. #6E6E73 gives 4.54 on --bg/--surface2 and
+     5.07 on --surface, while staying lighter than --text2. */
+  --text3: #6E6E73;
   --border: rgba(0, 0, 0, 0.08);
   --nav-bg: rgba(255, 255, 255, 0.94);
   --overlay: rgba(0, 0, 0, 0.45);
