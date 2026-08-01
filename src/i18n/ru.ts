@@ -451,6 +451,13 @@ const ru = {
 
   // ── Add Transaction Modal ────────────────────────────────────────────────────
   add_transaction: {
+    missing_amount: 'Укажите сумму, чтобы продолжить.',
+    missing_category: 'Выберите категорию, чтобы продолжить.',
+    missing_account: 'Выберите счёт, чтобы продолжить.',
+    discard_title: 'Отменить изменения?',
+    discard_detail: 'Введённые данные не сохранятся.',
+    discard_confirm: 'Отменить',
+    drag_to_reorder: 'Перетащите, чтобы изменить порядок',
     title_new: 'Новая транзакция',
     title_edit: 'Изменить транзакцию',
     type_expense: 'Расход',

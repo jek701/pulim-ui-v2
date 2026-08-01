@@ -7,6 +7,7 @@ import { api } from './api/client';
 import { qk } from './api/queryClient';
 import { paymentApi, type CheckoutSession } from './api/paymentClient';
 import type { AuthMethod, Tab, UserProfile } from './types';
+import { EMPTY_HISTORY_FILTERS, type HistoryFilters } from './utils/historyFilters';
 
 interface AppContextType {
   user: User | null;
@@ -28,6 +29,9 @@ interface AppContextType {
   setActiveTab: (tab: Tab) => void;
   categoryFilter: string | null;
   setCategoryFilter: (id: string | null) => void;
+  /** History filters live here so switching tabs no longer silently clears them. */
+  historyFilters: HistoryFilters;
+  setHistoryFilters: React.Dispatch<React.SetStateAction<HistoryFilters>>;
   profile: UserProfile | null;
   profileLoading: boolean;
   saveProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -95,6 +99,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [telegramLinkError, setTelegramLinkError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [historyFilters, setHistoryFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const telegramAuthInFlight = useRef(false);
@@ -417,6 +422,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       reloadUser,
       activeTab, setActiveTab,
       categoryFilter, setCategoryFilter,
+      historyFilters, setHistoryFilters,
       profile, profileLoading, saveProfile,
       paymentResult, dismissPaymentResult,
     }}>

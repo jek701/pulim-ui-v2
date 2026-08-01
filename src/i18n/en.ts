@@ -449,6 +449,13 @@ const en = {
 
   // ── Add Transaction Modal ────────────────────────────────────────────────────
   add_transaction: {
+    missing_amount: 'Enter an amount to continue.',
+    missing_category: 'Pick a category to continue.',
+    missing_account: 'Pick an account to continue.',
+    discard_title: 'Discard your changes?',
+    discard_detail: 'What you entered will not be saved.',
+    discard_confirm: 'Discard',
+    drag_to_reorder: 'Drag to reorder',
     title_new: 'New Transaction',
     title_edit: 'Edit Transaction',
     type_expense: 'Expense',

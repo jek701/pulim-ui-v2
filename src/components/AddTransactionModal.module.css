@@ -613,6 +613,18 @@
 
 .disabled {
   opacity: 0.45;
+  /* A disabled control must not advertise itself as clickable. */
+  cursor: not-allowed;
+}
+
+/* Says which required field is still missing. The button used to just sit dimmed
+   with no explanation, so users hunted for the reason by trial and error. */
+.missingHint {
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text2);
+  text-align: center;
 }
 
 .errorMsg {

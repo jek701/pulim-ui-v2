@@ -449,6 +449,13 @@ const uz = {
 
     // ── Add Transaction Modal ────────────────────────────────────────────────────
     add_transaction: {
+        missing_amount: 'Davom etish uchun summani kiriting.',
+        missing_category: 'Davom etish uchun kategoriyani tanlang.',
+        missing_account: 'Davom etish uchun hisobni tanlang.',
+        discard_title: 'O‘zgarishlar bekor qilinsinmi?',
+        discard_detail: 'Kiritilgan ma’lumotlar saqlanmaydi.',
+        discard_confirm: 'Bekor qilish',
+        drag_to_reorder: 'Tartibni o‘zgartirish uchun torting',
         title_new: 'Yangi tranzaksiya',
         title_edit: 'Tranzaksiyani o‘zgartirish',
         type_expense: 'Xarajat',

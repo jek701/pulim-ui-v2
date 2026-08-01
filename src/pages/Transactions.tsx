@@ -14,6 +14,7 @@ import {
     HiQuestionMarkCircle
 } from 'react-icons/hi2';
 import {useApp} from '../context';
+import {EMPTY_HISTORY_FILTERS, type HistoryFilters} from '../utils/historyFilters';
 import {useTransactions} from '../hooks/useTransactions';
 import {useCategories} from '../hooks/useCategories';
 import {useCards} from '../hooks/useCards';
@@ -39,26 +40,12 @@ import {useModalClose} from '../hooks/useModalClose';
 import {useSwipeDismiss} from '../hooks/useSwipeDismiss';
 import HistoryOnboardingTour from '../components/HistoryOnboardingTour';
 
-export interface ActiveFilters {
-    types: ('income' | 'expense' | 'transfer')[];
-    categoryIds: string[];
-    subcategoryIds: string[];
-    cardIds: string[];
-    dateFrom: string | null;
-    dateTo: string | null;
-}
+export type ActiveFilters = HistoryFilters;
 
-const defaultFilters: ActiveFilters = {
-    types: [],
-    categoryIds: [],
-    subcategoryIds: [],
-    cardIds: [],
-    dateFrom: null,
-    dateTo: null,
-};
+const defaultFilters = EMPTY_HISTORY_FILTERS;
 
 const Transactions = () => {
-    const {user, categoryFilter, setCategoryFilter} = useApp();
+    const {user, categoryFilter, setCategoryFilter, historyFilters: filters, setHistoryFilters: setFilters} = useApp();
     const {transactions, add, update, remove, returnTransaction, loading: txLoading} = useTransactions(user?.uid ?? null);
     const {categories, subcategories, loading: catLoading} = useCategories(user?.uid ?? null);
     const {cards, cardOrder, saveCardOrder} = useCards(user?.uid ?? null);
@@ -67,7 +54,6 @@ const Transactions = () => {
     const premiumGate = usePremiumGate();
     const categoryName = useCategoryName();
     const {confirm, node: confirmNode} = useConfirm();
-    const [filters, setFilters] = useState<ActiveFilters>(defaultFilters);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [showHistoryIntro, setShowHistoryIntro] = useState(true);
     const [historyTourRunning, setHistoryTourRunning] = useState(false);
@@ -163,7 +149,7 @@ const Transactions = () => {
             setFilters(f => ({...f, categoryIds: [categoryFilter]}));
             setCategoryFilter(null);
         }
-    }, [categoryFilter, setCategoryFilter]);
+    }, [categoryFilter, setCategoryFilter, setFilters]);
 
     const monthLabel = formatMonth(new Date(viewDate.year, viewDate.month), locale);
 

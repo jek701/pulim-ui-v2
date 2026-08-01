@@ -1,4 +1,4 @@
-import {useState, useMemo} from 'react';
+import {useState, useMemo, useRef} from 'react';
 import {
     HiCheck,
     HiCreditCard,
@@ -37,6 +37,7 @@ import {CURRENCIES} from '../utils/currencies';
 import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
 import {formatAmount, toDateInput} from '../utils/format';
 import {useCategoryName} from '../utils/categoryName';
+import {useConfirm} from './ConfirmDialog';
 import styles from './AddTransactionModal.module.css';
 
 function applyOrder(cards: Card[], order: string[]): Card[] {
@@ -56,6 +57,7 @@ interface SortableCardItemProps {
 }
 
 function SortableCardItem({card}: SortableCardItemProps) {
+    const {t} = useTranslation();
     const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({id: card.id});
 
     const style = {
@@ -74,7 +76,7 @@ function SortableCardItem({card}: SortableCardItemProps) {
                 {...attributes}
                 {...listeners}
                 type="button"
-                aria-label="Drag to reorder"
+                aria-label={t('add_transaction.drag_to_reorder')}
             >
                 <HiBars3 size={18}/>
             </button>
@@ -108,6 +110,7 @@ const AddTransactionModal: React.FC<Props> = ({
                                               }) => {
     const {t} = useTranslation();
     const categoryName = useCategoryName();
+    const {confirm, node: confirmNode} = useConfirm();
     const editing = !!initialData;
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type ?? 'expense');
     const [amount, setAmount] = useState(initialData ? String(initialData.amount) : '');
@@ -122,6 +125,33 @@ const AddTransactionModal: React.FC<Props> = ({
     const [showReorder, setShowReorder] = useState(false);
     const [showCardPicker, setShowCardPicker] = useState(false);
     const [cardSearch, setCardSearch] = useState('');
+
+    const initialSnapshot = useRef(JSON.stringify({
+        type: initialData?.type ?? 'expense',
+        amount: initialData ? String(initialData.amount) : '',
+        currency: initialData?.currency ?? 'UZS',
+        categoryId: initialData?.categoryId ?? '',
+        subcategoryId: initialData?.subcategoryId ?? '',
+        cardId: initialData?.cardId ?? (cards.length === 1 ? cards[0].id : ''),
+        date: initialData ? toDateInput(initialData.date) : toDateInput(Date.now()),
+        comment: initialData?.comment ?? '',
+    }));
+    const isDirty = JSON.stringify({ type, amount, currency, categoryId, subcategoryId, cardId, date, comment })
+        !== initialSnapshot.current;
+
+    /**
+     * Closing with edits in progress used to discard them without a word. Ask first —
+     * the transaction data itself was never at risk, but the typing was.
+     */
+    const handleClose = async () => {
+        if (!isDirty || saving) { onClose(); return; }
+        const ok = await confirm({
+            title: t('add_transaction.discard_title'),
+            detail: t('add_transaction.discard_detail'),
+            confirmLabel: t('add_transaction.discard_confirm'),
+        });
+        if (ok) onClose();
+    };
 
     const sortedCards = useMemo(() => applyOrder(cards, cardOrder), [cards, cardOrder]);
     const selectedCard = useMemo(() => cards.find(card => card.id === cardId), [cards, cardId]);
@@ -166,6 +196,15 @@ const AddTransactionModal: React.FC<Props> = ({
     const filteredSubs = subcategories.filter(s => s.categoryId === categoryId);
     const cardRequired = cards.length > 0;
     const canSave = !!amount && parseFloat(amount) > 0 && !!categoryId && (!cardRequired || !!cardId);
+    // Name the first missing requirement rather than leaving the dimmed button
+    // unexplained.
+    const missingRequirement = !amount || parseFloat(amount) <= 0
+        ? t('add_transaction.missing_amount')
+        : !categoryId
+            ? t('add_transaction.missing_category')
+            : cardRequired && !cardId
+                ? t('add_transaction.missing_account')
+                : null;
 
     const selectCard = (id: string) => {
         setCardId(id);
@@ -262,10 +301,13 @@ const AddTransactionModal: React.FC<Props> = ({
     return (
         <Modal
             title={editing ? t('add_transaction.title_edit') : t('add_transaction.title_new')}
-            onClose={onClose}
+            onClose={handleClose}
             footer={
                 <>
                     {error && <p className={styles.errorMsg}>{error}</p>}
+                    {!error && !saving && missingRequirement && (
+                        <p className={styles.missingHint} role="status">{missingRequirement}</p>
+                    )}
                     <button
                         className={`${styles.saveBtn} ${!canSave || saving ? styles.disabled : ''}`}
                         onClick={handleSave}
@@ -504,6 +546,7 @@ const AddTransactionModal: React.FC<Props> = ({
             <Textarea label={t('add_transaction.comment_placeholder')}
                       placeholder={t('add_transaction.comment_placeholder')} value={comment}
                       onChange={e => setComment(e.target.value)} rows={2}/>
+            {confirmNode}
         </Modal>
     );
 };
