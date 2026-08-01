@@ -268,6 +268,7 @@ const en = {
     balance_details_accounts: '{{count}} accounts shown',
     balance_details_chart_label: 'Available money distribution by account',
     balance_details_distribution: 'Distribution',
+    balance_details_tap_segment: 'Tap a segment to view the account',
     balance_details_accounts_title: 'Your accounts',
     balance_details_currency_hint: 'All accounts in {{currency}}',
     balance_details_cash: 'Cash wallet',

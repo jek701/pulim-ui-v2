@@ -268,6 +268,7 @@ const uz = {
         balance_details_accounts: '{{count}} ta hisob ko‘rsatildi',
         balance_details_chart_label: 'Mavjud pulning hisoblar bo‘yicha taqsimoti',
         balance_details_distribution: 'Taqsimot',
+        balance_details_tap_segment: 'Hisobni ko‘rish uchun segmentni bosing',
         balance_details_accounts_title: 'Hisoblaringiz',
         balance_details_currency_hint: '{{currency}} dagi barcha hisoblar',
         balance_details_cash: 'Naqd pul hamyoni',

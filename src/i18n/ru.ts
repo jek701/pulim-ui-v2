@@ -268,6 +268,7 @@ const ru = {
     balance_details_accounts: 'Счетов: {{count}}',
     balance_details_chart_label: 'Распределение доступных денег по счетам',
     balance_details_distribution: 'Распределение',
+    balance_details_tap_segment: 'Нажмите на сегмент, чтобы увидеть счёт',
     balance_details_accounts_title: 'Ваши счета',
     balance_details_currency_hint: 'Все счета в {{currency}}',
     balance_details_cash: 'Наличный кошелёк',

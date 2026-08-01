@@ -38,6 +38,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
   }, [cards]);
 
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(() => currencies[0] ?? 'UZS');
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const activeCurrency = currencies.includes(selectedCurrency) ? selectedCurrency : (currencies[0] ?? 'UZS');
 
   useEffect(() => {
@@ -94,12 +95,15 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
   }, [chartCards, magnitudeTotal]);
 
   const filterCards = useMemo(() => {
-    const hiddenCards = currencyCards.filter(card => card.includeInTotalBalance === false);
+    const hiddenCards = currencyCards.filter(card => card.cardType !== 'credit' && card.includeInTotalBalance === false);
     const creditCards = currencyCards.filter(card => card.cardType === "credit");
-    const leftCards = currencyCards.filter(card => card.includeInTotalBalance === true && (card.cardType === "cash" || card.cardType === "debit"))
+    const leftCards = currencyCards.filter(card => card.includeInTotalBalance !== false && (card.cardType === "cash" || card.cardType === "debit"))
 
     return [...leftCards, ...creditCards, ...hiddenCards]
   }, [currencyCards])
+
+  const selectedSegment = segments.find(segment => segment.card.id === selectedCardId);
+  const selectedCard = selectedSegment?.card;
 
   return createPortal(
     <motion.div
@@ -140,7 +144,10 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                   type="button"
                   role="tab"
                   aria-selected={activeCurrency === currency}
-                  onClick={() => setSelectedCurrency(currency)}
+                  onClick={() => {
+                    setSelectedCurrency(currency);
+                    setSelectedCardId(null);
+                  }}
                 >
                   {currency}
                 </button>
@@ -157,18 +164,6 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
           ) : (
             <>
               <section className={styles.hero}>
-                <motion.div
-                  className={styles.totalBlock}
-                  key={`total-${activeCurrency}`}
-                  initial={reduceMotion ? false : { opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                >
-                  <p>{t('home.balance_details_total')}</p>
-                  <strong>{formatAmount(total, activeCurrency)}</strong>
-                  <span>{t('home.balance_details_accounts', { count: currencyCards.length })}</span>
-                </motion.div>
-
                 <div className={styles.chartWrap}>
                   <svg className={styles.chart} viewBox="0 0 300 300" aria-label={t('home.balance_details_chart_label')}>
                     <circle className={styles.chartTrack} cx="150" cy="150" r="112" />
@@ -176,7 +171,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                       {segments.map((segment, index) => (
                         <motion.circle
                           key={`${activeCurrency}-${segment.card.id}`}
-                          className={styles.chartSegment}
+                          className={`${styles.chartSegment} ${selectedCardId === segment.card.id ? styles.chartSegmentSelected : ''}`}
                           cx="150"
                           cy="150"
                           r="112"
@@ -184,27 +179,61 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                           stroke={segment.color}
                           strokeDashoffset={-segment.start}
                           initial={reduceMotion ? false : { strokeDasharray: '0 1', opacity: 0.5 }}
-                          animate={{ strokeDasharray: `${segment.visible} ${1 - segment.visible}`, opacity: 1 }}
+                          animate={{
+                            strokeDasharray: `${segment.visible} ${1 - segment.visible}`,
+                            opacity: selectedCardId === null || selectedCardId === segment.card.id ? 1 : 0.38,
+                          }}
                           transition={{
-                            duration: reduceMotion ? 0 : 0.72,
-                            delay: reduceMotion ? 0 : 0.18 + index * 0.13,
-                            ease: [0.22, 1, 0.36, 1],
+                            strokeDasharray: {
+                              duration: reduceMotion ? 0 : 0.72,
+                              delay: reduceMotion ? 0 : 0.18 + index * 0.13,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                            opacity: { duration: reduceMotion ? 0 : 0.18, delay: 0 },
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${segment.card.name}: ${formatAmount(getAvailableAmount(segment.card), segment.card.currency)}`}
+                          onClick={() => setSelectedCardId(current => current === segment.card.id ? null : segment.card.id)}
+                          onKeyDown={event => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setSelectedCardId(current => current === segment.card.id ? null : segment.card.id);
+                            }
                           }}
                         />
                       ))}
                     </g>
                   </svg>
-                  {/*<motion.div*/}
-                  {/*  className={styles.chartCenter}*/}
-                  {/*  key={`center-${activeCurrency}`}*/}
-                  {/*  initial={reduceMotion ? false : { scale: 0.82, opacity: 0 }}*/}
-                  {/*  animate={{ scale: 1, opacity: 1 }}*/}
-                  {/*  transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}*/}
-                  {/*>*/}
-                  {/*  <span><HiChartPie size={19} /></span>*/}
-                  {/*  <small>{t('home.balance_details_distribution')}</small>*/}
-                  {/*  <strong>{activeCurrency}</strong>*/}
-                  {/*</motion.div>*/}
+                  <motion.div
+                    className={styles.chartCenter}
+                    key={selectedCard ? `card-${selectedCard.id}` : `total-${activeCurrency}`}
+                    initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {selectedCard ? (
+                      <>
+                        <span style={{ '--selected-color': selectedSegment.color } as React.CSSProperties}>
+                          {selectedCard.cardType === 'cash' ? <HiBanknotes size={18} /> : <HiCreditCard size={18} />}
+                        </span>
+                        <small>{selectedCard.bank || (selectedCard.cardType === 'credit'
+                          ? t('home.balance_details_credit')
+                          : selectedCard.cardType === 'cash'
+                            ? t('home.balance_details_cash')
+                            : t('home.balance_details_debit'))}
+                        </small>
+                        <strong className={styles.selectedName}>{selectedCard.name}</strong>
+                        <b>{formatAmount(getAvailableAmount(selectedCard), selectedCard.currency)}</b>
+                      </>
+                    ) : (
+                      <>
+                        <small>{t('home.balance_details_total')}</small>
+                        <strong className={styles.centerTotal}>{formatAmount(total, activeCurrency)}</strong>
+                        <em>{t('home.balance_details_tap_segment')}</em>
+                      </>
+                    )}
+                  </motion.div>
                 </div>
 
               </section>
