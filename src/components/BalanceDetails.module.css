@@ -140,7 +140,7 @@
 
 .hero {
   overflow: hidden;
-  padding: 6px 12px;
+  padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: 24px;
   background: color-mix(in srgb, var(--surface) 88%, transparent);
@@ -149,12 +149,13 @@
 
 .chartWrap {
   position: relative;
-  width: min(100%, 286px);
+  width: min(100%, 340px);
   aspect-ratio: 1;
   margin: 0 auto;
 }
 
 .chart {
+  display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
@@ -163,7 +164,7 @@
 .chartTrack,
 .chartSegment {
   fill: none;
-  stroke-width: 24;
+  stroke-width: 26;
 }
 
 /*.chartTrack { stroke: var(--surface2); }*/
@@ -187,11 +188,11 @@
   filter: drop-shadow(0 0 5px var(--accent2));
 }
 
-.chartSegmentSelected { stroke-width: 29; }
+.chartSegmentSelected { stroke-width: 31; }
 
 .chartCenter {
   position: absolute;
-  inset: 27%;
+  inset: 23.5%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -224,7 +225,7 @@
 
 .chartCenter strong {
   margin-top: 2px;
-  max-width: 128px;
+  max-width: 148px;
   overflow: hidden;
   font-size: 14px;
   font-weight: 800;
@@ -233,7 +234,7 @@
 }
 
 .chartCenter b {
-  max-width: 145px;
+  max-width: 100%;
   margin-top: 3px;
   overflow: hidden;
   color: var(--text);
@@ -254,10 +255,39 @@
 }
 
 .chartCenter .centerTotal {
-  max-width: 160px;
+  width: 100%;
+  max-width: 100%;
   margin-top: 5px;
-  font-size: clamp(17px, 5.2vw, 22px);
+  overflow: visible;
+  font-size: clamp(17px, 5.4vw, 23px);
   letter-spacing: -0.045em;
+  line-height: 1.05;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.centerAmount {
+  width: 100%;
+  overflow: visible !important;
+  line-height: 1.05;
+  text-overflow: clip !important;
+  white-space: nowrap;
+}
+
+.centerTotal > span:first-child,
+.centerAmount > span:first-child {
+  display: block;
+  width: 100%;
+}
+
+.centerCurrency {
+  display: block;
+  margin-top: 4px;
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  line-height: 1;
 }
 
 .selectedName {

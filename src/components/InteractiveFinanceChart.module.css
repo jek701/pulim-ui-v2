@@ -1,0 +1,248 @@
+.card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(124, 58, 237, 0.1), transparent 34%),
+    var(--surface);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.08);
+}
+
+.empty {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  margin: 0 16px;
+  border: 1px dashed var(--border);
+  border-radius: 22px;
+  color: var(--text3);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.pieStage { position: relative; }
+
+.pieTouchLayer {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 260px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pieTouchLayer circle {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 70px;
+  pointer-events: stroke;
+  touch-action: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pieTouchLayer rect {
+  fill: transparent;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pieCenter {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 132px;
+  height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--text);
+  transform: translate(-50%, -50%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pieCenter:active {
+  transform: translate(-50%, -50%);
+  transition: none;
+}
+
+.pieCenter > span {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.centerExpense { background: color-mix(in srgb, var(--expense) 13%, transparent); color: var(--expense); }
+.centerIncome { background: color-mix(in srgb, var(--income) 13%, transparent); color: var(--income); }
+
+.pieCenter small {
+  max-width: 105px;
+  overflow: hidden;
+  margin-top: 5px;
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pieCenter strong {
+  max-width: 122px;
+  margin-top: 3px;
+  font-size: clamp(14px, 4.3vw, 18px);
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+
+.pieCenter em {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 5px;
+  color: var(--accent2);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.pieCell {
+  cursor: pointer;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.drilldown {
+  margin: -2px 12px 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface2);
+  animation: drilldownIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes drilldownIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.drilldownHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+.drilldownHeader > div { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.drilldownHeader > div > span { font-size: 20px; }
+.drilldownHeader strong { display: block; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.drilldownHeader small { display: block; margin-top: 2px; color: var(--text3); font-size: 8px; }
+.drilldownHeader > b { flex-shrink: 0; font-size: 10px; }
+
+.drilldownList { max-height: 190px; overflow-y: auto; overscroll-behavior: contain; }
+.drilldownList > div { min-height: 42px; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.drilldownList > div + div { border-top: 1px solid var(--border); }
+.drilldownList > div > span { font-size: 16px; }
+.drilldownList p { overflow: hidden; color: var(--text2); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.drilldownList strong { font-size: 10px; white-space: nowrap; }
+
+.pieBreakdown {
+  margin: 0 12px 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface2));
+}
+
+.pieBreakdownHeader {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pieBreakdownHeader h3 { font-size: 12px; }
+.pieBreakdownHeader p { margin-top: 3px; color: var(--text3); font-size: 9px; }
+.pieBreakdownHeader > span {
+  min-width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.pieBreakdownList button {
+  position: relative;
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 13px;
+  color: var(--text);
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.pieBreakdownList button + button { border-top: 1px solid var(--border); }
+.pieBreakdownList button:active { transform: none; }
+
+.pieBreakdownIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  font-size: 17px;
+}
+
+.pieBreakdownName { min-width: 0; }
+.pieBreakdownName strong { display: block; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.pieBreakdownName small { display: block; margin-top: 2px; color: var(--text3); font-size: 8px; }
+.pieBreakdownList b { font-size: 10px; white-space: nowrap; }
+.pieBreakdownList i { position: absolute; top: 11px; bottom: 11px; left: 0; width: 3px; border-radius: 0 4px 4px 0; opacity: 0; transform: scaleY(0.55); transition: opacity 0.2s ease, transform 0.2s ease; }
+.pieBreakdownItemActive { background: var(--surface2); }
+.pieBreakdownItemActive i { opacity: 1; transform: scaleY(1); }
+
+.rechart,
+.rechart *,
+.card :global(.recharts-wrapper),
+.card :global(.recharts-wrapper *) {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lineTooltip {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.17);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.lineTooltip > small { display: block; margin-bottom: 6px; color: var(--text3); font-size: 9px; font-weight: 700; }
+.lineTooltip > div { display: grid; grid-template-columns: 7px minmax(50px, 1fr) auto; align-items: center; gap: 7px; }
+.lineTooltip > div + div { margin-top: 5px; }
+.lineTooltip > div > span { width: 7px; height: 7px; border-radius: 50%; }
+.lineTooltip p { color: var(--text2); font-size: 10px; }
+.lineTooltip strong { font-size: 10px; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pieCell { transition: none; }
+}

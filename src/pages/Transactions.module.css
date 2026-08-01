@@ -146,68 +146,49 @@
     background: var(--border);
 }
 
-.summaryToggle {
-    display: flex;
-    gap: 6px;
-    margin: 0 16px 8px;
-    background: var(--surface);
-    border-radius: var(--r);
-    padding: 4px;
-}
-
-.summaryToggleBtn {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text3);
-    border-radius: calc(var(--r) - 4px);
-    cursor: pointer;
-}
-
-.summaryToggleActive {
-    background: var(--bg);
-    color: var(--text);
-}
-
-.summaryByCurrency {
-    margin: 0 16px 8px;
-    background: var(--surface);
-    border-radius: var(--r);
-    padding: 8px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.summaryByCurrencyRow {
-    display: grid;
-    grid-template-columns: 50px 1fr 1fr;
-    align-items: center;
-    font-size: 13px;
-    gap: 8px;
-}
-
-.summaryByCurrencyCode {
-    font-weight: 700;
-    color: var(--text3);
-    font-size: 11px;
-    letter-spacing: 0.05em;
-}
-
-.summaryByCurrencyRow .summaryIncome,
-.summaryByCurrencyRow .summaryExpense {
-    text-align: right;
-}
-
 .summaryNote {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text3);
-    margin: -4px 16px 8px;
-    text-align: center;
-    font-style: italic;
+    margin: -2px 20px 10px;
+    line-height: 1.4;
+}
+
+.viewSwitcher {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: 2px 16px 4px;
+    padding: 4px;
+    border-radius: 15px;
+    background: var(--surface2);
+}
+
+.viewSwitcher button {
+    min-width: 0;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 8px;
+    border-radius: 11px;
+    color: var(--text3);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.viewSwitcherActive {
+    background: var(--surface);
+    color: var(--text) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 360px) {
+    .viewSwitcher button {
+        gap: 3px;
+        padding: 0 4px;
+        font-size: 10px;
+    }
 }
 
 /* ── Empty state ── */
@@ -415,27 +396,6 @@
     color: var(--income);
 }
 
-/* ── FAB ── */
-.fab {
-    position: fixed;
-    bottom: calc(var(--nav-total) + 16px);
-    right: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 20px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 28px;
-    font-size: 15px;
-    font-weight: 600;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-    z-index: 50;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
 /* ── Filter Panel ── */
 .filterOverlay {
     position: fixed;
@@ -548,6 +508,23 @@
     font-weight: 700;
 }
 
+.historyTourHelpBtn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.historyTourHelpBtn:active {
+    transform: scale(0.94);
+}
+
 .clearAllBtn {
     font-size: 13px;
     font-weight: 600;
@@ -564,6 +541,124 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.closePanelBtn:disabled {
+    opacity: 0.42;
+}
+
+.filterIntroCard {
+    margin: 12px 20px 2px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 13px;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+    border-radius: 17px;
+    background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 44%),
+        var(--surface);
+    box-shadow: 0 10px 30px rgba(73, 35, 145, 0.09);
+    animation: filterIntroIn 0.24s ease both;
+}
+
+.historyTourIntroOverlay {
+    position: fixed;
+    top: var(--app-viewport-top);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 650;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(var(--app-content-top) + 20px) calc(var(--app-content-right) + 20px) calc(var(--app-content-bottom) + 20px) calc(var(--app-content-left) + 20px);
+    background: rgba(8, 8, 12, 0.58);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.2s ease;
+}
+
+.historyTourIntroCard {
+    width: 100%;
+    max-width: 380px;
+    margin: 0;
+    padding: 20px;
+    border-radius: 22px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes filterIntroIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filterIntroIcon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    font-size: 20px;
+}
+
+.filterIntroCopy {
+    min-width: 0;
+}
+
+.filterIntroBadge {
+    display: inline-block;
+    margin-bottom: 5px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.filterIntroCopy h3 {
+    margin: 0 0 5px;
+    color: var(--text1);
+    font-size: 16px;
+    line-height: 1.25;
+}
+
+.filterIntroCopy p {
+    margin: 0;
+    color: var(--text2);
+    font-size: 13px;
+    line-height: 1.42;
+}
+
+.filterIntroPrimary {
+    grid-column: 1 / -1;
+    height: 42px;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-size: 14px;
+    font-weight: 750;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.filterIntroSecondaryRow {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.filterIntroSecondaryRow button {
+    color: var(--text3);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.filterIntroSecondaryRow button:last-child {
+    text-align: right;
 }
 
 /* ── Filter sections ── */
@@ -627,6 +722,11 @@
     color: var(--text2);
 }
 
+.filterSubBranch {
+    color: var(--text3);
+    margin-right: 3px;
+}
+
 .filterListItemActive {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     color: var(--accent);
@@ -669,4 +769,43 @@
     padding: 0 10px;
     font-size: 14px;
     color: var(--text1);
+}
+
+.filterDemoResult {
+    margin: 18px 20px 0;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+.filterDemoResultIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+    background: var(--accent);
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.filterDemoResult strong {
+    display: block;
+    color: var(--text1);
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.filterDemoResult p {
+    margin: 3px 0 0;
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.35;
 }

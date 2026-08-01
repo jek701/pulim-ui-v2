@@ -26,6 +26,8 @@ const isIncludedInAvailableTotal = (card: Card) => (
   card.cardType === 'credit' || card.includeInTotalBalance !== false
 );
 
+const formatCenterAmount = (amount: number) => amount.toLocaleString('uz-Latn-UZ');
+
 const BalanceDetails = ({ cards, onClose }: Props) => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -175,7 +177,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
               <section className={styles.hero}>
                 <div className={styles.chartWrap}>
                   <svg className={styles.chart} viewBox="0 0 300 300" aria-label={t('home.balance_details_chart_label')}>
-                    <circle className={styles.chartTrack} cx="150" cy="150" r="112" />
+                    <circle className={styles.chartTrack} cx="150" cy="150" r="116" />
                     <g transform="rotate(-90 150 150)">
                       {segments.map((segment, index) => (
                         <motion.circle
@@ -183,7 +185,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                           className={`${styles.chartSegment} ${selectedCardId === segment.card.id ? styles.chartSegmentSelected : ''}`}
                           cx="150"
                           cy="150"
-                          r="112"
+                          r="116"
                           pathLength={1}
                           stroke={segment.color}
                           strokeDashoffset={-segment.start}
@@ -233,12 +235,18 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                             : t('home.balance_details_debit'))}
                         </small>
                         <strong className={styles.selectedName}>{selectedCard.name}</strong>
-                        <b>{formatAmount(getAvailableAmount(selectedCard), selectedCard.currency)}</b>
+                        <b className={styles.centerAmount}>
+                          <span>{formatCenterAmount(getAvailableAmount(selectedCard))}</span>
+                          <span className={styles.centerCurrency}>{selectedCard.currency}</span>
+                        </b>
                       </>
                     ) : (
                       <>
                         <small>{t('home.balance_details_total')}</small>
-                        <strong className={styles.centerTotal}>{formatAmount(total, activeCurrency)}</strong>
+                        <strong className={styles.centerTotal}>
+                          <span>{formatCenterAmount(total)}</span>
+                          <span className={styles.centerCurrency}>{activeCurrency}</span>
+                        </strong>
                         <em>{t('home.balance_details_tap_segment')}</em>
                       </>
                     )}

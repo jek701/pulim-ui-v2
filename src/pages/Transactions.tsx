@@ -1,4 +1,4 @@
-import {useState, useMemo, useEffect} from 'react';
+import {useState, useMemo, useEffect, useCallback, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import {
     HiTrash,
@@ -7,9 +7,11 @@ import {
     HiChevronRight,
     HiChartPie,
     HiQueueList,
+    HiPresentationChartLine,
     HiArrowUturnLeft,
     HiAdjustmentsHorizontal,
-    HiXMark
+    HiXMark,
+    HiQuestionMarkCircle
 } from 'react-icons/hi2';
 import {useApp} from '../context';
 import {useTransactions} from '../hooks/useTransactions';
@@ -24,7 +26,7 @@ import AddTransactionModal from '../components/AddTransactionModal';
 import ReturnModal from '../components/ReturnModal';
 import ChartView from '../components/ChartView';
 import PageLoader from '../components/PageLoader';
-import type {Currency, Transaction} from '../types';
+import type {Budget, Category, Transaction} from '../types';
 import {BASE_CURRENCY} from '../utils/nbuRates';
 import type {NewTransaction} from '../hooks/useTransactions';
 import styles from './Transactions.module.css';
@@ -32,6 +34,7 @@ import {useTranslation} from 'react-i18next';
 import {Input} from "../components/FormField.tsx";
 import {useModalClose} from '../hooks/useModalClose';
 import {useSwipeDismiss} from '../hooks/useSwipeDismiss';
+import HistoryOnboardingTour from '../components/HistoryOnboardingTour';
 
 export interface ActiveFilters {
     types: ('income' | 'expense' | 'transfer')[];
@@ -61,6 +64,9 @@ const Transactions = () => {
     const premiumGate = usePremiumGate();
     const [filters, setFilters] = useState<ActiveFilters>(defaultFilters);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
+    const [showHistoryIntro, setShowHistoryIntro] = useState(true);
+    const [historyTourRunning, setHistoryTourRunning] = useState(false);
+    const [historyDemoStage, setHistoryDemoStage] = useState(0);
     const {
         isClosing: isFilterClosing,
         requestClose: closeFilterPanel,
@@ -75,7 +81,8 @@ const Transactions = () => {
     const [editingTx, setEditingTx] = useState<Transaction | null>(null);
     const [returnTx, setReturnTx] = useState<Transaction | null>(null);
     const [showReturn, setShowReturn] = useState(false);
-    const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'pie' | 'line'>('list');
+    const viewModeBeforeTour = useRef<'list' | 'pie' | 'line'>('list');
     const recentCardIds = useMemo(() => {
         const ids: string[] = [];
         for (const transaction of transactions) {
@@ -84,15 +91,65 @@ const Transactions = () => {
         }
         return ids;
     }, [transactions]);
-    const [summaryMode, setSummaryMode] = useState<'total' | 'byCurrency'>(() => {
-        const stored = localStorage.getItem('txSummaryMode');
-        return stored === 'byCurrency' ? 'byCurrency' : 'total';
-    });
-    useEffect(() => { localStorage.setItem('txSummaryMode', summaryMode); }, [summaryMode]);
     const now = new Date();
     const [viewDate, setViewDate] = useState({month: now.getMonth(), year: now.getFullYear()});
     const {t, i18n} = useTranslation();
     const locale = i18n.language === 'ru' ? 'ru-RU' : 'en-US';
+    const historyTourStorageKey = `pulim:history-onboarding:v2:${user?.uid ?? 'guest'}`;
+    const shouldShowHistoryIntro = showHistoryIntro
+        && localStorage.getItem(historyTourStorageKey) !== 'seen';
+
+    const startHistoryTour = useCallback(() => {
+        viewModeBeforeTour.current = viewMode;
+        setShowHistoryIntro(false);
+        setHistoryDemoStage(0);
+        setHistoryTourRunning(true);
+    }, [viewMode]);
+
+    const finishHistoryTour = useCallback(() => {
+        localStorage.setItem(historyTourStorageKey, 'seen');
+        setHistoryTourRunning(false);
+        setHistoryDemoStage(0);
+        setShowFilterPanel(false);
+        setViewMode(viewModeBeforeTour.current);
+    }, [historyTourStorageKey]);
+
+    const neverShowHistoryTour = useCallback(() => {
+        localStorage.setItem(historyTourStorageKey, 'seen');
+        setShowHistoryIntro(false);
+    }, [historyTourStorageKey]);
+
+    const openFilterPanel = useCallback(() => {
+        resetFilterClose();
+        setShowFilterPanel(true);
+    }, [resetFilterClose]);
+
+    const prepareHistoryTourStep = useCallback((stage: number) => {
+        setHistoryDemoStage(stage);
+        resetFilterClose();
+        if (stage === 2) setViewMode('pie');
+        else setViewMode('list');
+        setShowFilterPanel(stage >= 5);
+    }, [resetFilterClose]);
+
+    const demoDateFrom = dayjs(new Date(viewDate.year, viewDate.month, 1)).add(9, 'day').format('YYYY-MM-DD');
+    const demoDateTo = dayjs(new Date(viewDate.year, viewDate.month + 1, 0)).format('YYYY-MM-DD');
+    const demoFilters = useMemo<ActiveFilters>(() => ({
+        types: historyDemoStage >= 5 ? ['expense', 'transfer'] : [],
+        categoryIds: historyDemoStage >= 6 ? ['demo-shopping'] : [],
+        subcategoryIds: historyDemoStage >= 6 ? ['demo-groceries'] : [],
+        cardIds: historyDemoStage >= 7 ? ['demo-tbc', 'demo-cash'] : [],
+        dateFrom: historyDemoStage >= 8 ? demoDateFrom : null,
+        dateTo: historyDemoStage >= 8 ? demoDateTo : null,
+    }), [demoDateFrom, demoDateTo, historyDemoStage]);
+
+    const panelFilters = historyTourRunning ? demoFilters : filters;
+    const panelHasAnyFilter = panelFilters.types.length > 0
+        || panelFilters.categoryIds.length > 0
+        || panelFilters.subcategoryIds.length > 0
+        || panelFilters.cardIds.length > 0
+        || !!panelFilters.dateFrom
+        || !!panelFilters.dateTo;
 
     useEffect(() => {
         if (categoryFilter) {
@@ -115,37 +172,91 @@ const Transactions = () => {
         return {month: m, year: y};
     });
 
+    const demoCategories = useMemo<Category[]>(() => [
+        {id: 'demo-shopping', name: t('transactions.filter_tour_demo_shopping'), icon: '🛍️', color: '#FF375F', type: 'expense', userId: 'demo', createdAt: 0},
+        {id: 'demo-housing', name: t('transactions.filter_tour_demo_housing'), icon: '🏠', color: '#F97316', type: 'expense', userId: 'demo', createdAt: 0},
+        {id: 'demo-food', name: t('transactions.history_tour_demo_food'), icon: '🍔', color: '#30D158', type: 'expense', userId: 'demo', createdAt: 0},
+        {id: 'demo-transport', name: t('transactions.history_tour_demo_transport'), icon: '🚕', color: '#5AC8FA', type: 'expense', userId: 'demo', createdAt: 0},
+        {id: 'demo-bills', name: t('transactions.history_tour_demo_bills'), icon: '💡', color: '#FFD60A', type: 'expense', userId: 'demo', createdAt: 0},
+        {id: 'demo-health', name: t('transactions.history_tour_demo_health'), icon: '🏥', color: '#BF5AF2', type: 'expense', userId: 'demo', createdAt: 0},
+        {id: 'demo-salary', name: t('transactions.filter_tour_demo_salary'), icon: '💼', color: '#0A84FF', type: 'income', userId: 'demo', createdAt: 0},
+    ], [t]);
+
+    const demoTransactions = useMemo<Transaction[]>(() => {
+        const stamp = (day: number, hour: number) => new Date(viewDate.year, viewDate.month, day, hour).getTime();
+        const make = (id: string, day: number, amount: number, type: 'income' | 'expense', categoryId: string, cardId: string, extra: Partial<Transaction> = {}): Transaction => ({
+            id,
+            amount,
+            currency: 'UZS',
+            type,
+            categoryId,
+            cardId,
+            date: stamp(day, 12),
+            createdAt: stamp(day, 12),
+            userId: 'demo',
+            ...extra,
+        });
+        return [
+            make('demo-01', 2, 24_500_000, 'income', 'demo-salary', 'demo-tbc', {comment: t('transactions.history_tour_demo_main_salary')}),
+            make('demo-02', 6, 3_200_000, 'income', 'demo-salary', 'demo-cash', {comment: t('transactions.history_tour_demo_freelance')}),
+            make('demo-03', 4, 4_250_000, 'expense', 'demo-housing', 'demo-tbc', {comment: t('transactions.history_tour_demo_rent')}),
+            make('demo-04', 10, 1_350_000, 'expense', 'demo-shopping', 'demo-tbc', {subcategoryId: 'demo-groceries', comment: t('transactions.filter_tour_demo_groceries')}),
+            make('demo-05', 13, 780_000, 'expense', 'demo-shopping', 'demo-cash', {comment: t('transactions.history_tour_demo_clothes')}),
+            make('demo-06', 15, 2_100_000, 'expense', 'demo-food', 'demo-tbc', {comment: t('transactions.history_tour_demo_restaurants')}),
+            make('demo-07', 18, 920_000, 'expense', 'demo-transport', 'demo-cash'),
+            make('demo-08', 20, 640_000, 'expense', 'demo-bills', 'demo-tbc'),
+            make('demo-09', 22, 480_000, 'expense', 'demo-health', 'demo-credit'),
+            make('demo-10', 24, 1_100_000, 'expense', 'demo-bills', 'demo-credit', {source: 'debt_payment', sourceLabel: t('transactions.history_tour_demo_debt_one')}),
+            make('demo-11', 25, 850_000, 'expense', 'demo-bills', 'demo-tbc', {source: 'debt_payment', sourceLabel: t('transactions.history_tour_demo_debt_two')}),
+            make('demo-12', 27, 500_000, 'expense', 'demo-shopping', 'demo-cash', {subcategoryId: 'demo-groceries'}),
+            make('demo-13', 28, 750_000, 'expense', 'demo-shopping', 'demo-tbc', {currency: 'USD', amount: 62, baseAmount: 750_000, fxRate: 12_096}),
+            make('demo-14', 29, 1_500_000, 'expense', 'demo-shopping', 'demo-tbc', {source: 'transfer', toCardId: 'demo-cash'}),
+        ];
+    }, [t, viewDate.month, viewDate.year]);
+
+    const demoBudgets = useMemo<Budget[]>(() => [
+        {id: 'demo-income', categoryId: '__income__', amount: 28_000_000, currency: 'UZS', userId: 'demo', updatedAt: 0},
+        {id: 'demo-shopping-budget', categoryId: 'demo-shopping', amount: 4_000_000, currency: 'UZS', userId: 'demo', updatedAt: 0},
+        {id: 'demo-housing-budget', categoryId: 'demo-housing', amount: 5_000_000, currency: 'UZS', userId: 'demo', updatedAt: 0},
+        {id: 'demo-other-budget', categoryId: 'demo-food', amount: 3_000_000, currency: 'UZS', userId: 'demo', updatedAt: 0},
+    ], []);
+
+    const sourceTransactions = historyTourRunning ? demoTransactions : transactions;
+    const displayCategories = historyTourRunning ? demoCategories : categories;
+    const displayBudgets = historyTourRunning ? demoBudgets : budgets;
+    const activePageFilters = historyTourRunning ? demoFilters : filters;
+
     const filteredTxs = useMemo(() => {
-        return transactions.filter(t => {
+        return sourceTransactions.filter(t => {
             const d = new Date(t.date);
 
-            if (filters.dateFrom || filters.dateTo) {
-                if (filters.dateFrom && d < new Date(filters.dateFrom + 'T00:00:00')) return false;
-                if (filters.dateTo && d > new Date(filters.dateTo + 'T23:59:59')) return false;
+            if (activePageFilters.dateFrom || activePageFilters.dateTo) {
+                if (activePageFilters.dateFrom && d < new Date(activePageFilters.dateFrom + 'T00:00:00')) return false;
+                if (activePageFilters.dateTo && d > new Date(activePageFilters.dateTo + 'T23:59:59')) return false;
             } else {
                 if (d.getMonth() !== viewDate.month || d.getFullYear() !== viewDate.year) return false;
             }
 
-            if (filters.types.length > 0) {
+            if (activePageFilters.types.length > 0) {
                 const txKind = t.source === 'transfer' ? 'transfer' : t.type;
-                if (!filters.types.includes(txKind as 'income' | 'expense' | 'transfer')) return false;
+                if (!activePageFilters.types.includes(txKind as 'income' | 'expense' | 'transfer')) return false;
             }
 
-            const catActive = filters.categoryIds.length > 0 || filters.subcategoryIds.length > 0;
+            const catActive = activePageFilters.categoryIds.length > 0 || activePageFilters.subcategoryIds.length > 0;
             if (catActive) {
-                const matchesDebts = filters.categoryIds.includes('__debts__') && t.source === 'debt_payment';
-                const matchesCat = filters.categoryIds.includes(t.categoryId);
-                const matchesSub = t.subcategoryId != null && filters.subcategoryIds.includes(t.subcategoryId);
+                const matchesDebts = activePageFilters.categoryIds.includes('__debts__') && t.source === 'debt_payment';
+                const matchesCat = activePageFilters.categoryIds.includes(t.categoryId);
+                const matchesSub = t.subcategoryId != null && activePageFilters.subcategoryIds.includes(t.subcategoryId);
                 if (!matchesDebts && !matchesCat && !matchesSub) return false;
             }
 
-            if (filters.cardIds.length > 0) {
-                if (!t.cardId || !filters.cardIds.includes(t.cardId)) return false;
+            if (activePageFilters.cardIds.length > 0) {
+                if (!t.cardId || !activePageFilters.cardIds.includes(t.cardId)) return false;
             }
 
             return true;
         });
-    }, [transactions, filters, viewDate]);
+    }, [sourceTransactions, activePageFilters, viewDate]);
 
     const grouped = useMemo(() => {
         const todayStr = t('common.today_label');
@@ -175,54 +286,62 @@ const Transactions = () => {
         return {income, expense, hasUnconverted};
     }, [filteredTxs]);
 
-    const summaryByCurrency = useMemo(() => {
-        const byCcy: Record<string, { income: number; expense: number }> = {};
-        for (const tx of filteredTxs) {
-            if (tx.source === 'transfer') continue;
-            const c = tx.currency;
-            if (!byCcy[c]) byCcy[c] = { income: 0, expense: 0 };
-            if (tx.type === 'income') byCcy[c].income += tx.amount;
-            else if (tx.type === 'expense') byCcy[c].expense += tx.amount;
-        }
-        return byCcy;
-    }, [filteredTxs]);
-
-    const usedCurrencies = useMemo(
-        () => (Object.keys(summaryByCurrency) as Currency[])
-            .sort((a, b) => (a === BASE_CURRENCY ? -1 : b === BASE_CURRENCY ? 1 : a.localeCompare(b))),
-        [summaryByCurrency],
-    );
-
     const monthCategoryIds = useMemo(() => {
-        const monthTxs = transactions.filter(t => {
+        const monthTxs = sourceTransactions.filter(t => {
             const d = new Date(t.date);
             return d.getMonth() === viewDate.month && d.getFullYear() === viewDate.year;
         });
         return new Set(monthTxs.map(t => t.categoryId));
-    }, [transactions, viewDate]);
+    }, [sourceTransactions, viewDate]);
 
-    const hasDebtTxsThisMonth = useMemo(() => transactions.some(t => {
+    const monthSubcategoryIds = useMemo(() => {
+        const ids = sourceTransactions.flatMap(transaction => {
+            const date = new Date(transaction.date);
+            if (date.getMonth() !== viewDate.month || date.getFullYear() !== viewDate.year) return [];
+            return transaction.subcategoryId ? [transaction.subcategoryId] : [];
+        });
+        return new Set(ids);
+    }, [sourceTransactions, viewDate]);
+
+    const hasDebtTxsThisMonth = useMemo(() => sourceTransactions.some(t => {
         const d = new Date(t.date);
         return t.source === 'debt_payment' && d.getMonth() === viewDate.month && d.getFullYear() === viewDate.year;
-    }), [transactions, viewDate]);
+    }), [sourceTransactions, viewDate]);
 
     const hasAnyFilter = filters.types.length > 0 || filters.categoryIds.length > 0 || filters.subcategoryIds.length > 0 || filters.cardIds.length > 0 || !!filters.dateFrom || !!filters.dateTo;
+    const displayHasAnyFilter = historyTourRunning ? panelHasAnyFilter : hasAnyFilter;
 
-    const getCategory = (id: string) => categories.find(c => c.id === id);
+    const getCategory = (id: string) => displayCategories.find(c => c.id === id);
 
     if (txLoading || catLoading) return <PageLoader/>;
 
-    const incomeBudget = budgets.find(b => b.categoryId === '__income__')?.amount ?? 0;
-    const expenseBudget = budgets.filter(b => b.categoryId !== '__income__').reduce((s, b) => s + b.amount, 0);
+    const incomeBudget = displayBudgets.find(b => b.categoryId === '__income__')?.amount ?? 0;
+    const expenseBudget = displayBudgets.filter(b => b.categoryId !== '__income__').reduce((s, b) => s + b.amount, 0);
 
     const toggleType = (type: 'income' | 'expense' | 'transfer') =>
         setFilters(f => ({...f, types: f.types.includes(type) ? f.types.filter(x => x !== type) : [...f.types, type]}));
 
-    const toggleCategory = (id: string) =>
-        setFilters(f => ({
-            ...f,
-            categoryIds: f.categoryIds.includes(id) ? f.categoryIds.filter(x => x !== id) : [...f.categoryIds, id]
-        }));
+    const toggleCategory = (id: string) => setFilters(current => {
+        const isActive = current.categoryIds.includes(id);
+        const childIds = new Set(subcategories.filter(item => item.categoryId === id).map(item => item.id));
+        return {
+            ...current,
+            categoryIds: isActive
+                ? current.categoryIds.filter(item => item !== id)
+                : [...current.categoryIds, id],
+            subcategoryIds: isActive
+                ? current.subcategoryIds
+                : current.subcategoryIds.filter(item => !childIds.has(item)),
+        };
+    });
+
+    const toggleSubcategory = (id: string, categoryId: string) => setFilters(current => ({
+        ...current,
+        categoryIds: current.categoryIds.filter(item => item !== categoryId),
+        subcategoryIds: current.subcategoryIds.includes(id)
+            ? current.subcategoryIds.filter(item => item !== id)
+            : [...current.subcategoryIds, id],
+    }));
 
     const toggleCard = (id: string) =>
         setFilters(f => ({
@@ -264,25 +383,57 @@ const Transactions = () => {
 
     return (
         <div className={styles.page}>
+            {shouldShowHistoryIntro && !historyTourRunning && createPortal(
+                <div className={styles.historyTourIntroOverlay}>
+                    <div className={`${styles.filterIntroCard} ${styles.historyTourIntroCard}`}>
+                        <div className={styles.filterIntroIcon}>✨</div>
+                        <div className={styles.filterIntroCopy}>
+                            <span className={styles.filterIntroBadge}>{t('transactions.filter_tour_demo_badge')}</span>
+                            <h3>{t('transactions.history_tour_intro_title')}</h3>
+                            <p>{t('transactions.history_tour_intro_text')}</p>
+                        </div>
+                        <button className={styles.filterIntroPrimary} onClick={startHistoryTour}>
+                            {t('transactions.history_tour_start')}
+                        </button>
+                        <div className={styles.filterIntroSecondaryRow}>
+                            <button onClick={() => setShowHistoryIntro(false)}>
+                                {t('transactions.filter_tour_not_now')}
+                            </button>
+                            <button onClick={neverShowHistoryTour}>
+                                {t('transactions.filter_tour_never')}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body,
+            )}
+
             {/* Month nav */}
             <div className={styles.monthNav}>
                 <button onClick={prevMonth}><HiChevronLeft size={20}/></button>
                 <span>{monthLabel}</span>
                 <button onClick={nextMonth}><HiChevronRight size={20}/></button>
                 <button
-                    className={`${styles.filterIconBtn} ${hasAnyFilter ? styles.filterIconActive : ''}`}
-                    onClick={() => {
-                        resetFilterClose();
-                        setShowFilterPanel(true);
-                    }}
+                    className={styles.historyTourHelpBtn}
+                    onClick={startHistoryTour}
+                    title={t('transactions.history_tour_replay')}
+                    aria-label={t('transactions.history_tour_replay')}
+                >
+                    <HiQuestionMarkCircle size={20}/>
+                </button>
+                <button
+                    className={`${styles.filterIconBtn} ${displayHasAnyFilter ? styles.filterIconActive : ''}`}
+                    onClick={openFilterPanel}
+                    aria-label={t('transactions.filter_title')}
+                    data-history-tour="filter-button"
                 >
                     <HiAdjustmentsHorizontal size={19}/>
-                    {hasAnyFilter && <span className={styles.filterBadge}/>}
+                    {displayHasAnyFilter && <span className={styles.filterBadge}/>}
                 </button>
             </div>
 
             {/* Active filter chips */}
-            {hasAnyFilter && (
+            {!historyTourRunning && hasAnyFilter && (
                 <div className={styles.chipsRow}>
                     {filters.types.map(type => (
                         <div key={type} className={styles.chip}>
@@ -329,72 +480,75 @@ const Transactions = () => {
                 </div>
             )}
 
-            {/* Summary mode toggle (only useful if user has multi-currency txs) */}
-            {usedCurrencies.length > 1 && (
-                <div className={styles.summaryToggle}>
-                    <button
-                        className={`${styles.summaryToggleBtn} ${summaryMode === 'total' ? styles.summaryToggleActive : ''}`}
-                        onClick={() => setSummaryMode('total')}
-                    >{t('transactions.summary_total')}</button>
-                    <button
-                        className={`${styles.summaryToggleBtn} ${summaryMode === 'byCurrency' ? styles.summaryToggleActive : ''}`}
-                        onClick={() => setSummaryMode('byCurrency')}
-                    >{t('transactions.summary_by_currency')}</button>
+            {/* Monthly summary */}
+            <div className={styles.summaryRow} data-history-tour="summary">
+                <div className={styles.summaryItem}>
+                    <p className={styles.summaryLabel}>{t('common.income')}</p>
+                    <p className={styles.summaryIncome}>{formatAmount(summaryTotals.income)}</p>
+                    {!displayHasAnyFilter && incomeBudget > 0 &&
+                        <p className={styles.summaryBudget}>/ {formatAmount(incomeBudget)}</p>}
                 </div>
+                <div className={styles.summarySep}/>
+                <div className={styles.summaryItem}>
+                    <p className={styles.summaryLabel}>{t('common.expenses')}</p>
+                    <p className={`${styles.summaryExpense} ${!displayHasAnyFilter && expenseBudget > 0 && summaryTotals.expense > expenseBudget ? styles.summaryOver : ''}`}>
+                        {formatAmount(summaryTotals.expense)}
+                    </p>
+                    {!displayHasAnyFilter && expenseBudget > 0 &&
+                        <p className={styles.summaryBudget}>/ {formatAmount(expenseBudget)}</p>}
+                </div>
+                <div className={styles.summarySep}/>
+                <div className={styles.summaryItem}>
+                    <p className={styles.summaryLabel}>{t('common.net')}</p>
+                    <p className={summaryTotals.income - summaryTotals.expense >= 0 ? styles.summaryIncome : styles.summaryExpense}>
+                        {formatAmount(Math.abs(summaryTotals.income - summaryTotals.expense))}
+                    </p>
+                </div>
+            </div>
+            {summaryTotals.hasUnconverted && (
+                <p className={styles.summaryNote}>{t('transactions.summary_unconverted_note')}</p>
             )}
 
-            {/* Monthly summary */}
-            {summaryMode === 'total' || usedCurrencies.length <= 1 ? (
-                <>
-                    <div className={styles.summaryRow}>
-                        <div className={styles.summaryItem}>
-                            <p className={styles.summaryLabel}>{t('common.income')}</p>
-                            <p className={styles.summaryIncome}>{formatAmount(summaryTotals.income)}</p>
-                            {!hasAnyFilter && incomeBudget > 0 &&
-                                <p className={styles.summaryBudget}>/ {formatAmount(incomeBudget)}</p>}
-                        </div>
-                        <div className={styles.summarySep}/>
-                        <div className={styles.summaryItem}>
-                            <p className={styles.summaryLabel}>{t('common.expenses')}</p>
-                            <p className={`${styles.summaryExpense} ${!hasAnyFilter && expenseBudget > 0 && summaryTotals.expense > expenseBudget ? styles.summaryOver : ''}`}>
-                                {formatAmount(summaryTotals.expense)}
-                            </p>
-                            {!hasAnyFilter && expenseBudget > 0 &&
-                                <p className={styles.summaryBudget}>/ {formatAmount(expenseBudget)}</p>}
-                        </div>
-                        <div className={styles.summarySep}/>
-                        <div className={styles.summaryItem}>
-                            <p className={styles.summaryLabel}>{t('common.net')}</p>
-                            <p className={summaryTotals.income - summaryTotals.expense >= 0 ? styles.summaryIncome : styles.summaryExpense}>
-                                {formatAmount(Math.abs(summaryTotals.income - summaryTotals.expense))}
-                            </p>
-                        </div>
-                    </div>
-                    {summaryTotals.hasUnconverted && (
-                        <p className={styles.summaryNote}>{t('transactions.summary_unconverted_note')}</p>
-                    )}
-                </>
-            ) : (
-                <div className={styles.summaryByCurrency}>
-                    {usedCurrencies.map(ccy => (
-                        <div key={ccy} className={styles.summaryByCurrencyRow}>
-                            <span className={styles.summaryByCurrencyCode}>{ccy}</span>
-                            <span className={styles.summaryIncome}>+{formatAmount(summaryByCurrency[ccy].income, ccy)}</span>
-                            <span className={styles.summaryExpense}>−{formatAmount(summaryByCurrency[ccy].expense, ccy)}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className={styles.viewSwitcher} data-history-tour="views">
+                <button
+                    type="button"
+                    className={viewMode === 'list' ? styles.viewSwitcherActive : ''}
+                    onClick={() => setViewMode('list')}
+                >
+                    <HiQueueList size={17}/>
+                    {t('transactions.view_list')}
+                </button>
+                <button
+                    type="button"
+                    className={viewMode === 'pie' ? styles.viewSwitcherActive : ''}
+                    onClick={() => setViewMode('pie')}
+                >
+                    <HiChartPie size={17}/>
+                    {t('common.pie_chart')}
+                </button>
+                <button
+                    type="button"
+                    className={viewMode === 'line' ? styles.viewSwitcherActive : ''}
+                    onClick={() => setViewMode('line')}
+                >
+                    <HiPresentationChartLine size={18}/>
+                    {t('common.line_chart')}
+                </button>
+            </div>
 
             {/* Chart view */}
-            {viewMode === 'chart' && (
-                <ChartView
-                    filters={filters}
-                    transactions={filteredTxs}
-                    categories={categories}
-                    budgets={budgets}
-                    viewDate={viewDate}
-                />
+            {viewMode !== 'list' && (
+                <div>
+                    <ChartView
+                        chartType={viewMode}
+                        filters={activePageFilters}
+                        transactions={filteredTxs}
+                        categories={displayCategories}
+                        budgets={displayBudgets}
+                        viewDate={viewDate}
+                        demoMode={historyTourRunning}
+                    />
+                </div>
             )}
 
             {/* List view */}
@@ -420,13 +574,16 @@ const Transactions = () => {
                             const dayIncome = txs.filter(t => t.type === 'income' && t.currency === 'UZS' && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
                             const dayExpense = txs.filter(t => t.type === 'expense' && t.currency === 'UZS' && t.source !== 'transfer').reduce((s, t) => s + t.amount, 0);
                             const dayNet = dayIncome - dayExpense;
+                            const hasDayBaseActivity = dayIncome !== 0 || dayExpense !== 0;
                             return (
                                 <div key={dateLabel} className={styles.group}>
                                     <div className={styles.dateHeader}>
                                         <span>{dateLabel}</span>
-                                        <span className={dayNet >= 0 ? styles.incTotal : styles.expTotal}>
-                      {dayNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(dayNet))}
-                    </span>
+                                        {hasDayBaseActivity && (
+                                            <span className={dayNet >= 0 ? styles.incTotal : styles.expTotal}>
+                                                {dayNet >= 0 ? '+' : '−'}{formatAmount(Math.abs(dayNet))}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className={styles.list}>
                                         {txs.map(tx => {
@@ -437,7 +594,11 @@ const Transactions = () => {
                                             const name = isReturn ? t('return.history_label') : (tx.sourceLabel ?? cat?.name ?? 'Unknown');
                                             const remaining = tx.type === 'expense' ? tx.amount - (tx.returnedAmount ?? 0) : null;
                                             return (
-                                                <div key={tx.id} className={styles.txRow}>
+                                                <div
+                                                    key={tx.id}
+                                                    className={styles.txRow}
+                                                    data-history-tour={tx.id === 'demo-01' ? 'list' : undefined}
+                                                >
                                                     <div className={styles.txIcon} style={{background: color + '22'}}>
                                                         <span>{icon}</span>
                                                     </div>
@@ -491,46 +652,43 @@ const Transactions = () => {
                 )
             )}
 
-            {/* FAB */}
-            <button className={styles.fab} onClick={() => setViewMode(m => m === 'list' ? 'chart' : 'list')}>
-                {viewMode === 'list' ? t('transactions.view_chart') : t('transactions.view_list')}
-                {viewMode === 'chart' ? <HiQueueList size={22}/> : <HiChartPie size={22}/>}
-            </button>
-
             {/* Filter Panel */}
             {showFilterPanel && createPortal(
-                <div className={`${styles.filterOverlay} ${isFilterClosing ? styles.filterOverlayClosing : ''}`} onClick={closeFilterPanel}>
+                <div
+                    className={`${styles.filterOverlay} ${isFilterClosing ? styles.filterOverlayClosing : ''}`}
+                    onClick={historyTourRunning ? undefined : closeFilterPanel}
+                >
                     <div className={styles.filterSwipeLayer} style={filterSwipeStyle}>
                         <div
                             ref={filterSwipeRef}
                             className={`${styles.filterPanel} ${isFilterClosing ? styles.filterPanelClosing : ''}`}
                             onClick={event => event.stopPropagation()}
-                            {...filterSwipeProps}
+                            {...(historyTourRunning ? {} : filterSwipeProps)}
                         >
                             <div className={styles.filterSwipeArea}>
                                 <div className={styles.filterHandle}/>
                                 <div className={styles.filterPanelHeader}>
                                     <span className={styles.filterPanelTitle}>{t('transactions.filter_title')}</span>
-                                    {hasAnyFilter && (
+                                    {!historyTourRunning && panelHasAnyFilter && (
                                         <button className={styles.clearAllBtn} onClick={() => setFilters(defaultFilters)}>
                                             {t('transactions.filter_clear_all')}
                                         </button>
                                     )}
-                                    <button className={styles.closePanelBtn} onClick={closeFilterPanel}>
+                                    <button className={styles.closePanelBtn} onClick={closeFilterPanel} disabled={historyTourRunning}>
                                         <HiXMark size={20}/>
                                     </button>
                                 </div>
                             </div>
 
                         {/* Type */}
-                        <div className={styles.filterSection}>
+                        <div className={styles.filterSection} data-filter-tour="types">
                             <p className={styles.filterSectionLabel}>{t('transactions.filter_section_type')}</p>
                             <div className={styles.typeRow}>
                                 {(['income', 'expense', 'transfer'] as const).map(type => (
                                     <button
                                         key={type}
-                                        className={`${styles.typeBtn} ${filters.types.includes(type) ? styles.typeBtnActive : ''}`}
-                                        onClick={() => toggleType(type)}
+                                        className={`${styles.typeBtn} ${panelFilters.types.includes(type) ? styles.typeBtnActive : ''}`}
+                                        onClick={() => historyTourRunning ? undefined : toggleType(type)}
                                     >
                                         {type === 'income' ? t('transactions.filter_type_income') : type === 'expense' ? t('transactions.filter_type_expense') : t('transactions.filter_type_transfer')}
                                     </button>
@@ -539,46 +697,102 @@ const Transactions = () => {
                         </div>
 
                         {/* Category */}
-                        <div className={styles.filterSection}>
+                        <div className={styles.filterSection} data-filter-tour="categories">
                             <p className={styles.filterSectionLabel}>{t('transactions.filter_section_category')}</p>
                             <div className={styles.filterList}>
-                                {categories.filter(c => monthCategoryIds.has(c.id)).map(cat => {
-                                    const catActive = filters.categoryIds.includes(cat.id);
-                                    return (
-                                        <div key={cat.id}>
+                                {historyTourRunning ? (
+                                    [
+                                        {id: 'demo-shopping', icon: '🛍️', label: t('transactions.filter_tour_demo_shopping'), sub: false},
+                                        {id: 'demo-groceries', icon: '🥗', label: t('transactions.filter_tour_demo_groceries'), sub: true},
+                                        {id: 'demo-housing', icon: '🏠', label: t('transactions.filter_tour_demo_housing'), sub: false},
+                                        {id: 'demo-salary', icon: '💼', label: t('transactions.filter_tour_demo_salary'), sub: false},
+                                    ].map(item => {
+                                        const active = item.sub
+                                            ? panelFilters.subcategoryIds.includes(item.id)
+                                            : panelFilters.categoryIds.includes(item.id);
+                                        return (
                                             <button
-                                                className={`${styles.filterListItem} ${catActive ? styles.filterListItemActive : ''}`}
-                                                onClick={() => toggleCategory(cat.id)}
+                                                key={item.id}
+                                                className={`${styles.filterListItem} ${item.sub ? styles.filterListItemSub : ''} ${active ? styles.filterListItemActive : ''}`}
                                             >
-                                                <span>{cat.icon} {cat.name}</span>
-                                                {catActive && <span className={styles.checkMark}>✓</span>}
+                                                <span>{item.sub && <span className={styles.filterSubBranch}>↳</span>} {item.icon} {item.label}</span>
+                                                {active && <span className={styles.checkMark}>✓</span>}
                                             </button>
-                                        </div>
-                                    );
-                                })}
-                                {hasDebtTxsThisMonth && (
-                                    <button
-                                        className={`${styles.filterListItem} ${filters.categoryIds.includes('__debts__') ? styles.filterListItemActive : ''}`}
-                                        onClick={() => toggleCategory('__debts__')}
-                                    >
-                                        <span>{t('transactions.filter_debt_payments')}</span>
-                                        {filters.categoryIds.includes('__debts__') &&
-                                            <span className={styles.checkMark}>✓</span>}
-                                    </button>
+                                        );
+                                    })
+                                ) : (
+                                    <>
+                                        {categories.filter(c => monthCategoryIds.has(c.id)).map(cat => {
+                                            const catActive = filters.categoryIds.includes(cat.id);
+                                            return (
+                                                <div key={cat.id}>
+                                                    <button
+                                                        className={`${styles.filterListItem} ${catActive ? styles.filterListItemActive : ''}`}
+                                                        onClick={() => toggleCategory(cat.id)}
+                                                    >
+                                                        <span>{cat.icon} {cat.name}</span>
+                                                        {catActive && <span className={styles.checkMark}>✓</span>}
+                                                    </button>
+                                                    {subcategories
+                                                        .filter(subcategory => subcategory.categoryId === cat.id && monthSubcategoryIds.has(subcategory.id))
+                                                        .map(subcategory => {
+                                                            const subcategoryActive = filters.subcategoryIds.includes(subcategory.id);
+                                                            return (
+                                                                <button
+                                                                    key={subcategory.id}
+                                                                    className={`${styles.filterListItem} ${styles.filterListItemSub} ${subcategoryActive ? styles.filterListItemActive : ''}`}
+                                                                    onClick={() => toggleSubcategory(subcategory.id, cat.id)}
+                                                                >
+                                                                    <span><span className={styles.filterSubBranch}>↳</span> {subcategory.name}</span>
+                                                                    {subcategoryActive && <span className={styles.checkMark}>✓</span>}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                </div>
+                                            );
+                                        })}
+                                        {hasDebtTxsThisMonth && (
+                                            <button
+                                                className={`${styles.filterListItem} ${filters.categoryIds.includes('__debts__') ? styles.filterListItemActive : ''}`}
+                                                onClick={() => toggleCategory('__debts__')}
+                                            >
+                                                <span>{t('transactions.filter_debt_payments')}</span>
+                                                {filters.categoryIds.includes('__debts__') &&
+                                                    <span className={styles.checkMark}>✓</span>}
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
 
                         {/* Account */}
-                        {cards.length > 0 && (
-                            <div className={styles.filterSection} style={{ position: 'relative' }}>
+                        {(historyTourRunning || cards.length > 0) && (
+                            <div className={styles.filterSection} style={{ position: 'relative' }} data-filter-tour="accounts">
                                 <p className={styles.filterSectionLabel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     {t('transactions.filter_section_account')}
-                                    {!isPremium && <PremiumBadge />}
+                                    {!historyTourRunning && !isPremium && <PremiumBadge />}
                                 </p>
-                                <div className={styles.filterList} style={!isPremium ? { filter: 'blur(2px)', pointerEvents: 'none' } : undefined}>
-                                    {cards.map(card => {
-                                        const active = filters.cardIds.includes(card.id);
+                                <div className={styles.filterList} style={!historyTourRunning && !isPremium ? { filter: 'blur(2px)', pointerEvents: 'none' } : undefined}>
+                                    {historyTourRunning ? (
+                                        [
+                                            {id: 'demo-tbc', icon: '💳', label: t('transactions.filter_tour_demo_tbc')},
+                                            {id: 'demo-cash', icon: '💵', label: t('transactions.filter_tour_demo_cash')},
+                                            {id: 'demo-credit', icon: '💳', label: t('transactions.filter_tour_demo_credit')},
+                                        ].map(card => {
+                                            const active = panelFilters.cardIds.includes(card.id);
+                                            return (
+                                                <button
+                                                    key={card.id}
+                                                    className={`${styles.filterListItem} ${active ? styles.filterListItemActive : ''}`}
+                                                >
+                                                    <span>{card.icon} {card.label}</span>
+                                                    {active && <span className={styles.checkMark}>✓</span>}
+                                                </button>
+                                            );
+                                        })
+                                    ) : cards.map(card => {
+                                        const active = panelFilters.cardIds.includes(card.id);
                                         return (
                                             <button
                                                 key={card.id}
@@ -591,7 +805,7 @@ const Transactions = () => {
                                         );
                                     })}
                                 </div>
-                                {!isPremium && (
+                                {!historyTourRunning && !isPremium && (
                                     <button
                                         onClick={() => premiumGate.open('filters')}
                                         style={{
@@ -605,7 +819,7 @@ const Transactions = () => {
                         )}
 
                         {/* Date Range */}
-                        <div className={styles.filterSection}>
+                        <div className={styles.filterSection} data-filter-tour="dates">
                             <p className={styles.filterSectionLabel}>{t('transactions.filter_section_date')}</p>
                             <div className={styles.dateRow}>
                                 <div className={styles.dateField}>
@@ -613,8 +827,8 @@ const Transactions = () => {
                                     <Input
                                         type="date"
                                         className={styles.dateInput}
-                                        value={filters.dateFrom ?? ''}
-                                        onChange={e => setFilters(f => ({...f, dateFrom: e.target.value || null}))}
+                                        value={panelFilters.dateFrom ?? ''}
+                                        onChange={e => historyTourRunning ? undefined : setFilters(f => ({...f, dateFrom: e.target.value || null}))}
                                     />
                                 </div>
                                 <div className={styles.dateField}>
@@ -622,17 +836,33 @@ const Transactions = () => {
                                     <Input
                                         type="date"
                                         className={styles.dateInput}
-                                        value={filters.dateTo ?? ''}
-                                        onChange={e => setFilters(f => ({...f, dateTo: e.target.value || null}))}
+                                        value={panelFilters.dateTo ?? ''}
+                                        onChange={e => historyTourRunning ? undefined : setFilters(f => ({...f, dateTo: e.target.value || null}))}
                                     />
                                 </div>
                             </div>
                         </div>
+
+                        {historyTourRunning && (
+                            <div className={styles.filterDemoResult} data-filter-tour="result">
+                                <div className={styles.filterDemoResultIcon}>✓</div>
+                                <div>
+                                    <strong>{t('transactions.filter_tour_demo_result', {count: filteredTxs.length, total: demoTransactions.length})}</strong>
+                                    <p>{t('transactions.filter_tour_demo_result_hint')}</p>
+                                </div>
+                            </div>
+                        )}
                         </div>
                     </div>
                 </div>,
                 document.body,
             )}
+
+            <HistoryOnboardingTour
+                run={historyTourRunning}
+                onPrepareStep={prepareHistoryTourStep}
+                onFinish={finishHistoryTour}
+            />
 
             {showAdd && (
                 <AddTransactionModal
