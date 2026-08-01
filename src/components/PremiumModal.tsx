@@ -8,6 +8,8 @@ import {
 import { useEntitlements } from '../hooks/useEntitlements';
 import { paymentApi, type PaymentPlan, type PaymentPlanCode } from '../api/paymentClient';
 import styles from './PremiumModal.module.css';
+import { useModalClose } from '../hooks/useModalClose';
+import { useSwipeDismiss } from '../hooks/useSwipeDismiss';
 
 export type PremiumFeatureKey =
   | 'ai_chat' | 'cards' | 'credit_cash' | 'categories' | 'budgets'
@@ -22,6 +24,8 @@ interface Props {
 
 const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade }) => {
   const { t, i18n } = useTranslation();
+  const { isClosing, requestClose } = useModalClose(onClose);
+  const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
   const { aiUsed, isPremium } = useEntitlements();
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [selectedCode, setSelectedCode] = useState<PaymentPlanCode>('premium_12_months');
@@ -71,7 +75,7 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
   const handleUpgrade = async () => {
     if (onUpgrade) {
       onUpgrade();
-      onClose();
+      requestClose();
       return;
     }
     if (!selectedPlan || purchasing) return;
@@ -136,24 +140,30 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
   ];
 
   return createPortal(
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.close} onClick={onClose} aria-label="Close">
-          <HiXMark size={18} />
-        </button>
+    <div className={`${styles.overlay} ${isClosing ? styles.overlayClosing : ''}`} onClick={requestClose}>
+      <div className={styles.swipeLayer} style={swipeStyle}>
+        <div
+          ref={swipeRef}
+          className={`${styles.sheet} ${isClosing ? styles.sheetClosing : ''}`}
+          onClick={(e) => e.stopPropagation()}
+          {...swipeAreaProps}
+        >
+          <button className={styles.close} onClick={requestClose} aria-label="Close">
+            <HiXMark size={18} />
+          </button>
 
-        <div className={styles.hero}>
-          <div className={styles.starBadge}>
-            <HiStar size={44} />
-          </div>
-          <h2 className={styles.heroTitle}>{head.title}</h2>
-          <p className={styles.heroSubtitle}>{head.subtitle}</p>
-          {!isPremium && feature === 'ai_chat' && (
-            <div className={styles.trialBanner}>
-              {t('premium.ai_usage_banner', { used: aiUsed, limit: 10 })}
+          <div className={styles.hero}>
+            <div className={styles.starBadge}>
+              <HiStar size={44} />
             </div>
-          )}
-        </div>
+            <h2 className={styles.heroTitle}>{head.title}</h2>
+            <p className={styles.heroSubtitle}>{head.subtitle}</p>
+            {!isPremium && feature === 'ai_chat' && (
+              <div className={styles.trialBanner}>
+                {t('premium.ai_usage_banner', { used: aiUsed, limit: 10 })}
+              </div>
+            )}
+          </div>
 
         <section className={styles.plans} aria-label={t('premium.choose_plan')}>
           <h3 className={styles.plansTitle}>{t('premium.choose_plan')}</h3>
@@ -213,7 +223,8 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
           </button>
         </div>
 
-        <p className={styles.footnote}>{t('premium.footnote')}</p>
+          <p className={styles.footnote}>{t('premium.footnote')}</p>
+        </div>
       </div>
     </div>,
     document.body,

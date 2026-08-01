@@ -32,6 +32,15 @@
   box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.32);
 }
 
+.swipeLayer {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  min-height: 0;
+}
+
+.swipeLayer .sheet { max-width: none; }
+
 .header {
   min-height: 76px;
   display: flex;
@@ -43,7 +52,11 @@
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
 }
+
+.header:active { cursor: grabbing; }
 
 .headerIcon {
   width: 39px;

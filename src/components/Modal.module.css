@@ -19,6 +19,15 @@
   to { opacity: 1; }
 }
 
+.overlayClosing {
+  pointer-events: none;
+  animation: fadeOut 0.22s ease forwards;
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
 .sheet {
   width: 100%;
   max-width: 430px;
@@ -33,9 +42,41 @@
   animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+.swipeLayer {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0 auto;
+}
+
+.swipeLayer .sheet {
+  max-width: none;
+  margin: 0;
+}
+
+.swipeArea {
+  flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
+}
+
+.swipeArea:active { cursor: grabbing; }
+
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+.sheetClosing {
+  animation: slideDown 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes slideDown {
+  to { transform: translateY(100%); }
 }
 
 .handle {

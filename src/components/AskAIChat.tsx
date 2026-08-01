@@ -19,6 +19,8 @@ import PremiumModal from './PremiumModal';
 import { PremiumBadge } from './PremiumLock';
 import dayjs from '../utils/dayjs';
 import styles from './AskAIChat.module.css';
+import { useModalClose } from '../hooks/useModalClose';
+import { useSwipeDismiss } from '../hooks/useSwipeDismiss';
 
 const MarkdownContent = memo(({ text }: { text: string }) => (
   <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
@@ -30,6 +32,8 @@ interface Props {
 
 const AskAIChat = ({ onClose }: Props) => {
   const { t, i18n } = useTranslation();
+  const { isClosing, requestClose } = useModalClose(onClose);
+  const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
   const { user } = useApp();
   const qc = useQueryClient();
   const { chats, remove } = useAiChats(user?.uid ?? null);
@@ -226,8 +230,14 @@ const AskAIChat = ({ onClose }: Props) => {
   const headerTitle = activeChat?.title ?? t('ask_ai.title');
 
   return createPortal(
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={`${styles.overlay} ${isClosing ? styles.overlayClosing : ''}`} onClick={requestClose}>
+      <div className={styles.swipeLayer} style={swipeStyle}>
+        <div
+          ref={swipeRef}
+          className={`${styles.modal} ${isClosing ? styles.modalClosing : ''}`}
+          onClick={(e) => e.stopPropagation()}
+          {...swipeAreaProps}
+        >
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -263,7 +273,7 @@ const AskAIChat = ({ onClose }: Props) => {
             >
               <HiPencilSquare size={18} />
             </button>
-            <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
+            <button className={styles.closeBtn} onClick={requestClose} aria-label="Close">
               <HiXMark size={20} />
             </button>
           </div>
@@ -426,6 +436,7 @@ const AskAIChat = ({ onClose }: Props) => {
             </div>
           </div>
         )}
+        </div>
       </div>
       {showPremium && <PremiumModal feature="ai_chat" onClose={() => setShowPremium(false)} />}
     </div>,

@@ -11,6 +11,7 @@ import {
   HiXMark,
 } from 'react-icons/hi2';
 import type { PaymentResult } from '../context';
+import { useSwipeDismiss } from '../hooks/useSwipeDismiss';
 import styles from './PaymentResultModal.module.css';
 
 interface Props {
@@ -28,6 +29,7 @@ const confetti = [
 
 const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
   const { t, i18n } = useTranslation();
+  const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(onClose);
 
   useEffect(() => {
     if (!result) return;
@@ -67,16 +69,19 @@ const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
           exit={{ opacity: 0 }}
           role="presentation"
         >
-          <motion.section
-            className={styles.card}
-            initial={{ opacity: 0, y: 42, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 28, scale: 0.96 }}
-            transition={{ type: 'spring', damping: 24, stiffness: 260 }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="payment-result-title"
-          >
+          <div className={styles.swipeLayer} style={swipeStyle}>
+            <motion.section
+              className={styles.card}
+              initial={{ opacity: 0, y: 42, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 28, scale: 0.96 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="payment-result-title"
+              ref={swipeRef}
+              {...swipeAreaProps}
+            >
             {result.phase !== 'checking' && (
               <button className={styles.close} onClick={onClose} aria-label={t('payment_result.close')}>
                 <HiXMark size={20} />
@@ -181,7 +186,8 @@ const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
                 </motion.div>
               </>
             )}
-          </motion.section>
+            </motion.section>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

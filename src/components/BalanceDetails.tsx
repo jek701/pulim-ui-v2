@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { HiBanknotes, HiChartPie, HiCreditCard, HiXMark } from 'react-icons/hi2';
 import type { Card, Currency } from '../types';
 import { formatAmount } from '../utils/format';
+import { useModalClose } from '../hooks/useModalClose';
+import { useSwipeDismiss } from '../hooks/useSwipeDismiss';
 import styles from './BalanceDetails.module.css';
 
 interface Props {
@@ -27,6 +29,8 @@ const isIncludedInAvailableTotal = (card: Card) => (
 const BalanceDetails = ({ cards, onClose }: Props) => {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const { isClosing, requestClose } = useModalClose(onClose);
+  const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
 
   const currencies = useMemo(() => {
     const values = Array.from(new Set(cards.map(card => card.currency)));
@@ -45,14 +49,14 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') requestClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   const currencyCards = useMemo(
     () => cards
@@ -109,28 +113,33 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
     <motion.div
       className={styles.overlay}
       initial={reduceMotion ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
+      animate={{ opacity: isClosing ? 0 : 1 }}
+      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+      onClick={requestClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="balance-details-title"
     >
-      <motion.section
-        className={styles.sheet}
-        initial={reduceMotion ? false : { y: '8%', opacity: 0.7 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <header className={styles.header}>
-          <div className={styles.headerIcon}><HiChartPie size={20} /></div>
-          <div className={styles.headerCopy}>
-            <h2 id="balance-details-title">{t('home.balance_details_title')}</h2>
-            <p>{t('home.balance_details_subtitle')}</p>
-          </div>
-          <button className={styles.closeBtn} type="button" onClick={onClose} aria-label={t('common.close')}>
-            <HiXMark size={21} />
-          </button>
-        </header>
+      <div className={styles.swipeLayer} style={swipeStyle}>
+        <motion.section
+          className={styles.sheet}
+          initial={reduceMotion ? false : { y: '8%', opacity: 0.7 }}
+          animate={{ y: isClosing ? '8%' : 0, opacity: isClosing ? 0.7 : 1 }}
+          transition={{ duration: reduceMotion ? 0 : isClosing ? 0.22 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+          onClick={event => event.stopPropagation()}
+          ref={swipeRef}
+          {...swipeAreaProps}
+        >
+          <header className={styles.header}>
+            <div className={styles.headerIcon}><HiChartPie size={20} /></div>
+            <div className={styles.headerCopy}>
+              <h2 id="balance-details-title">{t('home.balance_details_title')}</h2>
+              <p>{t('home.balance_details_subtitle')}</p>
+            </div>
+            <button className={styles.closeBtn} type="button" onClick={requestClose} aria-label={t('common.close')}>
+              <HiXMark size={21} />
+            </button>
+          </header>
 
         <div className={styles.scroller}>
           {currencies.length > 1 && (
@@ -295,8 +304,9 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
               </section>
             </>
           )}
-        </div>
-      </motion.section>
+          </div>
+        </motion.section>
+      </div>
     </motion.div>,
     document.body,
   );

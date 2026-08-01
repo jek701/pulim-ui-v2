@@ -453,6 +453,11 @@
     animation: fadeIn 0.2s ease;
 }
 
+.filterOverlayClosing {
+    pointer-events: none;
+    animation: fadeOut 0.22s ease forwards;
+}
+
 .filterPanel {
     position: relative;
     width: 100%;
@@ -467,6 +472,33 @@
     -webkit-overflow-scrolling: touch;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.3);
     animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.filterSwipeLayer {
+    width: 100%;
+    max-width: 430px;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    margin: 0 auto;
+}
+
+.filterSwipeLayer .filterPanel {
+    max-width: none;
+    margin: 0;
+}
+
+.filterSwipeArea {
+    touch-action: none;
+    cursor: grab;
+}
+
+.filterSwipeArea:active { cursor: grabbing; }
+
+.filterPanelClosing {
+    animation: slideDown 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes slideUp {
@@ -485,6 +517,14 @@
     to {
         opacity: 1;
     }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; }
+}
+
+@keyframes slideDown {
+    to { transform: translateY(100%); }
 }
 
 .filterHandle {

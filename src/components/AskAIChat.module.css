@@ -22,6 +22,13 @@
   to { opacity: 1; }
 }
 
+.overlayClosing {
+  pointer-events: none;
+  animation: overlayOut 0.22s ease forwards;
+}
+
+@keyframes overlayOut { to { opacity: 0; } }
+
 .modal {
   width: 100%;
   max-width: 640px;
@@ -32,6 +39,16 @@
   animation: modalIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
   position: relative;
 }
+
+.swipeLayer {
+  width: 100%;
+  max-width: 640px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+}
+
+.swipeLayer .modal { max-width: none; }
 
 @media (min-width: 700px) {
   .modal {
@@ -48,6 +65,14 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+.modalClosing {
+  animation: modalOut 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes modalOut {
+  to { transform: translateY(40px); opacity: 0; }
+}
+
 /* Header */
 .header {
   display: flex;
@@ -57,6 +82,23 @@
   border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
   background: linear-gradient(135deg, rgba(147, 51, 234, 0.06), rgba(236, 72, 153, 0.06));
   flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
+}
+
+.header:active { cursor: grabbing; }
+
+@media (min-width: 700px) {
+  .swipeLayer {
+    height: 88dvh;
+    max-height: 800px;
+    margin-bottom: 6vh;
+  }
+
+  .swipeLayer .modal {
+    height: 100%;
+    margin-bottom: 0;
+  }
 }
 
 .headerLeft { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }

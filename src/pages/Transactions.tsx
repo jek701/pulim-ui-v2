@@ -30,6 +30,8 @@ import type {NewTransaction} from '../hooks/useTransactions';
 import styles from './Transactions.module.css';
 import {useTranslation} from 'react-i18next';
 import {Input} from "../components/FormField.tsx";
+import {useModalClose} from '../hooks/useModalClose';
+import {useSwipeDismiss} from '../hooks/useSwipeDismiss';
 
 export interface ActiveFilters {
     types: ('income' | 'expense' | 'transfer')[];
@@ -59,6 +61,16 @@ const Transactions = () => {
     const premiumGate = usePremiumGate();
     const [filters, setFilters] = useState<ActiveFilters>(defaultFilters);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
+    const {
+        isClosing: isFilterClosing,
+        requestClose: closeFilterPanel,
+        resetClose: resetFilterClose,
+    } = useModalClose(() => setShowFilterPanel(false));
+    const {
+        swipeRef: filterSwipeRef,
+        swipeAreaProps: filterSwipeProps,
+        swipeStyle: filterSwipeStyle,
+    } = useSwipeDismiss(closeFilterPanel);
     const [showAdd, setShowAdd] = useState(false);
     const [editingTx, setEditingTx] = useState<Transaction | null>(null);
     const [returnTx, setReturnTx] = useState<Transaction | null>(null);
@@ -259,7 +271,10 @@ const Transactions = () => {
                 <button onClick={nextMonth}><HiChevronRight size={20}/></button>
                 <button
                     className={`${styles.filterIconBtn} ${hasAnyFilter ? styles.filterIconActive : ''}`}
-                    onClick={() => setShowFilterPanel(true)}
+                    onClick={() => {
+                        resetFilterClose();
+                        setShowFilterPanel(true);
+                    }}
                 >
                     <HiAdjustmentsHorizontal size={19}/>
                     {hasAnyFilter && <span className={styles.filterBadge}/>}
@@ -484,20 +499,28 @@ const Transactions = () => {
 
             {/* Filter Panel */}
             {showFilterPanel && createPortal(
-                <div className={styles.filterOverlay} onClick={() => setShowFilterPanel(false)}>
-                    <div className={styles.filterPanel} onClick={event => event.stopPropagation()}>
-                        <div className={styles.filterHandle}/>
-                        <div className={styles.filterPanelHeader}>
-                            <span className={styles.filterPanelTitle}>{t('transactions.filter_title')}</span>
-                            {hasAnyFilter && (
-                                <button className={styles.clearAllBtn} onClick={() => setFilters(defaultFilters)}>
-                                    {t('transactions.filter_clear_all')}
-                                </button>
-                            )}
-                            <button className={styles.closePanelBtn} onClick={() => setShowFilterPanel(false)}>
-                                <HiXMark size={20}/>
-                            </button>
-                        </div>
+                <div className={`${styles.filterOverlay} ${isFilterClosing ? styles.filterOverlayClosing : ''}`} onClick={closeFilterPanel}>
+                    <div className={styles.filterSwipeLayer} style={filterSwipeStyle}>
+                        <div
+                            ref={filterSwipeRef}
+                            className={`${styles.filterPanel} ${isFilterClosing ? styles.filterPanelClosing : ''}`}
+                            onClick={event => event.stopPropagation()}
+                            {...filterSwipeProps}
+                        >
+                            <div className={styles.filterSwipeArea}>
+                                <div className={styles.filterHandle}/>
+                                <div className={styles.filterPanelHeader}>
+                                    <span className={styles.filterPanelTitle}>{t('transactions.filter_title')}</span>
+                                    {hasAnyFilter && (
+                                        <button className={styles.clearAllBtn} onClick={() => setFilters(defaultFilters)}>
+                                            {t('transactions.filter_clear_all')}
+                                        </button>
+                                    )}
+                                    <button className={styles.closePanelBtn} onClick={closeFilterPanel}>
+                                        <HiXMark size={20}/>
+                                    </button>
+                                </div>
+                            </div>
 
                         {/* Type */}
                         <div className={styles.filterSection}>
@@ -604,6 +627,7 @@ const Transactions = () => {
                                     />
                                 </div>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>,
