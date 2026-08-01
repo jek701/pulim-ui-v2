@@ -29,6 +29,8 @@ import {useConfirm} from '../components/ConfirmDialog';
 import dayjs from '../utils/dayjs';
 import AddTransactionModal from '../components/AddTransactionModal';
 import ReturnModal from '../components/ReturnModal';
+import EditReturnModal from '../components/EditReturnModal';
+import EditTransferModal from '../components/EditTransferModal';
 import ChartView from '../components/ChartView';
 import PageLoader from '../components/PageLoader';
 import type {Budget, Category, Transaction} from '../types';
@@ -40,6 +42,12 @@ import {Input} from "../components/FormField.tsx";
 import {useModalClose} from '../hooks/useModalClose';
 import {useSwipeDismiss} from '../hooks/useSwipeDismiss';
 import HistoryOnboardingTour from '../components/HistoryOnboardingTour';
+import {
+    getTransactionKind,
+    isRegularTransaction,
+    isReturnableTransaction,
+    type TransactionKind,
+} from '../utils/transactionKind';
 
 export type ActiveFilters = HistoryFilters;
 
@@ -47,7 +55,16 @@ const defaultFilters = EMPTY_HISTORY_FILTERS;
 
 const Transactions = () => {
     const {user, categoryFilter, setCategoryFilter, historyFilters: filters, setHistoryFilters: setFilters} = useApp();
-    const {transactions, add, update, remove, returnTransaction, loading: txLoading} = useTransactions(user?.uid ?? null);
+    const {
+        transactions,
+        add,
+        update,
+        remove,
+        returnTransaction,
+        updateTransfer,
+        updateReturn,
+        loading: txLoading,
+    } = useTransactions(user?.uid ?? null);
     const {categories, subcategories, loading: catLoading} = useCategories(user?.uid ?? null);
     const {cards, cardOrder, saveCardOrder} = useCards(user?.uid ?? null);
     const {budgets} = useBudgets(user?.uid ?? null);
@@ -73,6 +90,8 @@ const Transactions = () => {
     } = useSwipeDismiss(closeFilterPanel);
     const [showAdd, setShowAdd] = useState(false);
     const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+    const [editingReturnTx, setEditingReturnTx] = useState<Transaction | null>(null);
+    const [editingTransferTx, setEditingTransferTx] = useState<Transaction | null>(null);
     const [returnTx, setReturnTx] = useState<Transaction | null>(null);
     const [showReturn, setShowReturn] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'pie' | 'line'>('list');
@@ -234,8 +253,7 @@ const Transactions = () => {
             }
 
             if (activePageFilters.types.length > 0) {
-                const txKind = t.source === 'transfer' ? 'transfer' : t.type;
-                if (!activePageFilters.types.includes(txKind as 'income' | 'expense' | 'transfer')) return false;
+                if (!activePageFilters.types.includes(getTransactionKind(t))) return false;
             }
 
             const catActive = activePageFilters.categoryIds.length > 0 || activePageFilters.subcategoryIds.length > 0;
@@ -341,8 +359,28 @@ const Transactions = () => {
     const incomeBudget = displayBudgets.find(b => b.categoryId === '__income__')?.amount ?? 0;
     const expenseBudget = displayBudgets.filter(b => b.categoryId !== '__income__').reduce((s, b) => s + b.amount, 0);
 
-    const toggleType = (type: 'income' | 'expense' | 'transfer') =>
+    const toggleType = (type: TransactionKind) =>
         setFilters(f => ({...f, types: f.types.includes(type) ? f.types.filter(x => x !== type) : [...f.types, type]}));
+
+    const typeLabel = (type: TransactionKind) => {
+        if (type === 'income') return t('transactions.filter_type_income');
+        if (type === 'expense') return t('transactions.filter_type_expense');
+        if (type === 'return') return t('transactions.filter_type_return');
+        return t('transactions.filter_type_transfer');
+    };
+
+    const openTransactionEditor = (transaction: Transaction) => {
+        const kind = getTransactionKind(transaction);
+        if (kind === 'return') {
+            setEditingReturnTx(transaction);
+            return;
+        }
+        if (kind === 'transfer') {
+            setEditingTransferTx(transaction);
+            return;
+        }
+        if (isRegularTransaction(transaction)) setEditingTx(transaction);
+    };
 
     const toggleCategory = (id: string) => setFilters(current => {
         const isActive = current.categoryIds.includes(id);
@@ -479,7 +517,7 @@ const Transactions = () => {
                 <div className={styles.chipsRow}>
                     {filters.types.map(type => (
                         <div key={type} className={styles.chip}>
-                            <span>{type === 'income' ? t('transactions.filter_type_income') : type === 'expense' ? t('transactions.filter_type_expense') : t('transactions.filter_type_transfer')}</span>
+                            <span>{typeLabel(type)}</span>
                             <button
                                 onClick={() => setFilters(f => ({...f, types: f.types.filter(x => x !== type)}))}>✕
                             </button>
@@ -715,18 +753,20 @@ const Transactions = () => {
                                                             )}
                                                         </div>
                                                         <div className={styles.txActions}>
-                                                            {tx.type === 'expense' && !isReturn && tx.source !== 'transfer' && (
+                                                            {isReturnableTransaction(tx) && (
                                                                 <button className={styles.returnBtn}
                                                                         onClick={() => setReturnTx(tx)}
                                                                         title={t('return.history_label')}>
                                                                     <HiArrowUturnLeft size={13}/>
                                                                 </button>
                                                             )}
-                                                            <button className={styles.editBtn}
-                                                                    aria-label={t('common.edit')}
-                                                                    onClick={() => setEditingTx(tx)}>
-                                                                <HiPencil size={13}/>
-                                                            </button>
+                                                            {(isRegularTransaction(tx) || isReturn || tx.source === 'transfer') && (
+                                                                <button className={styles.editBtn}
+                                                                        aria-label={t('common.edit')}
+                                                                        onClick={() => openTransactionEditor(tx)}>
+                                                                    <HiPencil size={13}/>
+                                                                </button>
+                                                            )}
                                                             <button className={styles.delBtn}
                                                                     aria-label={t('common.delete')}
                                                                     onClick={() => handleDelete(tx)}>
@@ -752,7 +792,7 @@ const Transactions = () => {
                                                             <div className={styles.txActions}>
                                                                 <button className={styles.editBtn}
                                                                         aria-label={t('common.edit')}
-                                                                        onClick={() => setEditingTx(refund)}>
+                                                                        onClick={() => openTransactionEditor(refund)}>
                                                                     <HiPencil size={13}/>
                                                                 </button>
                                                                 <button className={styles.delBtn}
@@ -807,13 +847,13 @@ const Transactions = () => {
                         <div className={styles.filterSection} data-filter-tour="types">
                             <p className={styles.filterSectionLabel}>{t('transactions.filter_section_type')}</p>
                             <div className={styles.typeRow}>
-                                {(['income', 'expense', 'transfer'] as const).map(type => (
+                                {(['income', 'expense', 'return', 'transfer'] as const).map(type => (
                                     <button
                                         key={type}
                                         className={`${styles.typeBtn} ${panelFilters.types.includes(type) ? styles.typeBtnActive : ''}`}
                                         onClick={() => historyTourRunning ? undefined : toggleType(type)}
                                     >
-                                        {type === 'income' ? t('transactions.filter_type_income') : type === 'expense' ? t('transactions.filter_type_expense') : t('transactions.filter_type_transfer')}
+                                        {typeLabel(type)}
                                     </button>
                                 ))}
                             </div>
@@ -1020,6 +1060,26 @@ const Transactions = () => {
                     initialData={editingTx}
                     onAdd={handleEditSave}
                     onClose={() => setEditingTx(null)}
+                />
+            )}
+
+            {editingReturnTx && (
+                <EditReturnModal
+                    transaction={editingReturnTx}
+                    original={transactions.find(transaction => transaction.id === editingReturnTx.linkedTransactionId)}
+                    categories={categories}
+                    cards={cards}
+                    onSave={input => updateReturn(editingReturnTx.id, input)}
+                    onClose={() => setEditingReturnTx(null)}
+                />
+            )}
+
+            {editingTransferTx && (
+                <EditTransferModal
+                    transaction={editingTransferTx}
+                    cards={cards}
+                    onSave={input => updateTransfer(editingTransferTx.id, input)}
+                    onClose={() => setEditingTransferTx(null)}
                 />
             )}
 

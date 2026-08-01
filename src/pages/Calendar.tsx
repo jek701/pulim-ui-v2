@@ -19,6 +19,7 @@ import {useCategoryName} from '../utils/categoryName';
 import dayjs from '../utils/dayjs';
 import type {PlannedExpense, PlannedExpenseVisibility, Subscription, Debt, Transaction} from '../types';
 import styles from './Calendar.module.css';
+import { getTransactionKind } from '../utils/transactionKind';
 import i18n from "i18next";
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -156,16 +157,16 @@ const Calendar = () => {
     const expensesByDay = useMemo(() => {
         const map: Record<number, number> = {};
         transactions
-            .filter(t =>
-                t.type === 'expense' &&
+            .filter(t => {
+                const kind = getTransactionKind(t);
+                return (kind === 'expense' || kind === 'return') &&
                 t.currency === 'UZS' &&
-                t.source !== 'transfer' &&
                 new Date(t.date).getMonth() === viewDate.month &&
-                new Date(t.date).getFullYear() === viewDate.year
-            )
+                new Date(t.date).getFullYear() === viewDate.year;
+            })
             .forEach(t => {
                 const day = new Date(t.date).getDate();
-                map[day] = (map[day] ?? 0) + t.amount;
+                map[day] = (map[day] ?? 0) + (getTransactionKind(t) === 'return' ? -t.amount : t.amount);
             });
         return map;
     }, [transactions, viewDate]);
@@ -510,15 +511,17 @@ const Calendar = () => {
                             <p className={styles.sectionLabel}>{t('calendar.transactions')}</p>
                             {selectedTxs.map(tx => {
                                 const cat = getCategory(tx.categoryId);
-                                const isTransfer = tx.source === 'transfer';
-                                const icon = isTransfer ? '🔄' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : cat?.icon ?? '📦';
-                                const name = tx.sourceLabel || categoryName(cat) || t('common.transaction');
+                                const kind = getTransactionKind(tx);
+                                const isTransfer = kind === 'transfer';
+                                const isReturn = kind === 'return';
+                                const icon = isReturn ? '↩' : isTransfer ? '🔄' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : cat?.icon ?? '📦';
+                                const name = isReturn ? t('return.history_label') : tx.sourceLabel || categoryName(cat) || t('common.transaction');
                                 return (
                                     <div key={tx.id} className={styles.txRow}>
                                         <span className={styles.txIcon}>{icon}</span>
                                         <p className={styles.txName}>{name}</p>
-                                        <p className={`${styles.txAmt} ${isTransfer ? styles.neutral : tx.type === 'income' ? styles.inc : styles.exp}`}>
-                                            {isTransfer ? '' : tx.type === 'income' ? '+' : '−'}{formatAmount(tx.amount, tx.currency)}
+                                        <p className={`${styles.txAmt} ${isTransfer ? styles.neutral : isReturn || tx.type === 'income' ? styles.inc : styles.exp}`}>
+                                            {isTransfer ? '' : isReturn || tx.type === 'income' ? '+' : '−'}{formatAmount(tx.amount, tx.currency)}
                                         </p>
                                     </div>
                                 );

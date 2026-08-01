@@ -10,6 +10,7 @@ import InteractiveFinanceChart, {
   type FinancePieDatum,
 } from './InteractiveFinanceChart';
 import styles from './ChartView.module.css';
+import { getTransactionKind } from '../utils/transactionKind';
 
 const FALLBACK_COLORS = ['#7C3AED', '#0A84FF', '#30D158', '#FF9F0A', '#FF375F', '#5AC8FA', '#BF5AF2', '#FFD60A'];
 
@@ -26,6 +27,8 @@ interface Props {
 const transactionCategoryId = (transaction: Transaction) => (
   transaction.source === 'debt_payment'
     ? '__debt_payments__'
+    : transaction.source === 'return'
+      ? transaction.categoryId
     : transaction.source
       ? (transaction.sourceLabel ?? transaction.source)
       : transaction.categoryId
@@ -42,7 +45,7 @@ const ChartView = ({ chartType, transactions, categories, viewDate, filters, dem
 
   const forcedView = useMemo<FinanceChartView | null>(() => {
     const hasIncome = filters.types.includes('income');
-    const hasExpense = filters.types.includes('expense');
+    const hasExpense = filters.types.includes('expense') || filters.types.includes('return');
     if (hasIncome && hasExpense) return 'both';
     if (hasIncome && !hasExpense) return 'income';
     if (!hasIncome && hasExpense) return 'expense';
@@ -50,10 +53,13 @@ const ChartView = ({ chartType, transactions, categories, viewDate, filters, dem
   }, [filters.types]);
 
   const monthTxs = useMemo(() => transactions.filter(transaction => (
-    transaction.currency === activeCurrency && transaction.source !== 'transfer'
+    transaction.currency === activeCurrency && getTransactionKind(transaction) !== 'transfer'
   )), [activeCurrency, transactions]);
-  const hasExpenseData = monthTxs.some(transaction => transaction.type === 'expense');
-  const hasIncomeData = monthTxs.some(transaction => transaction.type === 'income');
+  const hasExpenseData = monthTxs.some(transaction => {
+    const kind = getTransactionKind(transaction);
+    return kind === 'expense' || kind === 'return';
+  });
+  const hasIncomeData = monthTxs.some(transaction => getTransactionKind(transaction) === 'income');
   const view: FinanceChartView = forcedView
     ?? (hasExpenseData && hasIncomeData
       ? (chartType === 'pie' ? 'expense' : 'both')
@@ -61,20 +67,25 @@ const ChartView = ({ chartType, transactions, categories, viewDate, filters, dem
   const daysInMonth = new Date(viewDate.year, viewDate.month + 1, 0).getDate();
 
   const rawPieData = useMemo<FinancePieDatum[]>(() => {
-    const relevant = monthTxs.filter(item => view === 'both' || item.type === view);
+    const relevant = monthTxs.filter(item => {
+      const financialView = getTransactionKind(item) === 'return' ? 'expense' : item.type;
+      return view === 'both' || financialView === view;
+    });
     const grouped = new Map<string, { value: number; children?: Map<string, number> }>();
     relevant.forEach(item => {
       const isDebtPayment = item.source === 'debt_payment';
       const key = transactionCategoryId(item);
+      const value = getTransactionKind(item) === 'return' ? -item.amount : item.amount;
       const current = grouped.get(key);
       const children = isDebtPayment ? new Map(current?.children) : undefined;
       if (children) {
         const debtName = item.sourceLabel?.trim() || t('charts.unnamed_debt');
         children.set(debtName, (children.get(debtName) ?? 0) + item.amount);
       }
-      grouped.set(key, { value: (current?.value ?? 0) + item.amount, children });
+      grouped.set(key, { value: (current?.value ?? 0) + value, children });
     });
     return Array.from(grouped.entries())
+      .filter(([, group]) => group.value > 0)
       .sort((left, right) => right[1].value - left[1].value)
       .map(([categoryId, group], index) => {
         const category = categories.find(item => item.id === categoryId);
@@ -123,7 +134,9 @@ const ChartView = ({ chartType, transactions, categories, viewDate, filters, dem
     const days = Array.from({ length: daysInMonth }, (_, index) => ({ day: index + 1, income: 0, expense: 0 }));
     monthTxs.forEach(item => {
       const day = new Date(item.date).getDate() - 1;
-      if (days[day]) days[day][item.type] += item.amount;
+      if (!days[day]) return;
+      if (getTransactionKind(item) === 'return') days[day].expense -= item.amount;
+      else days[day][item.type] += item.amount;
     });
     return days;
   }, [daysInMonth, monthTxs]);

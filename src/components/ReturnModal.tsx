@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiCheck, HiCreditCard } from 'react-icons/hi2';
 import Modal from './Modal';
@@ -8,6 +8,7 @@ import type { Transaction, Category, Card } from '../types';
 import { useCategoryName } from '../utils/categoryName';
 import styles from './ReturnModal.module.css';
 import {Input} from "./FormField.tsx";
+import { isReturnableTransaction } from '../utils/transactionKind';
 
 interface Props {
   transactions: Transaction[];
@@ -22,7 +23,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
   const { t, i18n } = useTranslation();
   const categoryName = useCategoryName();
 
-  const expenses = transactions.filter(tx => tx.type === 'expense' && tx.source !== 'return');
+  const expenses = transactions.filter(isReturnableTransaction);
 
   const [selectedTxId, setSelectedTxId] = useState(preselectedTx?.id ?? '');
   const [amountStr, setAmountStr] = useState(() => {
@@ -30,7 +31,9 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
     const remaining = preselectedTx.amount - (preselectedTx.returnedAmount ?? 0);
     return String(remaining > 0 ? remaining : '');
   });
-  const [accountId, setAccountId] = useState(cards[0]?.id ?? '');
+  const [accountId, setAccountId] = useState(
+    cards.find(card => !preselectedTx || card.currency === preselectedTx.currency)?.id ?? '',
+  );
   const [date, setDate] = useState(toDateInput(Date.now()));
   const [filterDate, setFilterDate] = useState(toDateInput(Date.now()));
   const [comment, setComment] = useState('');
@@ -38,6 +41,9 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
   const [error, setError] = useState('');
 
   const selectedTx = expenses.find(tx => tx.id === selectedTxId);
+  const compatibleCards = selectedTx
+    ? cards.filter(card => card.currency === selectedTx.currency)
+    : cards;
   const remaining = selectedTx
     ? selectedTx.amount - (selectedTx.returnedAmount ?? 0)
     : 0;
@@ -45,6 +51,11 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
   const exceeds = selectedTx && amount > remaining;
 
   const canSave = selectedTxId && amount > 0 && !exceeds && accountId && date;
+
+  useEffect(() => {
+    if (!selectedTx || compatibleCards.some(card => card.id === accountId)) return;
+    setAccountId(compatibleCards[0]?.id ?? '');
+  }, [accountId, compatibleCards, selectedTx]);
 
   const selectedAccount = cards.find(c => c.id === accountId);
 
@@ -213,7 +224,7 @@ const ReturnModal: React.FC<Props> = ({ transactions, categories, cards, presele
         <div>
           <p className={styles.fieldLabel}>{t('return.pick_account')}</p>
           <div className={styles.cardRow}>
-            {cards.map(card => (
+            {compatibleCards.map(card => (
               <button
                 key={card.id}
                 className={`${styles.cardChip} ${accountId === card.id ? styles.cardActive : ''}`}

@@ -22,6 +22,7 @@ import type { Currency } from '../types';
 import { formatAmount } from '../utils/format';
 import { formatWithMinus } from '../utils/money';
 import dayjs from '../utils/dayjs';
+import { getTransactionKind } from '../utils/transactionKind';
 import styles from './Charts.module.css';
 
 const FALLBACK_COLORS = ['#7C3AED', '#0A84FF', '#30D158', '#FF9F0A', '#FF375F', '#5AC8FA', '#BF5AF2', '#FFD60A'];
@@ -55,7 +56,7 @@ const Charts = () => {
     return date.getMonth() === viewDate.month
       && date.getFullYear() === viewDate.year
       && transaction.currency === activeCurrency
-      && transaction.source !== 'transfer';
+      && getTransactionKind(transaction) !== 'transfer';
   }), [activeCurrency, transactions, viewDate]);
 
   // Refunds (`type: 'income'`, `source: 'return'`) offset spending rather than
@@ -72,20 +73,30 @@ const Charts = () => {
     .reduce((sum, budget) => sum + budget.amount, 0);
 
   const pieData = useMemo(() => {
-    const relevant = monthTxs.filter(item => view === 'both' || item.type === view);
+    const relevant = monthTxs.filter(item => {
+      const financialView = getTransactionKind(item) === 'return' ? 'expense' : item.type;
+      return view === 'both' || financialView === view;
+    });
     const grouped = new Map<string, { value: number; children?: Map<string, number> }>();
     relevant.forEach(item => {
       const isDebtPayment = item.source === 'debt_payment';
-      const key = isDebtPayment ? '__debt_payments__' : item.source ? (item.sourceLabel ?? item.source) : item.categoryId;
+      const isReturn = getTransactionKind(item) === 'return';
+      const key = isDebtPayment
+        ? '__debt_payments__'
+        : isReturn
+          ? item.categoryId
+          : item.source ? (item.sourceLabel ?? item.source) : item.categoryId;
+      const value = isReturn ? -item.amount : item.amount;
       const current = grouped.get(key);
       const children = isDebtPayment ? new Map(current?.children) : undefined;
       if (children) {
         const debtName = item.sourceLabel?.trim() || t('charts.unnamed_debt');
         children.set(debtName, (children.get(debtName) ?? 0) + item.amount);
       }
-      grouped.set(key, { value: (current?.value ?? 0) + item.amount, children });
+      grouped.set(key, { value: (current?.value ?? 0) + value, children });
     });
     return Array.from(grouped.entries())
+      .filter(([, group]) => group.value > 0)
       .sort((left, right) => right[1].value - left[1].value)
       .map(([categoryId, group], index) => {
         const category = categories.find(item => item.id === categoryId);
@@ -107,7 +118,9 @@ const Charts = () => {
     const days = Array.from({ length: daysInMonth }, (_, index) => ({ day: index + 1, income: 0, expense: 0 }));
     monthTxs.forEach(item => {
       const day = new Date(item.date).getDate() - 1;
-      if (days[day]) days[day][item.type] += item.amount;
+      if (!days[day]) return;
+      if (getTransactionKind(item) === 'return') days[day].expense -= item.amount;
+      else days[day][item.type] += item.amount;
     });
     return days;
   }, [daysInMonth, monthTxs]);

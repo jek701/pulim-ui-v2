@@ -23,6 +23,15 @@ export interface ReturnInput {
   comment?: string;
 }
 
+export interface UpdateTransferInput extends TransferInput {
+  date: number;
+  comment?: string;
+}
+
+export interface UpdateReturnInput extends ReturnInput {
+  date: number;
+}
+
 export function useTransactions(userId: string | null) {
   const uid = userId ?? '';
   const qc = useQueryClient();
@@ -71,5 +80,26 @@ export function useTransactions(userId: string | null) {
     invalidate();
   };
 
-  return { transactions, loading: q.isLoading, add, update, remove, clearAll, transfer, returnTransaction };
+  const updateTransfer = async (id: string, input: UpdateTransferInput) => {
+    await api.patch(`/v1/transactions/${id}/transfer`, input);
+    invalidate();
+  };
+
+  const updateReturn = async (id: string, input: UpdateReturnInput) => {
+    await api.patch(`/v1/transactions/${id}/return`, input);
+    invalidate();
+  };
+
+  return {
+    transactions,
+    loading: q.isLoading,
+    add,
+    update,
+    remove,
+    clearAll,
+    transfer,
+    returnTransaction,
+    updateTransfer,
+    updateReturn,
+  };
 }

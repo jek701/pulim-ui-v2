@@ -193,7 +193,9 @@ Key hooks:
 - `useTransactions`
   - CRUD for `transactions`.
   - `clearAll` deletes all user transactions using a batch.
-  - `update` converts undefined fields to `deleteField()`.
+  - Ordinary income/expense updates use `PATCH /transactions/:id`.
+  - Transfers and returns use dedicated atomic update endpoints so both account legs
+    and the original transaction's `returnedAmount` stay consistent.
 
 - `useCards`
   - CRUD and `adjustBalance`.
@@ -236,6 +238,10 @@ Key hooks:
   - Transfer type is derived from `source === 'transfer'`.
   - Summary excludes transfers and uses `baseAmount` for non-UZS if available.
   - Deleting or editing adjusts account balances to reverse/apply financial effects.
+  - Business kind is derived with `getTransactionKind`: a return is never treated as
+    income and a transfer is never treated as an expense by filters or editors.
+  - Returns and transfers have dedicated edit modals; category/subcategory remain
+    unavailable because they are not user-selected fields for those operations.
 
 - `Accounts.tsx`
   - Container for account types plus savings and debts.

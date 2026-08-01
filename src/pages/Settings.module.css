@@ -341,8 +341,6 @@
   background: var(--surface3);
   position: relative;
   box-sizing: content-box;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
   background-clip: padding-box;
   flex-shrink: 0;
   transition: background 0.2s ease;

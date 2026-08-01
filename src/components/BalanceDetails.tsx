@@ -15,6 +15,8 @@ interface Props {
 }
 
 const COLORS = ['#8B5CF6', '#35C2FF', '#3DDC97', '#FFB454', '#F472B6', '#2DD4BF', '#FACC15', '#FB7185'];
+const CREDIT_COLORS = ['#A78BFA', '#8B5CF6', '#C084FC', '#7C3AED'];
+type BalanceView = 'own' | 'credit';
 
 const getAvailableAmount = (card: Card) => (
   card.cardType === 'credit'
@@ -27,6 +29,29 @@ const isIncludedInAvailableTotal = (card: Card) => (
 );
 
 const formatCenterAmount = (amount: number) => amount.toLocaleString('uz-Latn-UZ');
+
+const buildSegments = (segmentCards: Card[], magnitudeTotal: number, colors: string[]) => {
+  if (magnitudeTotal === 0) return [];
+
+  const gap = Math.min(0.05, 0.3 / segmentCards.length);
+  const drawableLength = Math.max(0, 1 - gap * segmentCards.length);
+
+  return segmentCards.map((card, index) => {
+    const fraction = Math.abs(getAvailableAmount(card)) / magnitudeTotal;
+    const previousLength = segmentCards
+      .slice(0, index)
+      .reduce(
+        (sum, previousCard) => sum + (Math.abs(getAvailableAmount(previousCard)) / magnitudeTotal) * drawableLength,
+        0,
+      );
+    return {
+      card,
+      color: getAvailableAmount(card) < 0 ? '#FF5A5F' : colors[index % colors.length],
+      visible: fraction * drawableLength,
+      start: gap / 2 + previousLength + index * gap,
+    };
+  });
+};
 
 const BalanceDetails = ({ cards, onClose }: Props) => {
   const { t } = useTranslation();
@@ -45,6 +70,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
 
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(() => currencies[0] ?? 'UZS');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [balanceView, setBalanceView] = useState<BalanceView>('own');
   const activeCurrency = currencies.includes(selectedCurrency) ? selectedCurrency : (currencies[0] ?? 'UZS');
 
   useEffect(() => {
@@ -74,38 +100,22 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
     [currencyCards],
   );
 
-  const total = chartCards.reduce((sum, card) => sum + getAvailableAmount(card), 0);
-  // "Total available" mixes real money with unused credit, so on a card-heavy
-  // account it reads several times larger than the balance on the Home card the
-  // user just tapped. Split the two so the headline figure is the user's own money.
-  const ownMoneyTotal = chartCards
-    .filter(card => card.cardType !== 'credit')
+  const ownCards = chartCards.filter(card => card.cardType !== 'credit');
+  const creditCards = chartCards.filter(card => card.cardType === 'credit');
+  const ownMoneyTotal = ownCards
     .reduce((sum, card) => sum + getAvailableAmount(card), 0);
-  const creditAvailableTotal = total - ownMoneyTotal;
-  const magnitudeTotal = chartCards.reduce((sum, card) => sum + Math.abs(getAvailableAmount(card)), 0);
+  const creditAvailableTotal = creditCards
+    .reduce((sum, card) => sum + getAvailableAmount(card), 0);
+  const ownMagnitudeTotal = ownCards.reduce((sum, card) => sum + Math.abs(getAvailableAmount(card)), 0);
+  const creditMagnitudeTotal = creditCards.reduce((sum, card) => sum + Math.abs(getAvailableAmount(card)), 0);
 
-  const segments = useMemo(() => {
-    if (magnitudeTotal === 0) return [];
+  const ownSegments = buildSegments(ownCards, ownMagnitudeTotal, COLORS);
+  const creditSegments = buildSegments(creditCards, creditMagnitudeTotal, CREDIT_COLORS);
 
-    const gap = Math.min(0.045, 0.28 / chartCards.length);
-    const drawableLength = Math.max(0, 1 - gap * chartCards.length);
-
-    return chartCards.map((card, index) => {
-        const fraction = Math.abs(getAvailableAmount(card)) / magnitudeTotal;
-        const previousLength = chartCards
-          .slice(0, index)
-          .reduce(
-            (sum, previousCard) => sum + (Math.abs(getAvailableAmount(previousCard)) / magnitudeTotal) * drawableLength,
-            0,
-          );
-        return {
-          card,
-          color: getAvailableAmount(card) < 0 ? '#FF5A5F' : COLORS[index % COLORS.length],
-          visible: fraction * drawableLength,
-          start: gap / 2 + previousLength + index * gap,
-        };
-      });
-  }, [chartCards, magnitudeTotal]);
+  const segments = [...ownSegments, ...creditSegments];
+  const activeBalanceView = balanceView === 'credit' && creditCards.length === 0 ? 'own' : balanceView;
+  const displayedSegments = activeBalanceView === 'credit' ? creditSegments : ownSegments;
+  const displayedTotal = activeBalanceView === 'credit' ? creditAvailableTotal : ownMoneyTotal;
 
   const filterCards = useMemo(() => {
     const hiddenCards = currencyCards.filter(card => card.cardType !== 'credit' && card.includeInTotalBalance === false);
@@ -115,7 +125,10 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
     return [...leftCards, ...creditCards, ...hiddenCards]
   }, [currencyCards])
 
-  const selectedSegment = segments.find(segment => segment.card.id === selectedCardId);
+  const visibleCards = filterCards.filter(card => (
+    activeBalanceView === 'credit' ? card.cardType === 'credit' : card.cardType !== 'credit'
+  ));
+  const selectedSegment = displayedSegments.find(segment => segment.card.id === selectedCardId);
   const selectedCard = selectedSegment?.card;
 
   return createPortal(
@@ -150,7 +163,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
             </button>
           </header>
 
-        <div className={styles.scroller}>
+        <div className={styles.scroller} onClick={() => setSelectedCardId(null)}>
           {currencies.length > 1 && (
             <div className={styles.currencyTabs} style={{
               gridTemplateColumns: `repeat(${currencies.length}, calc(100% / ${currencies.length}))`
@@ -165,6 +178,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                   onClick={() => {
                     setSelectedCurrency(currency);
                     setSelectedCardId(null);
+                    setBalanceView('own');
                   }}
                 >
                   {currency}
@@ -184,15 +198,19 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
               <section className={styles.hero}>
                 <div className={styles.chartWrap}>
                   <svg className={styles.chart} viewBox="0 0 300 300" aria-label={t('home.balance_details_chart_label')}>
-                    <circle className={styles.chartTrack} cx="150" cy="150" r="116" />
+                    <circle className={styles.chartTrack} cx="150" cy="150" r="121" />
                     <g transform="rotate(-90 150 150)">
-                      {segments.map((segment, index) => (
+                      {displayedSegments.map((segment, index) => (
                         <motion.circle
-                          key={`${activeCurrency}-${segment.card.id}`}
-                          className={`${styles.chartSegment} ${selectedCardId === segment.card.id ? styles.chartSegmentSelected : ''}`}
+                          key={`${activeCurrency}-${activeBalanceView}-${segment.card.id}`}
+                          className={`${styles.chartSegment} ${
+                            selectedCardId === segment.card.id
+                              ? styles.chartSegmentSelected
+                              : selectedCardId !== null ? styles.chartSegmentInactive : ''
+                          }`}
                           cx="150"
                           cy="150"
-                          r="116"
+                          r="121"
                           pathLength={1}
                           stroke={segment.color}
                           strokeDashoffset={-segment.start}
@@ -204,7 +222,7 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                           transition={{
                             strokeDasharray: {
                               duration: reduceMotion ? 0 : 0.72,
-                              delay: reduceMotion ? 0 : 0.18 + index * 0.13,
+                              delay: reduceMotion ? 0 : 0.14 + index * 0.11,
                               ease: [0.22, 1, 0.36, 1],
                             },
                             opacity: { duration: reduceMotion ? 0 : 0.18, delay: 0 },
@@ -212,7 +230,10 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                           role="button"
                           tabIndex={0}
                           aria-label={`${segment.card.name}: ${formatAmount(getAvailableAmount(segment.card), segment.card.currency)}`}
-                          onClick={() => setSelectedCardId(current => current === segment.card.id ? null : segment.card.id)}
+                          onClick={event => {
+                            event.stopPropagation();
+                            setSelectedCardId(current => current === segment.card.id ? null : segment.card.id);
+                          }}
                           onKeyDown={event => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
@@ -249,22 +270,47 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                       </>
                     ) : (
                       <>
-                        <small>{t('home.balance_details_own_money')}</small>
+                        <small>{t(activeBalanceView === 'credit'
+                          ? 'home.balance_details_credit_reserve'
+                          : 'home.balance_details_own_money')}
+                        </small>
                         <strong className={styles.centerTotal}>
-                          <span>{formatCenterAmount(ownMoneyTotal)}</span>
+                          <span>{formatCenterAmount(displayedTotal)}</span>
                           <span className={styles.centerCurrency}>{activeCurrency}</span>
                         </strong>
-                        {creditAvailableTotal > 0 && (
-                          <em>{t('home.balance_details_plus_credit', {
-                            amount: `${formatCenterAmount(creditAvailableTotal)} ${activeCurrency}`,
-                          })}</em>
-                        )}
-                        {creditAvailableTotal <= 0 && <em>{t('home.balance_details_tap_segment')}</em>}
                       </>
                     )}
                   </motion.div>
                 </div>
 
+                {creditCards.length > 0 && (
+                    <div className={styles.balanceViewTabs} role="tablist" aria-label={t('home.balance_details_subtitle')}>
+                      <button
+                          className={activeBalanceView === 'own' ? styles.balanceViewTabActive : ''}
+                          type="button"
+                          role="tab"
+                          aria-selected={activeBalanceView === 'own'}
+                          onClick={() => {
+                            setBalanceView('own');
+                            setSelectedCardId(null);
+                          }}
+                      >
+                        {t('home.balance_details_own_money')}
+                      </button>
+                      <button
+                          className={activeBalanceView === 'credit' ? styles.balanceViewTabActive : ''}
+                          type="button"
+                          role="tab"
+                          aria-selected={activeBalanceView === 'credit'}
+                          onClick={() => {
+                            setBalanceView('credit');
+                            setSelectedCardId(null);
+                          }}
+                      >
+                        {t('home.balance_details_credit_reserve')}
+                      </button>
+                    </div>
+                )}
               </section>
 
               <section className={styles.accountsSection}>
@@ -273,15 +319,20 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                     <p>{t('home.balance_details_accounts_title')}</p>
                     <span>{t('home.balance_details_currency_hint', { currency: activeCurrency })}</span>
                   </div>
-                  <strong>{currencyCards.length}</strong>
+                  <strong>{visibleCards.length}</strong>
                 </div>
 
                 <div className={styles.accountList}>
-                  {filterCards.map((card, index) => {
+                  {visibleCards.map((card, index) => {
                     const segment = segments.find(item => item.card.id === card.id);
                     const availableAmount = getAvailableAmount(card);
                     const isCredit = card.cardType === 'credit';
                     const isExcluded = !isCredit && card.includeInTotalBalance === false;
+                    const creditLimit = card.limit ?? 0;
+                    const creditUsed = isCredit ? Math.max(0, card.balance) : 0;
+                    const creditUsedPercent = creditLimit > 0
+                      ? Math.min(100, (creditUsed / creditLimit) * 100)
+                      : 0;
                     return (
                       <motion.article
                         className={styles.accountCard}
@@ -312,9 +363,18 @@ const BalanceDetails = ({ cards, onClose }: Props) => {
                           <strong>{card.name}</strong>
                           <p className={availableAmount < 0 ? styles.negativeBalance : ''}>{formatAmount(availableAmount, card.currency)}</p>
                           {isCredit && (
-                            <small className={styles.accountLimit}>
-                              {t('home.balance_details_credit_limit', { amount: formatAmount(card.limit ?? 0, card.currency) })}
-                            </small>
+                            <div className={styles.creditUsage}>
+                              <div className={styles.creditUsageCopy}>
+                                <span>{t('home.balance_details_credit_used')}</span>
+                                <strong>{formatAmount(creditUsed, card.currency)}</strong>
+                              </div>
+                              <div className={styles.creditUsageTrack} aria-hidden="true">
+                                <span style={{ width: `${creditUsedPercent}%` }} />
+                              </div>
+                              <small className={styles.accountLimit}>
+                                {t('home.balance_details_credit_limit', { amount: formatAmount(creditLimit, card.currency) })}
+                              </small>
+                            </div>
                           )}
                         </div>
                       </motion.article>

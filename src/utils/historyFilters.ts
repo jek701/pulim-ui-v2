@@ -1,10 +1,12 @@
+import type { TransactionKind } from './transactionKind';
+
 /**
  * History filter shape. Lives outside both the page and the context so the two can
  * share it without importing each other. Filters are held in app context because
  * page-local state was wiped whenever the user switched tabs and came back.
  */
 export interface HistoryFilters {
-  types: ('income' | 'expense' | 'transfer')[];
+  types: TransactionKind[];
   categoryIds: string[];
   subcategoryIds: string[];
   cardIds: string[];
