@@ -477,6 +477,18 @@ Recommended checks after changes:
 - New text exists in all i18n files.
 - Mobile layout stays inside the 430px app shell and respects bottom nav.
 
+## Telegram Premium Quick Entry
+
+- Premium users can create ordinary income/expense transactions by messaging the bot.
+- Backend-created transactions carry `origin: 'telegram'`; this is informational and
+  must never be treated like the service-operation `source` field.
+- `profile.language` controls bot replies and is synchronized with i18next/localStorage.
+- `profile.telegramQuickEntryEnabled` is managed from Settings and defaults to enabled.
+- `?tx=<transactionId>` and Telegram `start_param=tx_<transactionId>` open History and
+  the existing transaction editor once, then the deep-link state is cleared.
+- The public bot link uses `VITE_TELEGRAM_BOT_USERNAME`.
+- Premium payment remains ATMOS-only; Telegram Stars are not used.
+
 ## Known Technical Risks and Cleanup Targets
 
 - AI chat documents still store message arrays in one document; long-term, move messages to a paginated subcollection.

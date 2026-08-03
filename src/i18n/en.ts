@@ -183,6 +183,7 @@ const en = {
     err_invalid_code: 'The verification code is invalid.',
     err_code_expired: 'That code has expired. Send a new code and try again.',
     err_recaptcha: 'reCAPTCHA verification failed. Please try again.',
+    err_sms_temporarily_blocked: 'Firebase temporarily blocked SMS delivery for this number or project. Avoid repeated requests and try again later or use another number.',
     err_phone_unavailable: 'Firebase could not start phone verification for project {{projectId}}. If Phone Auth or Blaze billing was just enabled, wait a few minutes and try again. Otherwise check the SMS quota and Firebase Authentication settings.',
     err_phone_domain: 'Phone sign-in is blocked by Firebase app verification or domain settings. Check Authorized domains and phone auth configuration.',
     err_environment: 'This sign-in method is not supported in this environment.',
@@ -344,6 +345,7 @@ const en = {
 
   // ── Transactions ─────────────────────────────────────────────────────────────
   transactions: {
+    origin_telegram: 'Added through Telegram',
     filter_all: 'All',
     filter_income: 'Income',
     filter_expense: 'Expense',
@@ -809,6 +811,11 @@ const en = {
   settings: {
     title: 'Settings',
     quick_settings: 'Quick settings',
+    section_telegram_entry: 'Telegram quick entry',
+    telegram_entry_hint: 'For example: breakfast 45k',
+    telegram_entry_toggle: 'Record transactions from Telegram messages',
+    telegram_entry_not_linked: 'Open the bot and send /start to link Telegram.',
+    telegram_entry_open_bot: 'Open Telegram bot',
     personalization: 'Personalization',
     planning_group: 'Planning',
     account_and_data: 'Account & data',

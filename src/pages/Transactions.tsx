@@ -12,7 +12,8 @@ import {
     HiAdjustmentsHorizontal,
     HiXMark,
     HiQuestionMarkCircle,
-    HiChevronDown
+    HiChevronDown,
+    HiPaperAirplane,
 } from 'react-icons/hi2';
 import {useApp} from '../context';
 import {EMPTY_HISTORY_FILTERS, type HistoryFilters} from '../utils/historyFilters';
@@ -54,7 +55,10 @@ export type ActiveFilters = HistoryFilters;
 const defaultFilters = EMPTY_HISTORY_FILTERS;
 
 const Transactions = () => {
-    const {user, categoryFilter, setCategoryFilter, historyFilters: filters, setHistoryFilters: setFilters} = useApp();
+    const {
+        user, categoryFilter, setCategoryFilter, historyFilters: filters,
+        setHistoryFilters: setFilters, transactionDeepLinkId, clearTransactionDeepLink,
+    } = useApp();
     const {
         transactions,
         add,
@@ -94,6 +98,21 @@ const Transactions = () => {
     const [editingTransferTx, setEditingTransferTx] = useState<Transaction | null>(null);
     const [returnTx, setReturnTx] = useState<Transaction | null>(null);
     const [showReturn, setShowReturn] = useState(false);
+
+    useEffect(() => {
+        if (!transactionDeepLinkId || txLoading) return;
+        const transaction = transactions.find(candidate => candidate.id === transactionDeepLinkId);
+        const task = window.setTimeout(() => {
+            if (transaction) {
+                const kind = getTransactionKind(transaction);
+                if (kind === 'return') setEditingReturnTx(transaction);
+                else if (kind === 'transfer') setEditingTransferTx(transaction);
+                else if (isRegularTransaction(transaction)) setEditingTx(transaction);
+            }
+            clearTransactionDeepLink();
+        }, 0);
+        return () => window.clearTimeout(task);
+    }, [transactionDeepLinkId, txLoading, transactions, clearTransactionDeepLink]);
     const [viewMode, setViewMode] = useState<'list' | 'pie' | 'line'>('list');
     const viewModeBeforeTour = useRef<'list' | 'pie' | 'line'>('list');
     const recentCardIds = useMemo(() => {
@@ -716,6 +735,14 @@ const Transactions = () => {
                                                     <div className={styles.txMid}>
                                                         <p className={styles.txName}>
                                                             {name}
+                                                            {tx.origin === 'telegram' && (
+                                                                <span
+                                                                    title={t('transactions.origin_telegram')}
+                                                                    aria-label={t('transactions.origin_telegram')}
+                                                                >
+                                                                    <HiPaperAirplane size={12}/>
+                                                                </span>
+                                                            )}
                                                             <span className={styles.txTime}>{formatTime(tx.createdAt, locale)}</span>
                                                         </p>
                                                         {tx.comment && <p className={styles.txComment}>{tx.comment}</p>}

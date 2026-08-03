@@ -13,6 +13,7 @@ import {
     HiLanguage,
     HiLockClosed,
     HiPencil,
+    HiPaperAirplane,
     HiPlus,
     HiShieldCheck,
     HiSquares2X2,
@@ -249,6 +250,9 @@ const Settings = () => {
     const switchLanguage = (language: string) => {
         i18n.changeLanguage(language);
         localStorage.setItem('lang', language);
+        if (language === 'en' || language === 'ru' || language === 'uz') {
+            void saveProfile({language}).catch(error => console.warn('[profile] language sync failed:', error));
+        }
     };
 
     const filteredCats = categories.filter(category => category.type === catTab || category.type === 'both');
@@ -363,6 +367,47 @@ const Settings = () => {
                         >
                             <span className={styles.preferenceThumb}/>
                         </button>
+                    </div>
+                    <div className={styles.quickSettingRow}>
+                        <span className={`${styles.menuIcon} ${styles.menuIconAccent}`}><HiPaperAirplane size={18}/></span>
+                        <span className={styles.menuCopy}>
+                            <span className={styles.menuTitle}>
+                                {t('settings.section_telegram_entry')}
+                                {!isPremium && <PremiumBadge small/>}
+                            </span>
+                            <span className={styles.menuSubtitle}>
+                                {profile?.telegramChatIds && profile.telegramChatIds.length > 0
+                                    ? t('settings.telegram_entry_hint')
+                                    : t('settings.telegram_entry_not_linked')}
+                            </span>
+                            {(!profile?.telegramChatIds || profile.telegramChatIds.length === 0) && import.meta.env.VITE_TELEGRAM_BOT_USERNAME && (
+                                <a
+                                    href={`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    {t('settings.telegram_entry_open_bot')}
+                                </a>
+                            )}
+                        </span>
+                        {profile?.telegramChatIds && profile.telegramChatIds.length > 0 && (
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={profile.telegramQuickEntryEnabled !== false}
+                                aria-label={t('settings.telegram_entry_toggle')}
+                                className={`${styles.preferenceSwitch} ${profile.telegramQuickEntryEnabled !== false ? styles.preferenceSwitchOn : ''}`}
+                                onClick={() => {
+                                    if (!isPremium) {
+                                        premiumGate.open('generic');
+                                        return;
+                                    }
+                                    void saveProfile({telegramQuickEntryEnabled: profile.telegramQuickEntryEnabled === false});
+                                }}
+                            >
+                                <span className={styles.preferenceThumb}/>
+                            </button>
+                        )}
                     </div>
                     <MenuRow
                         icon={<HiLanguage size={19}/>}

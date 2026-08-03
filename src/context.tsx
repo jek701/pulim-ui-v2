@@ -8,6 +8,7 @@ import { qk } from './api/queryClient';
 import { paymentApi, type CheckoutSession } from './api/paymentClient';
 import type { AuthMethod, Tab, UserProfile } from './types';
 import { EMPTY_HISTORY_FILTERS, type HistoryFilters } from './utils/historyFilters';
+import i18n from './i18n';
 
 interface AppContextType {
   user: User | null;
@@ -38,6 +39,8 @@ interface AppContextType {
   profile: UserProfile | null;
   profileLoading: boolean;
   saveProfile: (data: Partial<UserProfile>) => Promise<void>;
+  transactionDeepLinkId: string | null;
+  clearTransactionDeepLink: () => void;
   paymentResult: PaymentResult | null;
   dismissPaymentResult: () => void;
 }
@@ -60,6 +63,7 @@ type TelegramWebApp = {
   initData?: string;
   initDataUnsafe?: {
     user?: TelegramWebAppUser;
+    start_param?: string;
   };
 };
 
@@ -89,6 +93,13 @@ const dedupeAuthMethods = (methods: Array<AuthMethod | null | undefined>) => (
 
 const hasModernAuthMethod = (methods: AuthMethod[]) => methods.some(method => MODERN_AUTH_METHODS.includes(method));
 
+const initialTransactionDeepLink = () => {
+  const queryId = new URLSearchParams(window.location.search).get('tx');
+  if (queryId) return queryId;
+  const startParam = getTelegramWebApp()?.initDataUnsafe?.start_param;
+  return startParam?.startsWith('tx_') ? startParam.slice(3) : null;
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
@@ -101,6 +112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [telegramLinkPending, setTelegramLinkPending] = useState(false);
   const [telegramLinkError, setTelegramLinkError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [transactionDeepLinkId, setTransactionDeepLinkId] = useState<string | null>(initialTransactionDeepLink);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [historyFilters, setHistoryFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
   const [tabResetNonce, setTabResetNonce] = useState(0);
@@ -352,11 +364,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const saveProfile = async (data: Partial<UserProfile>) => {
+  const saveProfile = useCallback(async (data: Partial<UserProfile>) => {
     if (!uid) return;
     const updated = await api.patch<UserProfile & { id: string }>('/v1/profile', data);
     queryClient.setQueryData(qk.profile(uid), updated);
-  };
+  }, [uid, queryClient]);
+
+  const languageSyncedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!uid || !profile) return;
+    if (profile.language && profile.language !== i18n.language) {
+      void i18n.changeLanguage(profile.language);
+      localStorage.setItem('lang', profile.language);
+      languageSyncedFor.current = uid;
+      return;
+    }
+    if (!profile.language && languageSyncedFor.current !== uid) {
+      languageSyncedFor.current = uid;
+      const language = (['en', 'ru', 'uz'].includes(i18n.language) ? i18n.language : 'en') as 'en' | 'ru' | 'uz';
+      void saveProfile({ language }).catch((error) => {
+        languageSyncedFor.current = null;
+        console.warn('[profile] language sync failed:', error);
+      });
+    }
+  }, [uid, profile, saveProfile]);
+
+  useEffect(() => {
+    if (!transactionDeepLinkId) return;
+    setActiveTab('transactions');
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('tx')) {
+      url.searchParams.delete('tx');
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, [transactionDeepLinkId]);
+
+  const clearTransactionDeepLink = useCallback(() => setTransactionDeepLinkId(null), []);
 
   // ── Consent-based Telegram linking for signed-in email users (option B) ──────
   const linkTelegram = async () => {
@@ -430,6 +473,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       historyFilters, setHistoryFilters,
       tabResetNonce, requestTabReset,
       profile, profileLoading, saveProfile,
+      transactionDeepLinkId, clearTransactionDeepLink,
       paymentResult, dismissPaymentResult,
     }}>
       {children}

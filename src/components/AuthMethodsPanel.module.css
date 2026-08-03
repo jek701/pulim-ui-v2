@@ -151,12 +151,6 @@
   color: var(--text3);
 }
 
-.recaptchaContainer {
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
-
 .sentNotice {
   display: flex;
   align-items: center;

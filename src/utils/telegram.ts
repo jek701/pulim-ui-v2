@@ -7,6 +7,9 @@ export type TelegramInset = {
 
 export type TelegramWebApp = {
   initData?: string;
+  initDataUnsafe?: {
+    start_param?: string;
+  };
   platform?: string;
   colorScheme?: 'light' | 'dark';
   version?: string;

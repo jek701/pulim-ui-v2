@@ -183,6 +183,7 @@ const ru = {
     err_invalid_code: 'Неверный код подтверждения.',
     err_code_expired: 'Срок действия кода истёк. Отправьте новый код и попробуйте снова.',
     err_recaptcha: 'Проверка reCAPTCHA не пройдена. Попробуйте ещё раз.',
+    err_sms_temporarily_blocked: 'Firebase временно заблокировал отправку SMS для этого номера или проекта. Не запрашивайте код повторно много раз — попробуйте позже или используйте другой номер.',
     err_phone_unavailable: 'Firebase не смог запустить подтверждение телефона для проекта {{projectId}}. Если Phone Auth или биллинг Blaze были включены только что, подождите несколько минут и повторите попытку. В остальных случаях проверьте квоту SMS и настройки Firebase Authentication.',
     err_phone_domain: 'Вход по телефону блокируется настройками Firebase app verification или домена. Проверьте Authorized domains и конфигурацию phone auth.',
     err_environment: 'Этот способ входа не поддерживается в текущей среде.',
@@ -344,6 +345,7 @@ const ru = {
 
   // ── Transactions ─────────────────────────────────────────────────────────────
   transactions: {
+    origin_telegram: 'Добавлено через Telegram',
     filter_all: 'Все',
     filter_income: 'Доходы',
     filter_expense: 'Расходы',
@@ -815,6 +817,11 @@ const ru = {
   settings: {
     title: 'Настройки',
     quick_settings: 'Быстрые настройки',
+    section_telegram_entry: 'Запись через Telegram',
+    telegram_entry_hint: 'Например: завтрак 45к',
+    telegram_entry_toggle: 'Записывать операции сообщениями в Telegram',
+    telegram_entry_not_linked: 'Откройте бота и отправьте /start, чтобы связать Telegram.',
+    telegram_entry_open_bot: 'Открыть Telegram-бота',
     personalization: 'Персонализация',
     planning_group: 'Планирование',
     account_and_data: 'Аккаунт и данные',

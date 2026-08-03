@@ -63,8 +63,10 @@ const AuthMethodsPanel: React.FC<Props> = ({
   const { reloadUser } = useApp();
   const idPrefix = useId().replace(/:/g, '_');
   const sendButtonId = `phone_send_${idPrefix}`;
-  const recaptchaContainerId = `phone_recaptcha_${idPrefix}`;
+  const phoneFormId = `phone_form_${idPrefix}`;
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaWidgetIdRef = useRef<number | null>(null);
+  const sendCodeInFlightRef = useRef(false);
   const [busyMethod, setBusyMethod] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+998 ');
@@ -83,6 +85,13 @@ const AuthMethodsPanel: React.FC<Props> = ({
 
   const mapAuthError = (err: unknown, method: 'phone' | 'email') => {
     const code = (err as { code?: string }).code?.replace('auth/', '') ?? '';
+    const message = (err as { message?: string }).message ?? '';
+    if (
+      method === 'phone'
+      && (code === 'error-code:-39' || /error code:\s*39\b/i.test(message))
+    ) {
+      return t('auth.err_sms_temporarily_blocked');
+    }
     const sharedErrors: Record<string, string> = {
       'too-many-requests': t('login.err_too_many_attempts'),
       'network-request-failed': t('login.err_network'),
@@ -112,26 +121,66 @@ const AuthMethodsPanel: React.FC<Props> = ({
       'invalid-credential': t('login.err_invalid_credentials'),
     };
     const errors = method === 'phone' ? phoneErrors : emailErrors;
-    return errors[code] ?? sharedErrors[code] ?? (err as { message?: string }).message ?? t('common.error_generic');
+    return errors[code] ?? sharedErrors[code] ?? (message || t('common.error_generic'));
   };
 
   const clearVerifier = () => {
     verifierRef.current?.clear();
     verifierRef.current = null;
+    recaptchaWidgetIdRef.current = null;
+  };
+
+  const resetRecaptcha = async () => {
+    const verifier = verifierRef.current;
+    if (!verifier) return;
+
+    try {
+      const widgetId = recaptchaWidgetIdRef.current ?? await verifier.render();
+      recaptchaWidgetIdRef.current = widgetId;
+      const recaptcha = (
+        window as typeof window & {
+          grecaptcha?: { reset: (id?: number) => void };
+        }
+      ).grecaptcha;
+
+      if (!recaptcha) {
+        clearVerifier();
+        return;
+      }
+      recaptcha.reset(widgetId);
+    } catch {
+      clearVerifier();
+    }
   };
 
   const ensureRecaptcha = async () => {
     if (verifierRef.current) return verifierRef.current;
     auth.languageCode = i18n.resolvedLanguage ?? i18n.language;
-    verifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerId, {
+
+    // Firebase's invisible reCAPTCHA example binds the verifier directly to
+    // the button that submits the phone sign-in form.
+    const verifier = new RecaptchaVerifier(auth, sendButtonId, {
       size: 'invisible',
       badge: 'bottomright',
+      callback: () => {
+        // This mirrors Firebase's onSignInSubmit() example. requestSubmit()
+        // also covers browsers where reCAPTCHA intercepts the original click.
+        const form = document.getElementById(phoneFormId);
+        if (form instanceof HTMLFormElement) form.requestSubmit();
+      },
       'expired-callback': () => {
-        clearVerifier();
+        void resetRecaptcha();
       },
     });
-    await verifierRef.current.render();
-    return verifierRef.current;
+    verifierRef.current = verifier;
+
+    try {
+      recaptchaWidgetIdRef.current = await verifier.render();
+      return verifier;
+    } catch (error) {
+      clearVerifier();
+      throw error;
+    }
   };
 
   const resetPhoneFlow = () => {
@@ -143,16 +192,18 @@ const AuthMethodsPanel: React.FC<Props> = ({
 
   const handleSendCode = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (sendCodeInFlightRef.current) return;
+
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     if (!normalizedPhone.valid) {
       setError(t('auth.err_invalid_phone'));
       return;
     }
 
+    sendCodeInFlightRef.current = true;
     setBusyMethod('phone-send');
     setError('');
     try {
-      clearVerifier();
       const verifier = await ensureRecaptcha();
       let result: ConfirmationResult;
       if (mode === 'link') {
@@ -164,9 +215,10 @@ const AuthMethodsPanel: React.FC<Props> = ({
       setConfirmationResult(result);
     } catch (err) {
       console.error(`[auth:${mode === 'link' ? 'link-' : ''}phone-send]`, err);
-      clearVerifier();
+      await resetRecaptcha();
       setError(mapAuthError(err, 'phone'));
     } finally {
+      sendCodeInFlightRef.current = false;
       setBusyMethod(null);
     }
   };
@@ -226,7 +278,7 @@ const AuthMethodsPanel: React.FC<Props> = ({
           </div>
         </div>
 
-        <form className={styles.phoneForm} onSubmit={handleSendCode}>
+        <form id={phoneFormId} className={styles.phoneForm} onSubmit={handleSendCode}>
           <label className={styles.fieldLabel} htmlFor={`${sendButtonId}_number`}>
             {t('auth.phone_label')}
           </label>
@@ -260,7 +312,6 @@ const AuthMethodsPanel: React.FC<Props> = ({
                 ? t('auth.phone_resend_code')
                 : t('auth.phone_send_code')}
           </button>
-          <div id={recaptchaContainerId} className={styles.recaptchaContainer} />
           <p className={styles.smsNote}>{t('auth.phone_sms_note')}</p>
         </form>
 

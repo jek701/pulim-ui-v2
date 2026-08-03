@@ -183,6 +183,7 @@ const uz = {
         err_invalid_code: 'Tasdiqlash kodi noto‘g‘ri.',
         err_code_expired: 'Kodning muddati tugagan. Yangi kod yuborib, qayta urinib ko‘ring.',
         err_recaptcha: 'reCAPTCHA tekshiruvi muvaffaqiyatsiz bo‘ldi. Qayta urinib ko‘ring.',
+        err_sms_temporarily_blocked: 'Firebase bu raqam yoki loyiha uchun SMS yuborishni vaqtincha blokladi. Kodni qayta-qayta so‘ramang, keyinroq urinib ko‘ring yoki boshqa raqamdan foydalaning.',
         err_phone_unavailable: 'Firebase {{projectId}} loyihasi uchun telefon tasdiqlashni boshlay olmadi. Phone Auth yoki Blaze billing hozirgina yoqilgan bo‘lsa, bir necha daqiqa kutib qayta urinib ko‘ring. Aks holda SMS kvotasi va Firebase Authentication sozlamalarini tekshiring.',
         err_phone_domain: 'Telefon orqali kirish Firebase app verification yoki domain sozlamalari sabab bloklanyapti. Authorized domains va phone auth konfiguratsiyasini tekshiring.',
         err_environment: 'Bu kirish usuli joriy muhitda ishlamaydi.',
@@ -344,6 +345,7 @@ const uz = {
 
     // ── Transactions ─────────────────────────────────────────────────────────────
     transactions: {
+        origin_telegram: 'Telegram orqali qo‘shilgan',
         filter_all: 'Hammasi',
         filter_income: 'Daromadlar',
         filter_expense: 'Xarajatlar',
@@ -809,6 +811,11 @@ const uz = {
     settings: {
         title: 'Sozlamalar',
         quick_settings: 'Tezkor sozlamalar',
+        section_telegram_entry: 'Telegram orqali tezkor yozish',
+        telegram_entry_hint: 'Masalan: nonushta 45 ming',
+        telegram_entry_toggle: 'Telegram xabarlari orqali operatsiya yozish',
+        telegram_entry_not_linked: 'Telegramni ulash uchun botni ochib /start yuboring.',
+        telegram_entry_open_bot: 'Telegram botni ochish',
         personalization: 'Moslashtirish',
         planning_group: 'Rejalashtirish',
         account_and_data: 'Akkaunt va ma’lumotlar',

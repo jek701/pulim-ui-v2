@@ -87,6 +87,8 @@ export interface UserProfile {
   phoneNumberMasked?: string;
   authMethodsUpdatedAt?: number;
   homeWidgets?: HomeWidgetSetting[]; // ordered widget config for the Home screen
+  language?: 'en' | 'ru' | 'uz';
+  telegramQuickEntryEnabled?: boolean;
   /** Authoritative premium flag. All UI gating reads from this field. */
   isPremium?: boolean;
   subscription?: SubscriptionState;
@@ -165,6 +167,7 @@ export interface Transaction {
   cardId?: string;
   comment?: string;
   source?: 'debt_payment' | 'savings' | 'transfer' | 'deposit_interest' | 'deposit_close' | 'deposit_replenish' | 'deposit_withdraw' | 'return' | 'subscription';
+  origin?: 'telegram';
   sourceLabel?: string;
   toCardId?: string;
   toAmount?: number;
