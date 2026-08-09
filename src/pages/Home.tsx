@@ -191,7 +191,7 @@ const Home = () => {
     setForecast(null);
     setForecastError(null);
     try {
-      const language = i18n.language === 'ru' ? 'ru' : i18n.language === 'uz' ? 'uz' : 'en';
+      const language = i18n.language === 'ru' ? 'ru' : 'uz';
       setForecast(await getBudgetForecast(language));
     } catch {
       setForecastError(t('home.forecast_ai_error'));

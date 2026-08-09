@@ -6,10 +6,10 @@ import dayjs from './dayjs';
  * English, so Uzbek screens showed English month and day names.
  */
 const localeOf = (l: string) => {
-  if (!l) return 'en';
+  if (!l) return 'uz-latn';
   if (l.startsWith('ru')) return 'ru';
   if (l.startsWith('uz')) return 'uz-latn';
-  return 'en';
+  return 'uz-latn';
 };
 
 type FormatMoneyOptions = {

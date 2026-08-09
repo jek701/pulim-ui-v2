@@ -1,11 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import {
-  linkWithPhoneNumber,
-  RecaptchaVerifier,
-  signInWithEmailAndPassword,
-  signInWithPhoneNumber,
-} from 'firebase/auth';
-import type { ConfirmationResult } from 'firebase/auth';
+import { signInWithCustomToken, signInWithEmailAndPassword } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import {
   HiArrowPath,
@@ -14,7 +8,9 @@ import {
   HiLockClosed,
   HiOutlineCheckCircle,
 } from 'react-icons/hi2';
-import { auth, firebaseProjectId } from '../firebase';
+import { auth } from '../firebase';
+import { ApiError } from '../api/client';
+import { sendPhoneCode, verifyPhoneCode } from '../api/phoneAuth';
 import { useApp } from '../context';
 import styles from './AuthMethodsPanel.module.css';
 
@@ -49,8 +45,14 @@ const normalizePhoneNumber = (value: string) => {
   const e164 = `+${digits}`;
   return {
     e164,
-    valid: /^\+[1-9]\d{7,14}$/.test(e164),
+    // Eskiz sends domestic SMS only, so the gateway accepts +998 numbers exclusively.
+    valid: /^\+998\d{9}$/.test(e164),
   };
+};
+
+const smsLanguage = (language: string) => {
+  const base = language.split('-')[0];
+  return base === 'ru' || base === 'en' || base === 'uz' ? base : 'uz';
 };
 
 const AuthMethodsPanel: React.FC<Props> = ({
@@ -64,135 +66,91 @@ const AuthMethodsPanel: React.FC<Props> = ({
   const idPrefix = useId().replace(/:/g, '_');
   const sendButtonId = `phone_send_${idPrefix}`;
   const phoneFormId = `phone_form_${idPrefix}`;
-  const verifierRef = useRef<RecaptchaVerifier | null>(null);
-  const recaptchaWidgetIdRef = useRef<number | null>(null);
   const sendCodeInFlightRef = useRef(false);
   const [busyMethod, setBusyMethod] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+998 ');
   const [smsCode, setSmsCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
   const [showLegacyForm, setShowLegacyForm] = useState(false);
   const [legacyEmail, setLegacyEmail] = useState('');
   const [legacyPassword, setLegacyPassword] = useState('');
 
+  // Resend cooldown mirrors the server-side one, so the button reflects reality
+  // instead of letting the user collect 429s.
   useEffect(() => {
-    return () => {
-      verifierRef.current?.clear();
-      verifierRef.current = null;
-    };
-  }, []);
+    if (resendIn <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendIn((seconds) => Math.max(seconds - 1, 0));
+    }, 1_000);
+    return () => window.clearInterval(timer);
+  }, [resendIn]);
 
-  const mapAuthError = (err: unknown, method: 'phone' | 'email') => {
+  const mapPhoneError = (err: unknown) => {
+    if (err instanceof TypeError) return t('login.err_network');
+    if (!(err instanceof ApiError)) {
+      const message = (err as { message?: string }).message;
+      return message || t('common.error_generic');
+    }
+    const details = (err.details ?? {}) as { retryAfter?: number; attemptsLeft?: number };
+    switch (err.code) {
+      case 'PHONE_INVALID':
+      case 'VALIDATION_ERROR':
+        return t('auth.err_invalid_phone');
+      case 'RESEND_TOO_SOON':
+        return t('auth.err_resend_too_soon', { seconds: details.retryAfter ?? 60 });
+      case 'TOO_MANY_SENDS':
+        return t('auth.err_too_many_sends');
+      case 'CODE_INVALID':
+        return details.attemptsLeft
+          ? t('auth.err_invalid_code_attempts', { attempts: details.attemptsLeft })
+          : t('auth.err_invalid_code');
+      case 'CODE_EXPIRED':
+        return t('auth.err_code_expired');
+      case 'CODE_NOT_FOUND':
+        return t('auth.err_code_not_found');
+      case 'TOO_MANY_ATTEMPTS':
+        return t('auth.err_too_many_attempts');
+      case 'PHONE_ALREADY_LINKED':
+        return t('auth.err_credential_in_use');
+      case 'SMS_UNAVAILABLE':
+        return t('auth.err_sms_unavailable');
+      case 'SMS_SEND_FAILED':
+      case 'SMS_GATEWAY_ERROR':
+        return t('auth.err_sms_failed');
+      case 'RATE_LIMITED':
+        return t('login.err_too_many_attempts');
+      case 'AUTH_REQUIRED':
+        return mode === 'link' ? t('auth.err_no_user') : t('common.error_generic');
+      default:
+        return err.message || t('common.error_generic');
+    }
+  };
+
+  const mapEmailError = (err: unknown) => {
     const code = (err as { code?: string }).code?.replace('auth/', '') ?? '';
     const message = (err as { message?: string }).message ?? '';
-    if (
-      method === 'phone'
-      && (code === 'error-code:-39' || /error code:\s*39\b/i.test(message))
-    ) {
-      return t('auth.err_sms_temporarily_blocked');
-    }
-    const sharedErrors: Record<string, string> = {
+    const errors: Record<string, string> = {
       'too-many-requests': t('login.err_too_many_attempts'),
       'network-request-failed': t('login.err_network'),
-      'operation-not-supported-in-this-environment': t('auth.err_environment'),
-    };
-    const phoneErrors: Record<string, string> = {
-      'operation-not-allowed': t('auth.err_phone_unavailable', {
-        projectId: firebaseProjectId,
-      }),
-      'invalid-phone-number': t('auth.err_invalid_phone'),
-      'missing-phone-number': t('auth.err_invalid_phone'),
-      'invalid-verification-code': t('auth.err_invalid_code'),
-      'missing-verification-code': t('auth.err_invalid_code'),
-      'code-expired': t('auth.err_code_expired'),
-      'session-expired': t('auth.err_code_expired'),
-      'captcha-check-failed': t('auth.err_recaptcha'),
-      'app-not-authorized': t('auth.err_phone_domain'),
-      'unauthorized-domain': t('auth.err_phone_domain'),
-      'invalid-app-credential': t('auth.err_phone_domain'),
-      'credential-already-in-use': t('auth.err_credential_in_use'),
-      'provider-already-linked': t('auth.err_provider_linked'),
-    };
-    const emailErrors: Record<string, string> = {
       'operation-not-allowed': t('login.err_not_enabled'),
       'user-not-found': t('login.err_user_not_found'),
       'wrong-password': t('login.err_wrong_password'),
       'invalid-credential': t('login.err_invalid_credentials'),
     };
-    const errors = method === 'phone' ? phoneErrors : emailErrors;
-    return errors[code] ?? sharedErrors[code] ?? (message || t('common.error_generic'));
-  };
-
-  const clearVerifier = () => {
-    verifierRef.current?.clear();
-    verifierRef.current = null;
-    recaptchaWidgetIdRef.current = null;
-  };
-
-  const resetRecaptcha = async () => {
-    const verifier = verifierRef.current;
-    if (!verifier) return;
-
-    try {
-      const widgetId = recaptchaWidgetIdRef.current ?? await verifier.render();
-      recaptchaWidgetIdRef.current = widgetId;
-      const recaptcha = (
-        window as typeof window & {
-          grecaptcha?: { reset: (id?: number) => void };
-        }
-      ).grecaptcha;
-
-      if (!recaptcha) {
-        clearVerifier();
-        return;
-      }
-      recaptcha.reset(widgetId);
-    } catch {
-      clearVerifier();
-    }
-  };
-
-  const ensureRecaptcha = async () => {
-    if (verifierRef.current) return verifierRef.current;
-    auth.languageCode = i18n.resolvedLanguage ?? i18n.language;
-
-    // Firebase's invisible reCAPTCHA example binds the verifier directly to
-    // the button that submits the phone sign-in form.
-    const verifier = new RecaptchaVerifier(auth, sendButtonId, {
-      size: 'invisible',
-      badge: 'bottomright',
-      callback: () => {
-        // This mirrors Firebase's onSignInSubmit() example. requestSubmit()
-        // also covers browsers where reCAPTCHA intercepts the original click.
-        const form = document.getElementById(phoneFormId);
-        if (form instanceof HTMLFormElement) form.requestSubmit();
-      },
-      'expired-callback': () => {
-        void resetRecaptcha();
-      },
-    });
-    verifierRef.current = verifier;
-
-    try {
-      recaptchaWidgetIdRef.current = await verifier.render();
-      return verifier;
-    } catch (error) {
-      clearVerifier();
-      throw error;
-    }
+    return errors[code] ?? (message || t('common.error_generic'));
   };
 
   const resetPhoneFlow = () => {
-    clearVerifier();
-    setConfirmationResult(null);
+    setCodeSentTo(null);
     setSmsCode('');
     setError('');
   };
 
   const handleSendCode = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (sendCodeInFlightRef.current) return;
+    if (sendCodeInFlightRef.current || resendIn > 0) return;
 
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     if (!normalizedPhone.valid) {
@@ -204,19 +162,20 @@ const AuthMethodsPanel: React.FC<Props> = ({
     setBusyMethod('phone-send');
     setError('');
     try {
-      const verifier = await ensureRecaptcha();
-      let result: ConfirmationResult;
-      if (mode === 'link') {
-        if (!auth.currentUser) throw new Error(t('auth.err_no_user'));
-        result = await linkWithPhoneNumber(auth.currentUser, normalizedPhone.e164, verifier);
-      } else {
-        result = await signInWithPhoneNumber(auth, normalizedPhone.e164, verifier);
-      }
-      setConfirmationResult(result);
+      if (mode === 'link' && !auth.currentUser) throw new Error(t('auth.err_no_user'));
+      const result = await sendPhoneCode({
+        phone: normalizedPhone.e164,
+        purpose: mode === 'link' ? 'link' : 'signin',
+        language: smsLanguage(i18n.resolvedLanguage ?? i18n.language),
+        firebaseIdToken: mode === 'link' ? await auth.currentUser!.getIdToken() : undefined,
+      });
+      setCodeSentTo(result.phone);
+      setResendIn(result.resendAfter);
+      // Dev convenience: the API only echoes the code when SMS sending is disabled.
+      if (result.debugCode) setSmsCode(result.debugCode);
     } catch (err) {
       console.error(`[auth:${mode === 'link' ? 'link-' : ''}phone-send]`, err);
-      await resetRecaptcha();
-      setError(mapAuthError(err, 'phone'));
+      setError(mapPhoneError(err));
     } finally {
       sendCodeInFlightRef.current = false;
       setBusyMethod(null);
@@ -225,18 +184,23 @@ const AuthMethodsPanel: React.FC<Props> = ({
 
   const handleConfirmCode = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!confirmationResult) return;
+    if (!codeSentTo) return;
 
     setBusyMethod('phone-confirm');
     setError('');
     try {
-      await confirmationResult.confirm(smsCode);
-      clearVerifier();
+      const result = await verifyPhoneCode({
+        phone: codeSentTo,
+        code: smsCode,
+        purpose: mode === 'link' ? 'link' : 'signin',
+        firebaseIdToken: mode === 'link' ? await auth.currentUser?.getIdToken() : undefined,
+      });
+      if (result.customToken) await signInWithCustomToken(auth, result.customToken);
       if (mode === 'link') await reloadUser();
       onSuccess?.();
     } catch (err) {
       console.error(`[auth:${mode === 'link' ? 'link-' : ''}phone-confirm]`, err);
-      setError(mapAuthError(err, 'phone'));
+      setError(mapPhoneError(err));
     } finally {
       setBusyMethod(null);
     }
@@ -251,7 +215,7 @@ const AuthMethodsPanel: React.FC<Props> = ({
       onSuccess?.();
     } catch (err) {
       console.error('[auth:legacy-email]', err);
-      setError(mapAuthError(err, 'email'));
+      setError(mapEmailError(err));
     } finally {
       setBusyMethod(null);
     }
@@ -260,6 +224,12 @@ const AuthMethodsPanel: React.FC<Props> = ({
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const codeComplete = /^\d{6}$/.test(smsCode);
   const phoneBusy = busyMethod === 'phone-send' || busyMethod === 'phone-confirm';
+
+  const sendButtonLabel = () => {
+    if (busyMethod === 'phone-send') return t('auth.phone_sending');
+    if (resendIn > 0) return t('auth.phone_resend_in', { seconds: resendIn });
+    return codeSentTo ? t('auth.phone_resend_code') : t('auth.phone_send_code');
+  };
 
   return (
     <div className={styles.wrap}>
@@ -292,7 +262,7 @@ const AuthMethodsPanel: React.FC<Props> = ({
               value={phoneNumber}
               onChange={(event) => {
                 setPhoneNumber(formatPhoneInput(event.target.value));
-                if (confirmationResult) resetPhoneFlow();
+                if (codeSentTo) resetPhoneFlow();
               }}
               autoComplete="tel"
               inputMode="tel"
@@ -303,23 +273,19 @@ const AuthMethodsPanel: React.FC<Props> = ({
           <button
             id={sendButtonId}
             className={styles.primaryBtn}
-            disabled={!normalizedPhone.valid || phoneBusy}
+            disabled={!normalizedPhone.valid || phoneBusy || resendIn > 0}
             type="submit"
           >
-            {busyMethod === 'phone-send'
-              ? t('auth.phone_sending')
-              : confirmationResult
-                ? t('auth.phone_resend_code')
-                : t('auth.phone_send_code')}
+            {sendButtonLabel()}
           </button>
           <p className={styles.smsNote}>{t('auth.phone_sms_note')}</p>
         </form>
 
-        {confirmationResult && (
+        {codeSentTo && (
           <form className={styles.codeForm} onSubmit={handleConfirmCode}>
             <div className={styles.sentNotice}>
               <HiOutlineCheckCircle size={18} />
-              <span>{t('auth.phone_code_sent', { phone: normalizedPhone.e164 })}</span>
+              <span>{t('auth.phone_code_sent', { phone: codeSentTo })}</span>
             </div>
             <label className={styles.fieldLabel} htmlFor={`${sendButtonId}_code`}>
               {t('auth.phone_code_label')}

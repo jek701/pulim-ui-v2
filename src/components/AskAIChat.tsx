@@ -140,7 +140,7 @@ const AskAIChat = ({ onClose }: Props) => {
     if (activeChatId === chatId) startNewChat();
   };
 
-  const language = i18n.language === 'ru' ? 'ru' : i18n.language === 'uz' ? 'uz' : 'en';
+  const language = i18n.language === 'ru' ? 'ru' : 'uz';
 
   const copyMessage = async (content: string, index: number) => {
     try {

@@ -139,13 +139,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const tokenResult = await nextUser.getIdTokenResult();
     const firebaseClaims = tokenResult.claims.firebase as { sign_in_provider?: string } | undefined;
     const signInProviderId = firebaseClaims?.sign_in_provider ?? null;
-    const provider = tokenResult.claims.provider === 'telegram'
+    // Phone sign-in goes through the API (Eskiz SMS) and lands as a custom token,
+    // so `sign_in_provider` is `custom` and the real method travels in our claim.
+    const claimProvider = tokenResult.claims.provider;
+    const provider = claimProvider === 'telegram'
       ? 'telegram'
       : mapProviderIdToAuthMethod(signInProviderId)
+        ?? (claimProvider === 'phone' ? 'phone' : null)
         ?? mapProviderIdToAuthMethod(nextUser.providerData[0]?.providerId)
         ?? (nextUser.email ? 'email' : null);
     const methods = dedupeAuthMethods([
       provider === 'telegram' ? 'telegram' : null,
+      tokenResult.claims.phone ? 'phone' : null,
       ...nextUser.providerData.map((entry) => mapProviderIdToAuthMethod(entry.providerId)),
     ]);
     setAuthProvider(provider);
@@ -381,7 +386,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (!profile.language && languageSyncedFor.current !== uid) {
       languageSyncedFor.current = uid;
-      const language = (['en', 'ru', 'uz'].includes(i18n.language) ? i18n.language : 'en') as 'en' | 'ru' | 'uz';
+      const language = (['en', 'ru', 'uz'].includes(i18n.language) ? i18n.language : 'uz') as 'en' | 'ru' | 'uz';
       void saveProfile({ language }).catch((error) => {
         languageSyncedFor.current = null;
         console.warn('[profile] language sync failed:', error);

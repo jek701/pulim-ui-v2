@@ -21,7 +21,7 @@ export const toDayjsLocale = (lang: string): string => {
   return DAYJS_LOCALE[base] ?? base;
 };
 
-const initial = (typeof localStorage !== 'undefined' && localStorage.getItem('lang')) || 'en';
+const initial = (typeof localStorage !== 'undefined' && localStorage.getItem('lang')) || 'uz';
 dayjs.locale(toDayjsLocale(initial));
 
 /** Switch dayjs locale at runtime — call when i18n language changes. */

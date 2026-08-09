@@ -5,7 +5,7 @@ import ru from './ru';
 import uz from './uz';
 import { setDayjsLocale } from '../utils/dayjs';
 
-const saved = localStorage.getItem('lang') ?? 'en';
+const saved = localStorage.getItem('lang') ?? 'uz';
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -14,9 +14,7 @@ i18n.use(initReactI18next).init({
     uz: { translation: uz }
   },
   lng: saved,
-  // English, not Russian: a Russian fallback made missing `uz` keys look like a
-  // deliberate mixed-language UI instead of a gap, so they went unnoticed.
-  fallbackLng: 'en',
+  fallbackLng: 'uz',
   interpolation: { escapeValue: false },
 });
 

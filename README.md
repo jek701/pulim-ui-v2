@@ -1,18 +1,33 @@
 # React + TypeScript + Vite
 
-## Firebase phone authentication
+## Phone authentication (Eskiz SMS)
 
-The primary registration and sign-in flow uses Firebase phone authentication. Before deploying:
+The primary registration and sign-in flow is phone + one-time code. The code is
+sent by **pulim-api-v2** through the [Eskiz](https://eskiz.uz) SMS gateway — the
+frontend never talks to Eskiz and there is **no reCAPTCHA** anywhere in the flow.
 
-1. In Firebase Console, open **Authentication → Sign-in method** and enable **Phone**.
-2. Add the production Firebase Hosting/custom domain to **Authentication → Settings → Authorized domains**.
-3. Upgrade the project to the pay-as-you-go **Blaze** plan before sending real verification SMS messages.
-4. Add fictional phone numbers and six-digit codes under the Phone provider for development and QA without SMS charges.
-5. Keep Email/Password enabled for legacy users. The app does not expose email registration.
+Flow:
 
-The web flow uses Firebase's invisible reCAPTCHA and sends phone numbers in E.164 format.
-Do not add a separate reCAPTCHA site/API key for Firebase Phone Auth; the Firebase
-SDK creates and manages the required reCAPTCHA keys through `RecaptchaVerifier`.
+1. `POST /auth/phone/send-code` — the API issues a 6-digit code, stores only its
+   HMAC in Firestore (`phoneVerifications`), and sends the SMS via Eskiz.
+2. `POST /auth/phone/verify` — on a match the API mints a Firebase **custom
+   token**, which the client exchanges via `signInWithCustomToken`.
+
+Firebase Auth stays the session and uid store (`/v1/*` still verifies ID tokens),
+so existing phone users keep their uid and data — they are matched by number
+through the Admin SDK. Rate limiting (resend cooldown, sends per hour, wrong-code
+attempts) lives in the API, which is what replaced reCAPTCHA.
+
+Setup:
+
+1. Fill `ESKIZ_EMAIL` / `ESKIZ_PASSWORD` (and `ESKIZ_FROM` once you have an
+   approved nickname) in the API environment — see `pulim-api-v2/.env.example`.
+2. Get the SMS text approved in the Eskiz cabinet; the templates live in
+   `pulim-api-v2/src/services/phoneAuth.service.ts` (`MESSAGE_TEMPLATES`).
+3. The Firebase **Phone** provider is no longer used and can be disabled; keep
+   Email/Password enabled for legacy users. The app does not expose email
+   registration.
+4. Only `+998` numbers are accepted — Eskiz's `/message/sms/send` is domestic.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

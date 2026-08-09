@@ -16,7 +16,7 @@ const AuthLanguageSelector = () => {
       <select
         className={styles.select}
         aria-label={t('settings.section_language')}
-        value={LANGS.includes(i18n.language as typeof LANGS[number]) ? i18n.language : 'en'}
+        value={LANGS.includes(i18n.language as typeof LANGS[number]) ? i18n.language : 'uz'}
         onChange={(e) => switchLanguage(e.target.value as typeof LANGS[number])}
       >
         {LANGS.map((lang) => (

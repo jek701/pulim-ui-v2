@@ -42,7 +42,7 @@ const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
   const validUntil = order?.entitlementEndAt
     ? new Intl.DateTimeFormat(
         i18n.resolvedLanguage === 'uz' ? 'uz-UZ'
-          : i18n.resolvedLanguage === 'en' ? 'en-GB' : 'ru-RU',
+          : i18n.resolvedLanguage === 'en' ? 'en-GB' : 'uz-UZ',
         { day: 'numeric', month: 'long', year: 'numeric' },
       ).format(new Date(order.entitlementEndAt))
     : null;

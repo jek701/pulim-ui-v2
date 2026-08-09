@@ -35,7 +35,7 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
   const idempotencyKey = useRef<string | null>(null);
   const language = (['ru', 'uz', 'en'].includes(i18n.resolvedLanguage ?? '')
     ? i18n.resolvedLanguage
-    : 'ru') as 'ru' | 'uz' | 'en';
+    : 'uz') as 'ru' | 'uz' | 'en';
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
