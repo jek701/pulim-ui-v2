@@ -58,9 +58,10 @@ type PendingPayment = {
 };
 
 const PAYMENT_STORAGE_PREFIX = 'pulim:pending-payment:';
+const PAYMENT_MODAL_DISMISSED_PREFIX = 'pulim:payment-modal-dismissed:';
 const PAYMENT_START_PARAM_PREFIX = 'payment_';
-const PAYMENT_POLL_ATTEMPTS = 12;
 const PAYMENT_POLL_INTERVAL_MS = 5_000;
+const PAYMENT_MONITOR_WINDOW_MS = 30 * 60_000;
 const PAYMENT_ORDER_PRIORITY_WINDOW_MS = 30 * 60_000;
 const PAYMENT_STORAGE_TTL_MS = 24 * 60 * 60_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -71,6 +72,10 @@ function isOrderId(value: string | null | undefined): value is string {
 
 function paymentStorageKey(uid: string): string {
   return `${PAYMENT_STORAGE_PREFIX}${uid}`;
+}
+
+function paymentModalDismissedKey(uid: string, orderId: string): string {
+  return `${PAYMENT_MODAL_DISMISSED_PREFIX}${uid}:${orderId}`;
 }
 
 function readPendingPayment(uid: string): PendingPayment | null {
@@ -84,6 +89,7 @@ function readPendingPayment(uid: string): PendingPayment | null {
     }
     if (Date.now() - parsed.createdAt > PAYMENT_STORAGE_TTL_MS) {
       localStorage.removeItem(paymentStorageKey(uid));
+      localStorage.removeItem(paymentModalDismissedKey(uid, parsed.orderId));
       return null;
     }
     return { orderId: parsed.orderId, createdAt: parsed.createdAt };
@@ -92,15 +98,39 @@ function readPendingPayment(uid: string): PendingPayment | null {
   }
 }
 
-function savePendingPayment(uid: string, orderId: string): void {
+function savePendingPayment(uid: string, orderId: string, createdAt = Date.now()): void {
   try {
     localStorage.setItem(
       paymentStorageKey(uid),
-      JSON.stringify({ orderId, createdAt: Date.now() } satisfies PendingPayment),
+      JSON.stringify({ orderId, createdAt } satisfies PendingPayment),
     );
   } catch {
     // Private browsing and embedded webviews can disable storage. Polling still
     // works for the current Mini App session in that case.
+  }
+}
+
+function isPaymentModalDismissed(uid: string, orderId: string): boolean {
+  try {
+    return localStorage.getItem(paymentModalDismissedKey(uid, orderId)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markPaymentModalDismissed(uid: string, orderId: string): void {
+  try {
+    localStorage.setItem(paymentModalDismissedKey(uid, orderId), '1');
+  } catch {
+    // The in-memory ref still prevents the modal from reopening in this session.
+  }
+}
+
+function clearPaymentModalDismissed(uid: string, orderId: string): void {
+  try {
+    localStorage.removeItem(paymentModalDismissedKey(uid, orderId));
+  } catch {
+    // Ignore storage failures; the order state remains authoritative.
   }
 }
 
@@ -188,7 +218,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bootstrapped, setBootstrapped] = useState(false);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const telegramAuthInFlight = useRef(false);
-  const paymentMonitorRef = useRef<{ orderId: string; cancelled: boolean } | null>(null);
+  const paymentMonitorRef = useRef<{
+    orderId: string;
+    cancelled: boolean;
+    expiresAt: number;
+  } | null>(null);
   const paymentModalDismissedRef = useRef(false);
 
   const uid = user?.uid ?? null;
@@ -342,18 +376,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (current?.orderId === orderId && !current.cancelled) return;
     if (current) current.cancelled = true;
 
-    const monitor = { orderId, cancelled: false };
+    const storedPayment = readPendingPayment(uid);
+    const createdAt = storedPayment?.orderId === orderId
+      ? storedPayment.createdAt
+      : Date.now();
+    const monitor = {
+      orderId,
+      cancelled: false,
+      expiresAt: createdAt + PAYMENT_MONITOR_WINDOW_MS,
+    };
     paymentMonitorRef.current = monitor;
-    paymentModalDismissedRef.current = false;
-    savePendingPayment(uid, orderId);
-    setPaymentResult({ phase: 'checking' });
+    paymentModalDismissedRef.current = isPaymentModalDismissed(uid, orderId);
+    savePendingPayment(uid, orderId, createdAt);
+    setPaymentResult(paymentModalDismissedRef.current ? null : { phase: 'checking' });
 
     void (async () => {
       let paidOrder: CheckoutSession | null = null;
       let lastOrder: CheckoutSession | null = null;
 
       try {
-        for (let attempt = 0; attempt < PAYMENT_POLL_ATTEMPTS && !monitor.cancelled; attempt += 1) {
+        while (!monitor.cancelled && Date.now() < monitor.expiresAt) {
           try {
             // This endpoint is authenticated and asks ATMOS for the current
             // provider status, so a successful result is safe to use for UI.
@@ -367,23 +409,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } catch (error) {
             // ATMOS and the payment API can briefly be unavailable while the
             // customer is returning from the bank page. Keep the order pending
-            // and spend the remaining polling attempts before showing delayed.
+            // and continue checking until the invoice window expires.
             console.warn('[billing] payment status attempt failed:', error);
           }
 
-          if (attempt < PAYMENT_POLL_ATTEMPTS - 1 && !monitor.cancelled) {
-            await new Promise<void>((resolve) => window.setTimeout(resolve, PAYMENT_POLL_INTERVAL_MS));
-          }
+          if (monitor.cancelled || Date.now() >= monitor.expiresAt) break;
+          await new Promise<void>((resolve) => window.setTimeout(
+            resolve,
+            Math.min(PAYMENT_POLL_INTERVAL_MS, monitor.expiresAt - Date.now()),
+          ));
         }
 
         if (monitor.cancelled) return;
 
         if (!paidOrder) {
-          if (lastOrder?.status !== 'PENDING_PAYMENT') clearPendingPayment(uid);
+          const reachedDeadline = Date.now() >= monitor.expiresAt;
+          const terminalOrder = lastOrder?.status === 'EXPIRED' || lastOrder?.status === 'CANCELLED';
+          const modalWasDismissed = paymentModalDismissedRef.current;
+          if (lastOrder?.status !== 'PENDING_PAYMENT' || reachedDeadline) {
+            clearPendingPayment(uid);
+            clearPaymentModalDismissed(uid, orderId);
+          }
           if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
-          if (!paymentModalDismissedRef.current) {
+          if (!modalWasDismissed) {
             setPaymentResult({
-              phase: lastOrder?.status === 'EXPIRED' || lastOrder?.status === 'CANCELLED'
+              phase: terminalOrder || reachedDeadline
                 ? 'expired'
                 : 'delayed',
               orderId,
@@ -395,6 +445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const confirmedOrder = paidOrder;
 
         clearPendingPayment(uid);
+        clearPaymentModalDismissed(uid, orderId);
         if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
 
         const entitlementUntil = paidOrder.entitlementEndAt
@@ -481,7 +532,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : startParamOrderId ?? storedOrder?.orderId;
     if (!orderId) return;
 
-    savePendingPayment(uid, orderId);
     startPaymentMonitoring(orderId);
 
     if (paymentHint || queryOrderId) {
@@ -600,6 +650,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const dismissPaymentResult = () => {
+    const orderId = paymentResult?.phase === 'success'
+      ? null
+      : paymentResult && paymentResult.phase !== 'checking'
+        ? paymentResult.orderId
+        : paymentMonitorRef.current?.orderId;
+    if (uid && orderId) markPaymentModalDismissed(uid, orderId);
     paymentModalDismissedRef.current = true;
     setPaymentResult(null);
   };
