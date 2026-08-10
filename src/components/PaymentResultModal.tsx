@@ -60,9 +60,10 @@ const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
     : '';
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {result && (
         <motion.div
+          key={result.phase === 'success' ? `success-${result.order.orderId}` : result.phase}
           className={styles.overlay}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

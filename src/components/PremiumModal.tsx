@@ -6,6 +6,7 @@ import {
   HiBanknotes, HiCurrencyDollar, HiFlag, HiTag, HiFunnel, HiStar,
 } from 'react-icons/hi2';
 import { useEntitlements } from '../hooks/useEntitlements';
+import { useApp } from '../context';
 import { paymentApi, type PaymentPlan, type PaymentPlanCode } from '../api/paymentClient';
 import styles from './PremiumModal.module.css';
 import { useModalClose } from '../hooks/useModalClose';
@@ -27,6 +28,7 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
   const { isClosing, requestClose } = useModalClose(onClose);
   const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
   const { aiUsed, isPremium } = useEntitlements();
+  const { startPaymentMonitoring } = useApp();
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [selectedCode, setSelectedCode] = useState<PaymentPlanCode>('premium_12_months');
   const [plansLoading, setPlansLoading] = useState(true);
@@ -94,6 +96,10 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
         idempotencyKey.current,
       );
       if (!checkout.checkoutUrl) throw new Error('ATMOS checkout URL is missing.');
+      // Persist and start verification before leaving the Mini App. Telegram
+      // can suspend this webview while ATMOS is open, so the monitor also
+      // resumes on visibility and on the next Mini App launch.
+      startPaymentMonitoring(checkout.orderId);
       if (channel === 'telegram' && telegram?.openLink) {
         telegram.openLink(checkout.checkoutUrl);
       } else {

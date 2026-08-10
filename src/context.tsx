@@ -41,6 +41,7 @@ interface AppContextType {
   saveProfile: (data: Partial<UserProfile>) => Promise<void>;
   transactionDeepLinkId: string | null;
   clearTransactionDeepLink: () => void;
+  startPaymentMonitoring: (orderId: string) => void;
   paymentResult: PaymentResult | null;
   dismissPaymentResult: () => void;
 }
@@ -49,6 +50,71 @@ export type PaymentResult =
   | { phase: 'checking' }
   | { phase: 'success'; order: CheckoutSession }
   | { phase: 'delayed'; orderId: string };
+
+type PendingPayment = {
+  orderId: string;
+  createdAt: number;
+};
+
+const PAYMENT_STORAGE_PREFIX = 'pulim:pending-payment:';
+const PAYMENT_START_PARAM_PREFIX = 'payment_';
+const PAYMENT_POLL_ATTEMPTS = 12;
+const PAYMENT_POLL_INTERVAL_MS = 5_000;
+const PAYMENT_STORAGE_TTL_MS = 24 * 60 * 60_000;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isOrderId(value: string | null | undefined): value is string {
+  return Boolean(value && UUID_PATTERN.test(value));
+}
+
+function paymentStorageKey(uid: string): string {
+  return `${PAYMENT_STORAGE_PREFIX}${uid}`;
+}
+
+function readPendingPayment(uid: string): PendingPayment | null {
+  try {
+    const raw = localStorage.getItem(paymentStorageKey(uid));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PendingPayment>;
+    if (!isOrderId(parsed.orderId) || typeof parsed.createdAt !== 'number') {
+      localStorage.removeItem(paymentStorageKey(uid));
+      return null;
+    }
+    if (Date.now() - parsed.createdAt > PAYMENT_STORAGE_TTL_MS) {
+      localStorage.removeItem(paymentStorageKey(uid));
+      return null;
+    }
+    return { orderId: parsed.orderId, createdAt: parsed.createdAt };
+  } catch {
+    return null;
+  }
+}
+
+function savePendingPayment(uid: string, orderId: string): void {
+  try {
+    localStorage.setItem(
+      paymentStorageKey(uid),
+      JSON.stringify({ orderId, createdAt: Date.now() } satisfies PendingPayment),
+    );
+  } catch {
+    // Private browsing and embedded webviews can disable storage. Polling still
+    // works for the current Mini App session in that case.
+  }
+}
+
+function clearPendingPayment(uid: string): void {
+  try {
+    localStorage.removeItem(paymentStorageKey(uid));
+  } catch {
+    // Ignore storage failures; the server remains the source of truth.
+  }
+}
+
+function paymentOrderFromStartParam(value: string | undefined): string | null {
+  if (!value?.startsWith(PAYMENT_START_PARAM_PREFIX)) return null;
+  const orderId = value.slice(PAYMENT_START_PARAM_PREFIX.length);
+  return isOrderId(orderId) ? orderId : null;
+}
 
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -120,6 +186,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bootstrapped, setBootstrapped] = useState(false);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const telegramAuthInFlight = useRef(false);
+  const paymentMonitorRef = useRef<{ orderId: string; cancelled: boolean } | null>(null);
 
   const uid = user?.uid ?? null;
 
@@ -265,99 +332,169 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const profile = (profileQuery.data as UserProfile | undefined) ?? null;
   const profileLoading = !!uid && (!bootstrapped || profileQuery.isLoading);
 
-  // ATMOS returns through the public web URL. The query string is only a hint:
-  // always ask the payment service for the authenticated, provider-verified status.
-  useEffect(() => {
-    if (!uid) return;
-    const url = new URL(window.location.href);
-    const orderId = url.searchParams.get('order');
-    const paymentHint = url.searchParams.get('payment');
-    const returnState = url.searchParams.get('state');
-    if (orderId && returnState && !paymentHint) {
-      window.location.replace(paymentApi.returnUrl(orderId, returnState));
-      return;
-    }
-    if (!orderId || !paymentHint) return;
+  const startPaymentMonitoring = useCallback((orderId: string) => {
+    if (!uid || !isOrderId(orderId)) return;
 
-    let cancelled = false;
+    const current = paymentMonitorRef.current;
+    if (current?.orderId === orderId && !current.cancelled) return;
+    if (current) current.cancelled = true;
+
+    const monitor = { orderId, cancelled: false };
+    paymentMonitorRef.current = monitor;
+    savePendingPayment(uid, orderId);
     setPaymentResult({ phase: 'checking' });
+
     void (async () => {
+      let paidOrder: CheckoutSession | null = null;
+      let lastOrder: CheckoutSession | null = null;
+
       try {
-        let paidOrder: CheckoutSession | null = null;
-        for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
-          const order = await paymentApi.refreshOrder(orderId);
-          if (order.status === 'PAID') {
-            paidOrder = order;
-            break;
+        for (let attempt = 0; attempt < PAYMENT_POLL_ATTEMPTS && !monitor.cancelled; attempt += 1) {
+          try {
+            // This endpoint is authenticated and asks ATMOS for the current
+            // provider status, so a successful result is safe to use for UI.
+            const order = await paymentApi.refreshOrder(orderId);
+            lastOrder = order;
+            if (order.status === 'PAID') {
+              paidOrder = order;
+              break;
+            }
+            if (order.status !== 'PENDING_PAYMENT') break;
+          } catch (error) {
+            // ATMOS and the payment API can briefly be unavailable while the
+            // customer is returning from the bank page. Keep the order pending
+            // and spend the remaining polling attempts before showing delayed.
+            console.warn('[billing] payment status attempt failed:', error);
           }
-          if (order.status !== 'PENDING_PAYMENT') break;
-          if (attempt < 9) {
-            await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+
+          if (attempt < PAYMENT_POLL_ATTEMPTS - 1 && !monitor.cancelled) {
+            await new Promise<void>((resolve) => window.setTimeout(resolve, PAYMENT_POLL_INTERVAL_MS));
           }
         }
 
-        if (!paidOrder || cancelled) {
-          if (!cancelled) setPaymentResult({ phase: 'delayed', orderId });
+        if (monitor.cancelled) return;
+
+        if (!paidOrder) {
+          if (lastOrder?.status !== 'PENDING_PAYMENT') clearPendingPayment(uid);
+          if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
+          setPaymentResult({ phase: 'delayed', orderId });
           return;
         }
+
+        const confirmedOrder = paidOrder;
+
+        clearPendingPayment(uid);
+        if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
 
         const entitlementUntil = paidOrder.entitlementEndAt
           ? Date.parse(paidOrder.entitlementEndAt)
           : null;
-        setPaymentResult({ phase: 'success', order: paidOrder });
 
-        // The authenticated payment API result is provider-verified. Reflect it
-        // immediately in the local profile cache, then keep polling the main API
-        // until the durable Firestore projection catches up through the outbox.
+        // Show the success animation as soon as the payment service confirms
+        // the order. Firestore projection is allowed to catch up in parallel.
+        setPaymentResult({ phase: 'success', order: confirmedOrder });
+
         if (entitlementUntil && Number.isFinite(entitlementUntil)) {
-          queryClient.setQueryData<UserProfile & { id?: string }>(qk.profile(uid), (current) => current ? ({
-            ...current,
+          queryClient.setQueryData<UserProfile & { id?: string }>(qk.profile(uid), (currentProfile) => currentProfile ? ({
+            ...currentProfile,
             isPremium: true,
             subscription: {
-              ...current.subscription,
+              ...currentProfile.subscription,
               tier: 'premium',
               isTrial: false,
               source: 'atmos',
               premiumUntil: entitlementUntil,
-              lastOrderId: paidOrder.orderId,
+              lastOrderId: confirmedOrder.orderId,
             },
-          }) : current);
+          }) : currentProfile);
         }
 
-        for (let attempt = 0; attempt < 12 && !cancelled; attempt += 1) {
-          try {
-            const durableProfile = await api.get<UserProfile & { id: string }>(
-              `/v1/profile?billingRefresh=${Date.now()}`,
-            );
-            const durableUntil = durableProfile.subscription?.premiumUntil;
-            if (durableProfile.isPremium === true
-              && typeof durableUntil === 'number'
-              && durableUntil > Date.now()) {
-              queryClient.setQueryData(qk.profile(uid), durableProfile);
-              break;
+        void (async () => {
+          // The payment API's outbox is authoritative for the durable profile,
+          // but the success screen should not wait for network propagation.
+          for (let attempt = 0; attempt < 12 && !monitor.cancelled; attempt += 1) {
+            try {
+              const durableProfile = await api.get<UserProfile & { id: string }>(
+                `/v1/profile?billingRefresh=${Date.now()}`,
+              );
+              const durableUntil = durableProfile.subscription?.premiumUntil;
+              if (durableProfile.isPremium === true
+                && typeof durableUntil === 'number'
+                && durableUntil > Date.now()) {
+                queryClient.setQueryData(qk.profile(uid), durableProfile);
+                break;
+              }
+            } catch (profileError) {
+              console.warn('[billing] waiting for profile projection:', profileError);
             }
-          } catch (profileError) {
-            console.warn('[billing] waiting for profile projection:', profileError);
+            if (attempt < 11) {
+              await new Promise<void>((resolve) => window.setTimeout(resolve, 1_500));
+            }
           }
-          if (attempt < 11) {
-            await new Promise((resolve) => window.setTimeout(resolve, 1_500));
-          }
-        }
-      } catch (err) {
-        console.error('[billing] payment status refresh failed:', err);
-        if (!cancelled) setPaymentResult({ phase: 'delayed', orderId });
-      } finally {
-        if (!cancelled) {
-          url.searchParams.delete('payment');
-          url.searchParams.delete('order');
-          url.searchParams.delete('state');
-          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        })();
+      } catch (error) {
+        console.error('[billing] payment status refresh failed:', error);
+        if (!monitor.cancelled) {
+          if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
+          setPaymentResult({ phase: 'delayed', orderId });
         }
       }
     })();
-
-    return () => { cancelled = true; };
   }, [uid, queryClient]);
+
+  // ATMOS returns through the public web URL. The query string and Telegram
+  // start parameter are only hints; the payment API remains the source of truth.
+  useEffect(() => {
+    if (!uid || !bootstrapped || profileLoading) return;
+
+    const url = new URL(window.location.href);
+    const queryOrderId = url.searchParams.get('order');
+    const paymentHint = url.searchParams.get('payment');
+    const returnState = url.searchParams.get('state');
+    if (queryOrderId && returnState && !paymentHint) {
+      window.location.replace(paymentApi.returnUrl(queryOrderId, returnState));
+      return;
+    }
+
+    const startParamOrderId = paymentOrderFromStartParam(getTelegramWebApp()?.initDataUnsafe?.start_param);
+    const storedOrder = readPendingPayment(uid);
+    const orderId = isOrderId(queryOrderId) && paymentHint
+      ? queryOrderId
+      : startParamOrderId ?? storedOrder?.orderId;
+    if (!orderId) return;
+
+    savePendingPayment(uid, orderId);
+    startPaymentMonitoring(orderId);
+
+    if (paymentHint || queryOrderId) {
+      url.searchParams.delete('payment');
+      url.searchParams.delete('order');
+      url.searchParams.delete('state');
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, [uid, bootstrapped, profileLoading, startPaymentMonitoring]);
+
+  // Telegram may suspend the Mini App while ATMOS is open in an external
+  // browser. Resume the same authenticated order immediately when the app is
+  // visible again, even when ATMOS did not navigate back through a return URL.
+  useEffect(() => {
+    if (!uid || !bootstrapped) return;
+    const resumePayment = () => {
+      if (document.visibilityState !== 'visible') return;
+      const pending = readPendingPayment(uid);
+      if (pending) startPaymentMonitoring(pending.orderId);
+    };
+    document.addEventListener('visibilitychange', resumePayment);
+    window.addEventListener('pageshow', resumePayment);
+    return () => {
+      document.removeEventListener('visibilitychange', resumePayment);
+      window.removeEventListener('pageshow', resumePayment);
+    };
+  }, [uid, bootstrapped, startPaymentMonitoring]);
+
+  useEffect(() => () => {
+    if (paymentMonitorRef.current) paymentMonitorRef.current.cancelled = true;
+  }, [uid]);
 
   const reloadUser = async () => {
     if (!auth.currentUser) return;
@@ -479,6 +616,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tabResetNonce, requestTabReset,
       profile, profileLoading, saveProfile,
       transactionDeepLinkId, clearTransactionDeepLink,
+      startPaymentMonitoring,
       paymentResult, dismissPaymentResult,
     }}>
       {children}
