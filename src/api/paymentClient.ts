@@ -7,7 +7,8 @@ export type PaymentPlanCode =
   | 'premium_1_month'
   | 'premium_3_months'
   | 'premium_6_months'
-  | 'premium_12_months';
+  | 'premium_12_months'
+  | 'premium_test_1000';
 
 export interface PaymentPlan {
   code: PaymentPlanCode;
