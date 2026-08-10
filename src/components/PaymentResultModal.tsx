@@ -83,17 +83,18 @@ const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
               ref={swipeRef}
               {...swipeAreaProps}
             >
-            {result.phase !== 'checking' && (
-              <button className={styles.close} onClick={onClose} aria-label={t('payment_result.close')}>
-                <HiXMark size={20} />
-              </button>
-            )}
+            <button className={styles.close} onClick={onClose} aria-label={t('payment_result.close')}>
+              <HiXMark size={20} />
+            </button>
 
             {result.phase === 'checking' && (
               <div className={styles.checking}>
                 <div className={styles.loader}><HiArrowPath size={34} /></div>
                 <h2 id="payment-result-title">{t('payment_result.checking_title')}</h2>
                 <p>{t('payment_result.checking_desc')}</p>
+                <button className={styles.secondaryButton} onClick={onClose}>
+                  {t('payment_result.continue_later')}
+                </button>
               </div>
             )}
 
@@ -102,6 +103,17 @@ const PaymentResultModal: React.FC<Props> = ({ result, onClose }) => {
                 <div className={styles.delayedIcon}><HiArrowPath size={32} /></div>
                 <h2 id="payment-result-title">{t('payment_result.delayed_title')}</h2>
                 <p>{t('payment_result.delayed_desc')}</p>
+                <button className={styles.secondaryButton} onClick={onClose}>
+                  {t('payment_result.close')}
+                </button>
+              </div>
+            )}
+
+            {result.phase === 'expired' && (
+              <div className={styles.delayed}>
+                <div className={styles.delayedIcon}><HiArrowPath size={32} /></div>
+                <h2 id="payment-result-title">{t('payment_result.expired_title')}</h2>
+                <p>{t('payment_result.expired_desc')}</p>
                 <button className={styles.secondaryButton} onClick={onClose}>
                   {t('payment_result.close')}
                 </button>

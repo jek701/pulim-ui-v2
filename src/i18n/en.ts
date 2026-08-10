@@ -960,8 +960,11 @@ const en = {
   payment_result: {
     checking_title: 'Confirming your payment',
     checking_desc: 'We are verifying the payment with ATMOS and activating Premium. This usually takes a few seconds.',
+    continue_later: 'Continue later',
     delayed_title: 'Payment is still processing',
     delayed_desc: 'We will keep checking automatically. Premium will appear as soon as ATMOS confirms the payment.',
+    expired_title: 'Payment window expired',
+    expired_desc: 'The order was closed because payment was not completed within 30 minutes. Create a new order to try again.',
     success_badge: 'Payment successful',
     success_title: 'Premium is active!',
     success_desc: 'Thank you for your purchase. Every Pulim Premium feature is now available to your account.',

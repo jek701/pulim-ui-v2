@@ -49,7 +49,8 @@ interface AppContextType {
 export type PaymentResult =
   | { phase: 'checking' }
   | { phase: 'success'; order: CheckoutSession }
-  | { phase: 'delayed'; orderId: string };
+  | { phase: 'delayed'; orderId: string }
+  | { phase: 'expired'; orderId: string };
 
 type PendingPayment = {
   orderId: string;
@@ -60,6 +61,7 @@ const PAYMENT_STORAGE_PREFIX = 'pulim:pending-payment:';
 const PAYMENT_START_PARAM_PREFIX = 'payment_';
 const PAYMENT_POLL_ATTEMPTS = 12;
 const PAYMENT_POLL_INTERVAL_MS = 5_000;
+const PAYMENT_ORDER_PRIORITY_WINDOW_MS = 30 * 60_000;
 const PAYMENT_STORAGE_TTL_MS = 24 * 60 * 60_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -187,6 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const telegramAuthInFlight = useRef(false);
   const paymentMonitorRef = useRef<{ orderId: string; cancelled: boolean } | null>(null);
+  const paymentModalDismissedRef = useRef(false);
 
   const uid = user?.uid ?? null;
 
@@ -341,6 +344,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const monitor = { orderId, cancelled: false };
     paymentMonitorRef.current = monitor;
+    paymentModalDismissedRef.current = false;
     savePendingPayment(uid, orderId);
     setPaymentResult({ phase: 'checking' });
 
@@ -377,7 +381,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!paidOrder) {
           if (lastOrder?.status !== 'PENDING_PAYMENT') clearPendingPayment(uid);
           if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
-          setPaymentResult({ phase: 'delayed', orderId });
+          if (!paymentModalDismissedRef.current) {
+            setPaymentResult({
+              phase: lastOrder?.status === 'EXPIRED' || lastOrder?.status === 'CANCELLED'
+                ? 'expired'
+                : 'delayed',
+              orderId,
+            });
+          }
           return;
         }
 
@@ -392,6 +403,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // Show the success animation as soon as the payment service confirms
         // the order. Firestore projection is allowed to catch up in parallel.
+        paymentModalDismissedRef.current = false;
         setPaymentResult({ phase: 'success', order: confirmedOrder });
 
         if (entitlementUntil && Number.isFinite(entitlementUntil)) {
@@ -436,7 +448,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error('[billing] payment status refresh failed:', error);
         if (!monitor.cancelled) {
           if (paymentMonitorRef.current === monitor) paymentMonitorRef.current = null;
-          setPaymentResult({ phase: 'delayed', orderId });
+          if (!paymentModalDismissedRef.current) setPaymentResult({ phase: 'delayed', orderId });
         }
       }
     })();
@@ -458,9 +470,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const startParamOrderId = paymentOrderFromStartParam(getTelegramWebApp()?.initDataUnsafe?.start_param);
     const storedOrder = readPendingPayment(uid);
+    const currentStoredOrder = storedOrder
+      && Date.now() - storedOrder.createdAt <= PAYMENT_ORDER_PRIORITY_WINDOW_MS
+      ? storedOrder
+      : null;
     const orderId = isOrderId(queryOrderId) && paymentHint
       ? queryOrderId
-      : startParamOrderId ?? storedOrder?.orderId;
+      : currentStoredOrder
+        ? currentStoredOrder.orderId
+        : startParamOrderId ?? storedOrder?.orderId;
     if (!orderId) return;
 
     savePendingPayment(uid, orderId);
@@ -581,7 +599,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     void saveProfile({ telegramLinkPromptDismissed: true });
   };
 
-  const dismissPaymentResult = () => setPaymentResult(null);
+  const dismissPaymentResult = () => {
+    paymentModalDismissedRef.current = true;
+    setPaymentResult(null);
+  };
 
   const currentTgChatId = getTgUser()?.id;
   const telegramAlreadyLinked = authProvider === 'telegram'

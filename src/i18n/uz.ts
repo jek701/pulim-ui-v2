@@ -959,8 +959,11 @@ const uz = {
     payment_result: {
         checking_title: 'To‘lov tekshirilmoqda',
         checking_desc: 'ATMOS orqali to‘lovni tasdiqlayapmiz va Premiumni yoqayapmiz. Bu odatda bir necha soniya oladi.',
+        continue_later: 'Keyinroq davom etish',
         delayed_title: 'To‘lov hali qayta ishlanmoqda',
         delayed_desc: 'Tekshiruv avtomatik davom etadi. ATMOS tasdiqlashi bilan Premium darhol paydo bo‘ladi.',
+        expired_title: 'To‘lov muddati tugadi',
+        expired_desc: 'To‘lov 30 daqiqa ichida yakunlanmagani uchun buyurtma yopildi. Qayta urinib ko‘rish uchun yangi buyurtma yarating.',
         success_badge: 'To‘lov muvaffaqiyatli',
         success_title: 'Premium faollashtirildi!',
         success_desc: 'Xaridingiz uchun rahmat. Pulim Premiumning barcha imkoniyatlari endi siz uchun ochiq.',
