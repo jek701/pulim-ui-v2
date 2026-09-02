@@ -53,6 +53,12 @@ export function useEntitlements() {
 
     const isPremium = premium;
     const isTrial = !!profile?.subscription?.isTrial && premium;
+    const hasUsedTrial = typeof profile?.subscription?.trialGrantedAt === 'number'
+      || profile?.subscription?.isTrial === true
+      || profile?.subscription?.source === 'trial';
+    const hasPaidPremium = profile?.subscription?.source === 'atmos'
+      || Boolean(profile?.subscription?.lastOrderId);
+    const canStartTrial = Boolean(profile) && !premium && !hasUsedTrial && !hasPaidPremium;
     const trialDaysLeft = profile?.subscription?.premiumUntil
       ? Math.max(0, Math.ceil((profile.subscription.premiumUntil - now) / 86_400_000))
       : null;
@@ -90,6 +96,7 @@ export function useEntitlements() {
       tier,
       isPremium,
       isTrial,
+      canStartTrial,
       trialDaysLeft,
       limits: FREE_LIMITS,
       aiUsed,

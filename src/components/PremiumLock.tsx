@@ -123,6 +123,8 @@ function featureKeyToHeadline(key: PremiumFeatureKey): string {
   }
 }
 
+// This hook intentionally lives beside the Premium UI it renders.
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePremiumGate() {
   const [openFor, setOpenFor] = useState<PremiumFeatureKey | null>(null);
   const open = (feature: PremiumFeatureKey) => setOpenFor(feature);

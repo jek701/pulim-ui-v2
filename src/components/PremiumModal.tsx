@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   HiXMark, HiSparkles, HiCreditCard, HiChartPie, HiCalendar,
   HiBanknotes, HiCurrencyDollar, HiFlag, HiTag, HiFunnel, HiStar,
 } from 'react-icons/hi2';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { useApp } from '../context';
+import { api, ApiError } from '../api/client';
+import { qk } from '../api/queryClient';
 import { paymentApi, type PaymentPlan, type PaymentPlanCode } from '../api/paymentClient';
+import type { UserProfile } from '../types';
 import styles from './PremiumModal.module.css';
 import { useModalClose } from '../hooks/useModalClose';
 import { useSwipeDismiss } from '../hooks/useSwipeDismiss';
@@ -27,12 +31,15 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
   const { t, i18n } = useTranslation();
   const { isClosing, requestClose } = useModalClose(onClose);
   const { swipeRef, swipeAreaProps, swipeStyle } = useSwipeDismiss(requestClose);
-  const { aiUsed, isPremium } = useEntitlements();
-  const { startPaymentMonitoring } = useApp();
+  const { aiUsed, isPremium, canStartTrial } = useEntitlements();
+  const { user, startPaymentMonitoring } = useApp();
+  const queryClient = useQueryClient();
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [selectedCode, setSelectedCode] = useState<PaymentPlanCode>('premium_12_months');
   const [plansLoading, setPlansLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [startingTrial, setStartingTrial] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const idempotencyKey = useRef<string | null>(null);
   const language = (['ru', 'uz', 'en'].includes(i18n.resolvedLanguage ?? '')
@@ -114,6 +121,26 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
     }
   };
 
+  const handleStartTrial = async () => {
+    if (!user || !canStartTrial || startingTrial) return;
+    setStartingTrial(true);
+    setTrialError(null);
+    try {
+      const updated = await api.post<UserProfile & { id: string }>('/v1/profile/trial/start');
+      queryClient.setQueryData(qk.profile(user.uid), updated);
+      requestClose();
+    } catch (error) {
+      if (error instanceof ApiError
+        && ['PREMIUM_ALREADY_ACTIVE', 'TRIAL_ALREADY_USED', 'TRIAL_NOT_ELIGIBLE'].includes(error.code)) {
+        setTrialError(t('premium.trial_unavailable'));
+      } else {
+        setTrialError(t('premium.trial_error'));
+      }
+    } finally {
+      setStartingTrial(false);
+    }
+  };
+
   const headlines: Record<PremiumFeatureKey, { title: string; subtitle: string }> = {
     ai_chat:     { title: t('premium.headline_ai_title'),     subtitle: t('premium.headline_ai_subtitle') },
     cards:       { title: t('premium.headline_cards_title'),  subtitle: t('premium.headline_cards_subtitle') },
@@ -172,6 +199,23 @@ const PremiumModal: React.FC<Props> = ({ feature = 'generic', onClose, onUpgrade
           </div>
 
         <section className={styles.plans} aria-label={t('premium.choose_plan')}>
+          {canStartTrial && (
+            <div className={styles.trialOffer}>
+              <div className={styles.trialOfferCopy}>
+                <strong>{t('premium.trial_title')}</strong>
+                <span>{t('premium.trial_desc')}</span>
+              </div>
+              <button
+                type="button"
+                className={styles.trialOfferBtn}
+                onClick={() => void handleStartTrial()}
+                disabled={startingTrial}
+              >
+                {startingTrial ? t('premium.trial_starting') : t('premium.trial_cta')}
+              </button>
+              {trialError && <p className={styles.paymentError} role="alert">{trialError}</p>}
+            </div>
+          )}
           <h3 className={styles.plansTitle}>{t('premium.choose_plan')}</h3>
           {plansLoading ? (
             <div className={styles.plansLoading}>{t('premium.loading_plans')}</div>

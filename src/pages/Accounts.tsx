@@ -20,6 +20,11 @@ import styles from './Accounts.module.css';
 type AccountView = 'accounts' | 'savings' | 'debts';
 type AccountSubTab = 'debit' | 'credit' | 'cash';
 
+const initialAccountView = (): AccountView => {
+  const requested = new URLSearchParams(window.location.search).get('tab');
+  return requested === 'debts' || requested === 'savings' ? requested : 'accounts';
+};
+
 const Accounts = () => {
   const { t } = useTranslation();
   const { user } = useApp();
@@ -27,7 +32,7 @@ const Accounts = () => {
   const { transfer } = useTransactions(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
-  const [view, setView]       = useState<AccountView>('accounts');
+  const [view, setView]       = useState<AccountView>(initialAccountView);
   const [subTab, setSubTab]   = useState<AccountSubTab>('debit');
   const [addTrigger, setAddTrigger] = useState(0);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiPlus, HiChevronRight, HiChartPie } from 'react-icons/hi2';
 import { useApp } from '../context';
@@ -9,7 +9,6 @@ import { formatAmount, formatDate, formatMonth } from '../utils/format';
 import dayjs from '../utils/dayjs';
 import { getBudgetForecast, type BudgetForecast } from '../utils/ai';
 import { useBudgets } from '../hooks/useBudgets';
-import { useUserSettings } from '../hooks/useUserSettings';
 import AddTransactionModal from '../components/AddTransactionModal';
 import ReturnModal from '../components/ReturnModal';
 import PageLoader from '../components/PageLoader';
@@ -23,8 +22,6 @@ import { resolveHomeWidgets, type HomeWidgetId } from '../utils/homeWidgets';
 import { useCategoryName } from '../utils/categoryName';
 import styles from './Home.module.css';
 
-let launchTransactionHandledFor: string | null = null;
-
 const Home = () => {
   const { t, i18n } = useTranslation();
   const { user, profile, setActiveTab, setCategoryFilter } = useApp();
@@ -32,9 +29,7 @@ const Home = () => {
   const { categories, subcategories, loading: catLoading } = useCategories(user?.uid ?? null);
   const { cards, cardOrder, saveCardOrder, loading: cardsLoading } = useCards(user?.uid ?? null);
   const { budgets, loading: budgetLoading } = useBudgets(user?.uid ?? null);
-  const { openTransactionOnLaunch, loading: settingsLoading } = useUserSettings(user?.uid ?? null);
   const [showAdd, setShowAdd] = useState(false);
-  const [showLaunchHint, setShowLaunchHint] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
   const [showAskAi, setShowAskAi] = useState(false);
   const [showBalanceDetails, setShowBalanceDetails] = useState(false);
@@ -42,32 +37,6 @@ const Home = () => {
   const [forecastLoading, setForecastLoading] = useState(false);
   const [forecastError, setForecastError] = useState<string | null>(null);
   const [showAllBudgets, setShowAllBudgets] = useState(false);
-  const launchEffectRan = useRef(false);
-
-  useEffect(() => {
-    if (
-      launchTransactionHandledFor === user?.uid
-      || launchEffectRan.current
-      || !user?.uid
-      || txLoading
-      || catLoading
-      || cardsLoading
-      || settingsLoading
-    ) return;
-
-    launchEffectRan.current = true;
-    launchTransactionHandledFor = user.uid;
-    if (!openTransactionOnLaunch) return;
-
-    setShowAdd(true);
-    setShowLaunchHint(localStorage.getItem(`pulim:auto-transaction-hint:${user.uid}`) !== 'seen');
-  }, [cardsLoading, catLoading, openTransactionOnLaunch, settingsLoading, txLoading, user?.uid]);
-
-  const dismissLaunchHint = () => {
-    if (user?.uid) localStorage.setItem(`pulim:auto-transaction-hint:${user.uid}`, 'seen');
-    setShowLaunchHint(false);
-  };
-
   const [now] = useState(() => new Date());
   const userName = profile?.name?.trim()
     || user?.displayName?.trim()
@@ -212,7 +181,7 @@ const Home = () => {
     await returnTransaction(originalTxId, { returnAmount, accountId: accountId || undefined, date, comment });
   };
 
-  if (txLoading || catLoading || cardsLoading || budgetLoading || settingsLoading) return <PageLoader />;
+  if (txLoading || catLoading || cardsLoading || budgetLoading) return <PageLoader />;
 
   const monthName = dayjs(now).format('MMMM');
 
@@ -516,20 +485,8 @@ const Home = () => {
             // The server adjusts the card balance when cardId is present.
             await add(data);
           }}
-          onClose={() => {
-            setShowAdd(false);
-            setShowLaunchHint(false);
-          }}
+          onClose={() => setShowAdd(false)}
           onReturn={() => { setShowAdd(false); setShowReturn(true); }}
-          launchHint={{
-            visible: showLaunchHint,
-            onDismiss: dismissLaunchHint,
-            onOpenSettings: () => {
-              dismissLaunchHint();
-              setShowAdd(false);
-              setActiveTab('settings');
-            },
-          }}
         />
       )}
 

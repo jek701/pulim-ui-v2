@@ -152,10 +152,8 @@ const Settings = () => {
     const {
         plannedExpenseVisibility,
         setPlannedExpenseVisibility,
-        openTransactionOnLaunch,
-        setOpenTransactionOnLaunch,
     } = useUserSettings(user?.uid ?? null);
-    const {isPremium, isTrial, trialDaysLeft, aiUsed} = useEntitlements();
+    const {isPremium, isTrial, trialDaysLeft, aiUsed, canStartTrial} = useEntitlements();
     const premiumGate = usePremiumGate();
     const {confirm, node: confirmNode} = useConfirm();
 
@@ -322,7 +320,11 @@ const Settings = () => {
         </small>
       </span>
             <span className={styles.premiumAction}>
-        {isPremium ? t('settings.sub_manage_btn') : t('settings.sub_upgrade_btn')}
+        {isPremium
+            ? t('settings.sub_manage_btn')
+            : canStartTrial
+                ? t('settings.sub_start_trial_btn')
+                : t('settings.sub_upgrade_btn')}
       </span>
         </button>
     );
@@ -352,28 +354,10 @@ const Settings = () => {
                 <p className={styles.sectionLabel}>{t('settings.quick_settings')}</p>
                 <div className={styles.menuGroup}>
                     <div className={styles.quickSettingRow}>
-                        <span className={`${styles.menuIcon} ${styles.menuIconAccent}`}><HiPlus size={18}/></span>
-                        <span className={styles.menuCopy}>
-              <span className={styles.menuTitle}>{t('settings.auto_transaction_title')}</span>
-              <span className={styles.menuSubtitle}>{t('settings.auto_transaction_hint')}</span>
-            </span>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={openTransactionOnLaunch}
-                            aria-label={t('settings.auto_transaction_title')}
-                            className={`${styles.preferenceSwitch} ${openTransactionOnLaunch ? styles.preferenceSwitchOn : ''}`}
-                            onClick={() => setOpenTransactionOnLaunch(!openTransactionOnLaunch)}
-                        >
-                            <span className={styles.preferenceThumb}/>
-                        </button>
-                    </div>
-                    <div className={styles.quickSettingRow}>
                         <span className={`${styles.menuIcon} ${styles.menuIconAccent}`}><HiPaperAirplane size={18}/></span>
                         <span className={styles.menuCopy}>
                             <span className={styles.menuTitle}>
                                 {t('settings.section_telegram_entry')}
-                                {!isPremium && <PremiumBadge small/>}
                             </span>
                             <span className={styles.menuSubtitle}>
                                 {profile?.telegramChatIds && profile.telegramChatIds.length > 0
@@ -398,10 +382,6 @@ const Settings = () => {
                                 aria-label={t('settings.telegram_entry_toggle')}
                                 className={`${styles.preferenceSwitch} ${profile.telegramQuickEntryEnabled !== false ? styles.preferenceSwitchOn : ''}`}
                                 onClick={() => {
-                                    if (!isPremium) {
-                                        premiumGate.open('generic');
-                                        return;
-                                    }
                                     void saveProfile({telegramQuickEntryEnabled: profile.telegramQuickEntryEnabled === false});
                                 }}
                             >

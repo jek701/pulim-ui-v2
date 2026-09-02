@@ -2,7 +2,7 @@
 
 This file is a compact technical map of the Pulim codebase. It is intended to help future AI/code agents understand the project quickly without re-reading every file.
 
-Last reviewed: 2026-07-15.
+Last reviewed: 2026-09-01.
 
 ## Product Summary
 
@@ -71,7 +71,11 @@ Configured in `.env` or deployment environment:
   - Listens to Firebase Auth with `onAuthStateChanged`.
   - Auto-auths Telegram users by POSTing Telegram init data to `VITE_TELEGRAM_AUTH_API_URL`, then `signInWithCustomToken`.
   - Syncs auth metadata to `profiles/{uid}`.
-  - Seeds every profile with a 30-day premium trial if `isPremium` is undefined.
+  - Bootstraps profile metadata and default categories without auto-starting Premium.
+  - Supports one-step Telegram auth and a separate `?auth=link` flow for safely
+    connecting a Telegram chat to an existing Pulim account.
+  - Carries the language selected in the bot through `?lang=` into Telegram auth,
+    so a new profile and subsequent bot replies keep the chosen language.
   - Stores Telegram chat mapping in `telegramUsers/{chatId}` and appends `telegramChatIds` to profile.
 
 ## Navigation
@@ -86,7 +90,9 @@ Tabs are defined by `Tab` in `src/types.ts`:
 - `calendar`
 - `settings`
 
-`BottomNav.tsx` maps the visible tabs. The `cards` tab renders the `Accounts` page, which internally switches between account types, savings, and debts.
+`BottomNav.tsx` maps the visible tabs. Calendar remains a supported internal tab but
+is currently hidden from the bottom navigation. The `cards` tab renders the `Accounts`
+page, which internally switches between account types, savings, and debts.
 
 ## Firestore Security Model
 
@@ -215,6 +221,7 @@ Key hooks:
 
 - `useEntitlements`
   - Reads premium access from `profile.isPremium`.
+  - Exposes trial eligibility for the explicit one-time 7-day trial action.
   - Free limits: 1 debit card, 2 subscriptions, 10 AI messages/month, 1 AI chat.
   - Model routing is server-owned. The current API defaults are `gpt-5.6-terra` for Premium and `gpt-5.4-mini` for free users.
   - Usage is reserved and enforced by the API; the frontend refetches the profile after a completed answer.
@@ -234,6 +241,7 @@ Key hooks:
 
 - `Transactions.tsx`
   - History page with month navigation, filters, list/chart modes, summaries, edit/delete, return/refund.
+  - Has no onboarding/demo tour; only real user data is rendered.
   - Filters support type, category, subcategory, card, and date range.
   - Transfer type is derived from `source === 'transfer'`.
   - Summary excludes transfers and uses `baseAmount` for non-UZS if available.
@@ -285,7 +293,7 @@ Key hooks:
   - Premium-gated chart types/features.
 
 - `Settings.tsx`
-  - Profile, language, home widget order, planned expense visibility, categories/subcategories, budgets, danger zone.
+  - Profile, language, home widget order, planned expense visibility, Telegram quick-entry toggle, categories/subcategories, budgets, danger zone.
   - Custom categories and budgets are premium-gated.
 
 - `Onboarding.tsx`
@@ -398,7 +406,11 @@ Visible login today:
 
 Premium access is controlled by `profile.isPremium === true`.
 
-Context currently seeds a 30-day premium trial for every user whose profile has `isPremium === undefined`. The optional `profile.subscription` object is used for display metadata. Premium gating should read `useEntitlements()` instead of duplicating checks.
+Premium never starts automatically. Eligible users explicitly start one one-time
+7-day trial through the API; existing older 30-day trials retain their stored expiry.
+The optional `profile.subscription` object stores trial/payment metadata. Premium
+gating and trial eligibility should read `useEntitlements()` instead of duplicating
+client checks; the API remains authoritative.
 
 Free limits:
 

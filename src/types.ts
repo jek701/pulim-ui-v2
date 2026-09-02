@@ -40,8 +40,6 @@ export type PlannedExpenseVisibility = 'hidden' | '7d' | '14d' | 'this_month' | 
 export interface UserSettings {
   cardOrder?: string[];
   plannedExpenseVisibility?: PlannedExpenseVisibility;
-  /** Open the new transaction form once when the app starts. Defaults to true. */
-  openTransactionOnLaunch?: boolean;
 }
 
 export type SubscriptionTier = 'free' | 'premium';

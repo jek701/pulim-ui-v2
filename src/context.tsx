@@ -198,8 +198,38 @@ const initialTransactionDeepLink = () => {
   return startParam?.startsWith('tx_') ? startParam.slice(3) : null;
 };
 
+type TelegramAuthMode = 'telegram' | 'link' | null;
+type TelegramLanguage = 'uz' | 'ru' | 'en' | null;
+
+const initialTelegramAuthMode = (): TelegramAuthMode => {
+  const value = new URLSearchParams(window.location.search).get('auth');
+  return value === 'telegram' || value === 'link' ? value : null;
+};
+
+const initialTelegramLanguage = (): TelegramLanguage => {
+  const value = new URLSearchParams(window.location.search).get('lang');
+  return value === 'uz' || value === 'ru' || value === 'en' ? value : null;
+};
+
+const initialActiveTab = (): Tab => {
+  const value = new URLSearchParams(window.location.search).get('tab');
+  if (value === 'debts' || value === 'savings') return 'cards';
+  return ['home', 'transactions', 'cards', 'subscriptions', 'charts', 'settings', 'calendar'].includes(value ?? '')
+    ? value as Tab
+    : 'home';
+};
+
+const removeQueryParam = (name: string) => {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(name)) return;
+  url.searchParams.delete(name);
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
+  const [telegramAuthMode, setTelegramAuthMode] = useState<TelegramAuthMode>(initialTelegramAuthMode);
+  const telegramLanguage = useRef<TelegramLanguage>(initialTelegramLanguage()).current;
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authProvider, setAuthProvider] = useState<AuthMethod | null>(null);
@@ -209,7 +239,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [telegramRetryKey, setTelegramRetryKey] = useState(0);
   const [telegramLinkPending, setTelegramLinkPending] = useState(false);
   const [telegramLinkError, setTelegramLinkError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [activeTab, setActiveTab] = useState<Tab>(initialActiveTab);
   const [transactionDeepLinkId, setTransactionDeepLinkId] = useState<string | null>(initialTransactionDeepLink);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [historyFilters, setHistoryFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
@@ -297,6 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (authLoading) return;
     if (user) return;
+    if (telegramAuthMode === 'link') return;
     const tg = getTelegramWebApp();
     const tgUser = getTgUser();
     if (!tgUser?.id) return;
@@ -317,7 +348,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetch(telegramAuthApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ telegramInitData, chatId: String(tgUser.id) }),
+      body: JSON.stringify({
+        telegramInitData,
+        chatId: String(tgUser.id),
+        ...(telegramLanguage ? { language: telegramLanguage } : {}),
+      }),
     })
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as { error?: string; customToken?: string };
@@ -334,11 +369,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         telegramAuthInFlight.current = false;
         setTelegramAuthPending(false);
       });
-  }, [authLoading, user, telegramRetryKey]);
+  }, [authLoading, user, telegramRetryKey, telegramAuthMode, telegramLanguage]);
+
+  useEffect(() => {
+    if (user && telegramAuthMode === 'telegram') {
+      removeQueryParam('auth');
+      removeQueryParam('lang');
+    }
+  }, [user, telegramAuthMode]);
 
   // ── Profile bootstrap + load (server-owned) ──────────────────────────────────
-  // One idempotent call after login grants the trial, seeds default categories,
-  // and syncs auth metadata; it returns the profile, which seeds the query cache.
+  // One idempotent call after login seeds default categories and syncs auth
+  // metadata; it returns the profile, which seeds the query cache.
   useEffect(() => {
     if (!uid) {
       setBootstrapped(false);
@@ -631,12 +673,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const response = await fetch(telegramAuthApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-        body: JSON.stringify({ telegramInitData, chatId: String(tgUser.id), firebaseIdToken }),
+        body: JSON.stringify({
+          telegramInitData,
+          chatId: String(tgUser.id),
+          firebaseIdToken,
+          ...(telegramLanguage ? { language: telegramLanguage } : {}),
+        }),
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) throw new Error(data.error || 'Telegram link request failed.');
       await saveProfile({ telegramLinkPromptDismissed: true });
       await reloadUser();
+      setTelegramAuthMode(null);
+      removeQueryParam('auth');
+      removeQueryParam('lang');
     } catch (err) {
       console.error('[telegram] link failed:', err);
       setTelegramLinkError(formatTelegramAuthError(err));
@@ -646,6 +696,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const dismissTelegramLinkPrompt = () => {
+    setTelegramAuthMode(null);
+    removeQueryParam('auth');
+    removeQueryParam('lang');
     void saveProfile({ telegramLinkPromptDismissed: true });
   };
 
@@ -669,7 +722,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     && currentTgChatId != null
     && authProvider !== 'telegram'
     && !telegramAlreadyLinked
-    && !profile?.telegramLinkPromptDismissed;
+    && (telegramAuthMode === 'link' || !profile?.telegramLinkPromptDismissed);
 
   return (
     <AppContext.Provider value={{
@@ -701,6 +754,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
+// Keeping the public hook next to its provider avoids exporting the private context.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApp = () => {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used within AppProvider');

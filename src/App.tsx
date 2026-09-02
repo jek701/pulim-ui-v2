@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppProvider, useApp } from './context';
 import { queryClient } from './api/queryClient';
@@ -14,6 +15,7 @@ import BottomNav from './components/BottomNav';
 import AuthLanguageSelector from './components/AuthLanguageSelector';
 import TelegramLinkBanner from './components/TelegramLinkBanner';
 import PaymentResultModal from './components/PaymentResultModal';
+import PremiumModal from './components/PremiumModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
 import styles from './App.module.css';
 
@@ -44,6 +46,17 @@ const AppShell = () => {
     paymentResult,
     dismissPaymentResult,
   } = useApp();
+  const [showPremiumDeepLink, setShowPremiumDeepLink] = useState(
+    () => new URL(window.location.href).searchParams.get('upgrade') === '1',
+  );
+
+  useEffect(() => {
+    if (!user) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('upgrade') === '1') url.searchParams.delete('upgrade');
+    if (url.searchParams.has('tab')) url.searchParams.delete('tab');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [user]);
 
   if (authLoading || telegramAuthPending || (user && profileLoading)) {
     return (
@@ -75,6 +88,9 @@ const AppShell = () => {
         <BottomNav />
       </div>
       <PaymentResultModal result={paymentResult} onClose={dismissPaymentResult} />
+      {showPremiumDeepLink && (
+        <PremiumModal feature="generic" onClose={() => setShowPremiumDeepLink(false)} />
+      )}
     </>
   );
 };

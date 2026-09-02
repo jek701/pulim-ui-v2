@@ -8,7 +8,6 @@ import {
     HiChevronDown,
     HiBanknotes,
     HiBuildingLibrary,
-    HiSparkles,
     HiXMark,
 } from 'react-icons/hi2';
 import {useTranslation} from 'react-i18next';
@@ -96,17 +95,12 @@ interface Props {
     onReturn?: () => void;
     onSaveCardOrder: (ids: string[]) => Promise<void>;
     recentCardIds?: string[];
-    launchHint?: {
-        visible: boolean;
-        onDismiss: () => void;
-        onOpenSettings: () => void;
-    };
 }
 
 const AddTransactionModal: React.FC<Props> = ({
                                                   categories, subcategories, cards, cardOrder, initialData,
                                                   onAdd, onClose, onReturn, onSaveCardOrder,
-                                                  recentCardIds = [], launchHint,
+                                                  recentCardIds = [],
                                               }) => {
     const {t} = useTranslation();
     const categoryName = useCategoryName();
@@ -319,28 +313,6 @@ const AddTransactionModal: React.FC<Props> = ({
                 </>
             }
         >
-            {launchHint?.visible && (
-                <div className={styles.launchHint} role="status">
-                    <span className={styles.launchHintIcon}><HiSparkles size={20}/></span>
-                    <div className={styles.launchHintCopy}>
-                        <strong>{t('add_transaction.auto_hint_title')}</strong>
-                        <p>{t('add_transaction.auto_hint_text')}</p>
-                        <div className={styles.launchHintActions}>
-                            <button type="button" onClick={launchHint.onOpenSettings}>{t('add_transaction.auto_hint_settings')}</button>
-                            <button type="button" onClick={launchHint.onDismiss}>{t('add_transaction.auto_hint_done')}</button>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        className={styles.launchHintClose}
-                        aria-label={t('common.close')}
-                        onClick={launchHint.onDismiss}
-                    >
-                        <HiXMark size={17}/>
-                    </button>
-                </div>
-            )}
-
             {/* Type toggle */}
             <div className={styles.typeRow}>
                 <button
