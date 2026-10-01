@@ -13,6 +13,8 @@ import {
     HiXMark,
     HiChevronDown,
     HiPaperAirplane,
+    HiCheck,
+    HiMinus,
 } from 'react-icons/hi2';
 import {useApp} from '../context';
 import {EMPTY_HISTORY_FILTERS, type HistoryFilters} from '../utils/historyFilters';
@@ -75,6 +77,13 @@ const Transactions = () => {
     const categoryName = useCategoryName();
     const {confirm, node: confirmNode} = useConfirm();
     const [showFilterPanel, setShowFilterPanel] = useState(false);
+    // "Custom period" is a UI mode, not a filter value: it stays open while the user
+    // has picked no dates (or dates that happen to match a preset) yet.
+    const [customPeriod, setCustomPeriod] = useState(false);
+    // The sheet's main screen stays short; long option lists open as a second screen.
+    const [filterView, setFilterView] = useState<'main' | 'categories' | 'accounts'>('main');
+    const [categorySearch, setCategorySearch] = useState('');
+    const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
     // Which purchase currently has its merged refunds expanded.
     const [expandedRefundsFor, setExpandedRefundsFor] = useState<string | null>(null);
     const {
@@ -125,6 +134,9 @@ const Transactions = () => {
     const locale = i18n.language;
     const openFilterPanel = () => {
         resetFilterClose();
+        setFilterView('main');
+        setCategorySearch('');
+        setExpandedCategoryId(null);
         setShowFilterPanel(true);
     };
 
@@ -136,6 +148,13 @@ const Transactions = () => {
     }, [categoryFilter, setCategoryFilter, setFilters]);
 
     const monthLabel = formatMonth(new Date(viewDate.year, viewDate.month), locale);
+
+    // With a date range active the arrows would move a month nobody sees; stepping
+    // drops the range and goes back to browsing by month.
+    const leaveDateRange = () => {
+        setCustomPeriod(false);
+        if (filters.dateFrom || filters.dateTo) setFilters(f => ({...f, dateFrom: null, dateTo: null}));
+    };
 
     const prevMonth = () => setViewDate(d => {
         const m = d.month === 0 ? 11 : d.month - 1;
@@ -149,17 +168,20 @@ const Transactions = () => {
         return {month: m, year: y};
     });
 
+    // The period comes first: a custom/preset range replaces the month picked in the
+    // header, otherwise that month is the period. Everything else narrows within it.
+    const periodTxs = useMemo(() => transactions.filter(t => {
+        const d = new Date(t.date);
+        if (filters.dateFrom || filters.dateTo) {
+            if (filters.dateFrom && d < new Date(filters.dateFrom + 'T00:00:00')) return false;
+            if (filters.dateTo && d > new Date(filters.dateTo + 'T23:59:59')) return false;
+            return true;
+        }
+        return d.getMonth() === viewDate.month && d.getFullYear() === viewDate.year;
+    }), [transactions, filters.dateFrom, filters.dateTo, viewDate]);
+
     const filteredTxs = useMemo(() => {
-        return transactions.filter(t => {
-            const d = new Date(t.date);
-
-            if (filters.dateFrom || filters.dateTo) {
-                if (filters.dateFrom && d < new Date(filters.dateFrom + 'T00:00:00')) return false;
-                if (filters.dateTo && d > new Date(filters.dateTo + 'T23:59:59')) return false;
-            } else {
-                if (d.getMonth() !== viewDate.month || d.getFullYear() !== viewDate.year) return false;
-            }
-
+        return periodTxs.filter(t => {
             if (filters.types.length > 0) {
                 if (!filters.types.includes(getTransactionKind(t))) return false;
             }
@@ -178,7 +200,7 @@ const Transactions = () => {
 
             return true;
         });
-    }, [transactions, filters, viewDate]);
+    }, [periodTxs, filters.types, filters.categoryIds, filters.subcategoryIds, filters.cardIds]);
 
     /**
      * Day groups, with same-day refunds folded into the purchase they belong to.
@@ -235,27 +257,19 @@ const Transactions = () => {
         return {income, expense, hasUnconverted};
     }, [filteredTxs]);
 
-    const monthCategoryIds = useMemo(() => {
-        const monthTxs = transactions.filter(t => {
-            const d = new Date(t.date);
-            return d.getMonth() === viewDate.month && d.getFullYear() === viewDate.year;
-        });
-        return new Set(monthTxs.map(t => t.categoryId));
-    }, [transactions, viewDate]);
-
-    const monthSubcategoryIds = useMemo(() => {
-        const ids = transactions.flatMap(transaction => {
-            const date = new Date(transaction.date);
-            if (date.getMonth() !== viewDate.month || date.getFullYear() !== viewDate.year) return [];
-            return transaction.subcategoryId ? [transaction.subcategoryId] : [];
-        });
-        return new Set(ids);
-    }, [transactions, viewDate]);
-
-    const hasDebtTxsThisMonth = useMemo(() => transactions.some(t => {
-        const d = new Date(t.date);
-        return t.source === 'debt_payment' && d.getMonth() === viewDate.month && d.getFullYear() === viewDate.year;
-    }), [transactions, viewDate]);
+    // Operation counts per category/subcategory inside the chosen period, so the
+    // filter only offers options that can actually match and shows how many will.
+    const periodCounts = useMemo(() => {
+        const categoryCounts = new Map<string, number>();
+        const subcategoryCounts = new Map<string, number>();
+        let debtPayments = 0;
+        for (const tx of periodTxs) {
+            categoryCounts.set(tx.categoryId, (categoryCounts.get(tx.categoryId) ?? 0) + 1);
+            if (tx.subcategoryId) subcategoryCounts.set(tx.subcategoryId, (subcategoryCounts.get(tx.subcategoryId) ?? 0) + 1);
+            if (tx.source === 'debt_payment') debtPayments += 1;
+        }
+        return {categoryCounts, subcategoryCounts, debtPayments};
+    }, [periodTxs]);
 
     const hasAnyFilter = filters.types.length > 0 || filters.categoryIds.length > 0 || filters.subcategoryIds.length > 0 || filters.cardIds.length > 0 || !!filters.dateFrom || !!filters.dateTo;
 
@@ -289,27 +303,114 @@ const Transactions = () => {
         if (isRegularTransaction(transaction)) setEditingTx(transaction);
     };
 
-    const toggleCategory = (id: string) => setFilters(current => {
-        const isActive = current.categoryIds.includes(id);
-        const childIds = new Set(subcategories.filter(item => item.categoryId === id).map(item => item.id));
-        return {
+    const subcategoryIdsOf = (categoryId: string) =>
+        new Set(subcategories.filter(item => item.categoryId === categoryId).map(item => item.id));
+
+    const isCategoryActive = (id: string) => {
+        if (filters.categoryIds.includes(id)) return true;
+        const childIds = subcategoryIdsOf(id);
+        return filters.subcategoryIds.some(item => childIds.has(item));
+    };
+
+    // Checkbox semantics: a partly picked category (some subcategories) becomes the
+    // whole category on tap; a whole one is cleared.
+    const toggleCategory = (id: string) => {
+        const childIds = subcategoryIdsOf(id);
+        setFilters(current => ({
             ...current,
-            categoryIds: isActive
+            categoryIds: current.categoryIds.includes(id)
                 ? current.categoryIds.filter(item => item !== id)
                 : [...current.categoryIds, id],
-            subcategoryIds: isActive
-                ? current.subcategoryIds
-                : current.subcategoryIds.filter(item => !childIds.has(item)),
+            subcategoryIds: current.subcategoryIds.filter(item => !childIds.has(item)),
+        }));
+    };
+
+    // Subcategory ticks behave like checkboxes. Unticking one while the whole category
+    // is on keeps its siblings ticked, so only the unticked one leaves the result.
+    const toggleSubcategory = (id: string, categoryId: string) => setFilters(current => {
+        const childIds = subcategoryIdsOf(categoryId);
+        if (current.categoryIds.includes(categoryId)) {
+            const siblings = subcategories
+                .filter(sub => sub.categoryId === categoryId && sub.id !== id && periodCounts.subcategoryCounts.has(sub.id))
+                .map(sub => sub.id);
+            return {
+                ...current,
+                categoryIds: current.categoryIds.filter(item => item !== categoryId),
+                subcategoryIds: [...current.subcategoryIds.filter(item => !childIds.has(item)), ...siblings],
+            };
+        }
+        return {
+            ...current,
+            subcategoryIds: current.subcategoryIds.includes(id)
+                ? current.subcategoryIds.filter(item => item !== id)
+                : [...current.subcategoryIds, id],
         };
     });
 
-    const toggleSubcategory = (id: string, categoryId: string) => setFilters(current => ({
-        ...current,
-        categoryIds: current.categoryIds.filter(item => item !== categoryId),
-        subcategoryIds: current.subcategoryIds.includes(id)
-            ? current.subcategoryIds.filter(item => item !== id)
-            : [...current.subcategoryIds, id],
-    }));
+    const hasCategoryFilter = filters.categoryIds.length > 0 || filters.subcategoryIds.length > 0;
+
+    const categoryOptions = categories
+        .filter(cat => periodCounts.categoryCounts.has(cat.id) || isCategoryActive(cat.id))
+        .sort((a, b) => (periodCounts.categoryCounts.get(b.id) ?? 0) - (periodCounts.categoryCounts.get(a.id) ?? 0));
+    const subsInPeriod = (categoryId: string) => subcategories.filter(sub => sub.categoryId === categoryId
+        && (periodCounts.subcategoryCounts.has(sub.id) || filters.subcategoryIds.includes(sub.id)));
+
+    const searchQuery = categorySearch.trim().toLocaleLowerCase(locale);
+    const searchedCategories = searchQuery
+        ? categoryOptions.filter(cat => categoryName(cat).toLocaleLowerCase(locale).includes(searchQuery)
+            || subsInPeriod(cat.id).some(sub => sub.name.toLocaleLowerCase(locale).includes(searchQuery)))
+        : categoryOptions;
+
+    const categoryState = (id: string): 'all' | 'some' | 'none' => {
+        if (filters.categoryIds.includes(id)) return 'all';
+        return isCategoryActive(id) ? 'some' : 'none';
+    };
+
+    // One line that says what is picked: "All", "Food, Cafe", or "Food, Cafe +3".
+    const summarize = (labels: string[]) => {
+        if (labels.length === 0) return t('transactions.filter_all');
+        if (labels.length <= 2) return labels.join(', ');
+        return `${labels.slice(0, 2).join(', ')} ${t('transactions.filter_and_more', {count: labels.length - 2})}`;
+    };
+    const categorySummary = summarize([
+        ...categories.filter(cat => isCategoryActive(cat.id)).map(cat => categoryName(cat)),
+        ...(filters.categoryIds.includes('__debts__') ? [t('transactions.filter_debt_payments')] : []),
+    ]);
+    const accountSummary = summarize(cards.filter(card => filters.cardIds.includes(card.id)).map(card => card.name));
+
+    type PeriodMode = 'month' | '7d' | '30d' | 'custom';
+    const today = dayjs().format('YYYY-MM-DD');
+    const presetFrom = (days: number) => dayjs().subtract(days - 1, 'day').format('YYYY-MM-DD');
+    const derivedPeriod: PeriodMode = !filters.dateFrom && !filters.dateTo
+        ? 'month'
+        : filters.dateTo === today && filters.dateFrom === presetFrom(7)
+            ? '7d'
+            : filters.dateTo === today && filters.dateFrom === presetFrom(30)
+                ? '30d'
+                : 'custom';
+    const periodMode: PeriodMode = customPeriod ? 'custom' : derivedPeriod;
+    const periodOptions: {mode: PeriodMode; label: string}[] = [
+        {mode: 'month', label: monthLabel},
+        {mode: '7d', label: t('transactions.filter_period_7d')},
+        {mode: '30d', label: t('transactions.filter_period_30d')},
+        {mode: 'custom', label: t('transactions.filter_period_custom')},
+    ];
+
+    const selectPeriod = (mode: PeriodMode) => {
+        setCustomPeriod(mode === 'custom');
+        if (mode === 'custom') return;
+        if (mode === 'month') {
+            setFilters(f => ({...f, dateFrom: null, dateTo: null}));
+            return;
+        }
+        const from = presetFrom(mode === '7d' ? 7 : 30);
+        setFilters(f => ({...f, dateFrom: from, dateTo: today}));
+    };
+
+    const resetFilters = () => {
+        setCustomPeriod(false);
+        setFilters(defaultFilters);
+    };
 
     const toggleCard = (id: string) => {
         if (!isPremium) { premiumGate.open('filters'); return; }
@@ -372,9 +473,9 @@ const Transactions = () => {
         <div className={styles.page}>
             {/* Month nav */}
             <div className={styles.monthNav}>
-                <button aria-label={t('common.prev_month')} onClick={prevMonth}><HiChevronLeft size={20}/></button>
-                <span>{monthLabel}</span>
-                <button aria-label={t('common.next_month')} onClick={nextMonth}><HiChevronRight size={20}/></button>
+                <button aria-label={t('common.prev_month')} onClick={() => { leaveDateRange(); prevMonth(); }}><HiChevronLeft size={20}/></button>
+                <span>{filters.dateFrom || filters.dateTo ? formatDateChip(filters.dateFrom, filters.dateTo) : monthLabel}</span>
+                <button aria-label={t('common.next_month')} onClick={() => { leaveDateRange(); nextMonth(); }}><HiChevronRight size={20}/></button>
                 <button
                     className={`${styles.filterIconBtn} ${hasAnyFilter ? styles.filterIconActive : ''}`}
                     onClick={openFilterPanel}
@@ -427,7 +528,7 @@ const Transactions = () => {
                     {(filters.dateFrom || filters.dateTo) && (
                         <div className={styles.chip}>
                             <span>{formatDateChip(filters.dateFrom, filters.dateTo)}</span>
-                            <button onClick={() => setFilters(f => ({...f, dateFrom: null, dateTo: null}))}>✕</button>
+                            <button onClick={() => selectPeriod('month')}>✕</button>
                         </div>
                     )}
                 </div>
@@ -514,7 +615,7 @@ const Transactions = () => {
                         {hasAnyFilter && (
                             <>
                                 <p className={styles.emptyHint}>{t('transactions.filter_no_match_hint')}</p>
-                                <button className={styles.emptyClearBtn} onClick={() => setFilters(defaultFilters)}>
+                                <button className={styles.emptyClearBtn} onClick={resetFilters}>
                                     {t('transactions.filter_clear_btn')}
                                 </button>
                             </>
@@ -703,149 +804,312 @@ const Transactions = () => {
                     <div className={styles.filterSwipeLayer} style={filterSwipeStyle}>
                         <div
                             ref={filterSwipeRef}
-                            className={`${styles.filterPanel} ${isFilterClosing ? styles.filterPanelClosing : ''}`}
+                            className={`${styles.filterPanel} ${filterView !== 'main' ? styles.filterPanelTall : ''} ${isFilterClosing ? styles.filterPanelClosing : ''}`}
                             onClick={event => event.stopPropagation()}
                             {...filterSwipeProps}
                         >
                             <div className={styles.filterSwipeArea}>
                                 <div className={styles.filterHandle}/>
                                 <div className={styles.filterPanelHeader}>
-                                    <span className={styles.filterPanelTitle}>{t('transactions.filter_title')}</span>
-                                    {hasAnyFilter && (
-                                        <button className={styles.clearAllBtn} onClick={() => setFilters(defaultFilters)}>
+                                    {filterView !== 'main' && (
+                                        <button
+                                            type="button"
+                                            className={styles.closePanelBtn}
+                                            aria-label={t('common.back')}
+                                            onClick={() => setFilterView('main')}
+                                        >
+                                            <HiChevronLeft size={20}/>
+                                        </button>
+                                    )}
+                                    <span className={styles.filterPanelTitle}>
+                                        {filterView === 'categories'
+                                            ? t('transactions.filter_section_category')
+                                            : filterView === 'accounts'
+                                                ? t('transactions.filter_section_account')
+                                                : t('transactions.filter_title')}
+                                    </span>
+                                    {filterView === 'categories' && hasCategoryFilter && (
+                                        <button type="button" className={styles.sectionClearBtn} onClick={() => setFilters(f => ({...f, categoryIds: [], subcategoryIds: []}))}>
                                             {t('transactions.filter_clear_all')}
                                         </button>
                                     )}
-                                    <button className={styles.closePanelBtn} aria-label={t('common.close')} onClick={closeFilterPanel}>
-                                        <HiXMark size={20}/>
-                                    </button>
+                                    {filterView === 'accounts' && filters.cardIds.length > 0 && (
+                                        <button type="button" className={styles.sectionClearBtn} onClick={() => setFilters(f => ({...f, cardIds: []}))}>
+                                            {t('transactions.filter_clear_all')}
+                                        </button>
+                                    )}
+                                    {filterView === 'main' && (
+                                        <button className={styles.closePanelBtn} aria-label={t('common.close')} onClick={closeFilterPanel}>
+                                            <HiXMark size={20}/>
+                                        </button>
+                                    )}
                                 </div>
+                                {filterView === 'main' && (
+                                    <p className={styles.filterPanelSubtitle}>{t('transactions.filter_subtitle')}</p>
+                                )}
                             </div>
 
-                        {/* Type */}
-                        <div className={styles.filterSection}>
-                            <p className={styles.filterSectionLabel}>{t('transactions.filter_section_type')}</p>
-                            <div className={styles.typeRow}>
-                                {(['income', 'expense', 'return', 'transfer'] as const).map(type => (
-                                    <button
-                                        key={type}
-                                        className={`${styles.typeBtn} ${filters.types.includes(type) ? styles.typeBtnActive : ''}`}
-                                        onClick={() => toggleType(type)}
-                                    >
-                                        {typeLabel(type)}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Category */}
-                        <div className={styles.filterSection}>
-                            <p className={styles.filterSectionLabel}>{t('transactions.filter_section_category')}</p>
-                            <div className={styles.filterList}>
-                                {categories.filter(c => monthCategoryIds.has(c.id)).map(cat => {
-                                    const catActive = filters.categoryIds.includes(cat.id);
-                                    return (
-                                        <div key={cat.id}>
+                            {filterView === 'main' && (
+                            <div className={styles.filterBody}>
+                                {/* Period */}
+                                <section className={styles.filterSection}>
+                                    <p className={styles.filterSectionLabel}>{t('transactions.filter_section_date')}</p>
+                                    <div className={styles.chipGroup}>
+                                        {periodOptions.map(option => (
                                             <button
-                                                className={`${styles.filterListItem} ${catActive ? styles.filterListItemActive : ''}`}
-                                                onClick={() => toggleCategory(cat.id)}
+                                                key={option.mode}
+                                                type="button"
+                                                className={`${styles.optionChip} ${periodMode === option.mode ? styles.optionChipActive : ''}`}
+                                                aria-pressed={periodMode === option.mode}
+                                                onClick={() => selectPeriod(option.mode)}
                                             >
-                                                <span>{cat.icon} {categoryName(cat)}</span>
-                                                {catActive && <span className={styles.checkMark}>✓</span>}
+                                                {option.label}
                                             </button>
-                                            {subcategories
-                                                .filter(subcategory => subcategory.categoryId === cat.id && monthSubcategoryIds.has(subcategory.id))
-                                                .map(subcategory => {
-                                                    const subcategoryActive = filters.subcategoryIds.includes(subcategory.id);
+                                        ))}
+                                    </div>
+                                    {periodMode === 'custom' && (
+                                        <div className={styles.dateRow}>
+                                            <div className={styles.dateField}>
+                                                <label className={styles.dateLabel}>{t('transactions.filter_date_from')}</label>
+                                                <Input
+                                                    type="date"
+                                                    className={styles.dateInput}
+                                                    value={filters.dateFrom ?? ''}
+                                                    max={filters.dateTo ?? undefined}
+                                                    onChange={e => setFilters(f => ({...f, dateFrom: e.target.value || null}))}
+                                                />
+                                            </div>
+                                            <div className={styles.dateField}>
+                                                <label className={styles.dateLabel}>{t('transactions.filter_date_to')}</label>
+                                                <Input
+                                                    type="date"
+                                                    className={styles.dateInput}
+                                                    value={filters.dateTo ?? ''}
+                                                    min={filters.dateFrom ?? undefined}
+                                                    onChange={e => setFilters(f => ({...f, dateTo: e.target.value || null}))}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {periodMode !== 'month' && (
+                                        <p className={styles.filterHint}>{t('transactions.filter_period_override_hint')}</p>
+                                    )}
+                                </section>
+
+                                {/* Type */}
+                                <section className={styles.filterSection}>
+                                    <p className={styles.filterSectionLabel}>{t('transactions.filter_section_type')}</p>
+                                    <div className={styles.chipGroup}>
+                                        <button
+                                            type="button"
+                                            className={`${styles.optionChip} ${filters.types.length === 0 ? styles.optionChipActive : ''}`}
+                                            aria-pressed={filters.types.length === 0}
+                                            onClick={() => setFilters(f => ({...f, types: []}))}
+                                        >
+                                            {t('transactions.filter_all')}
+                                        </button>
+                                        {(['expense', 'income', 'transfer', 'return'] as const).map(type => (
+                                            <button
+                                                key={type}
+                                                type="button"
+                                                className={`${styles.optionChip} ${filters.types.includes(type) ? styles.optionChipActive : ''}`}
+                                                aria-pressed={filters.types.includes(type)}
+                                                onClick={() => toggleType(type)}
+                                            >
+                                                {typeLabel(type)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* Category and account: one summary row each, details on their own screen */}
+                                <section className={styles.filterSection}>
+                                    <div className={styles.navGroup}>
+                                        <button
+                                            type="button"
+                                            className={styles.navRow}
+                                            onClick={() => { setCategorySearch(''); setFilterView('categories'); }}
+                                        >
+                                            <span className={styles.navLabel}>{t('transactions.filter_section_category')}</span>
+                                            <span className={`${styles.navValue} ${hasCategoryFilter ? styles.navValueActive : ''}`}>{categorySummary}</span>
+                                            <HiChevronRight className={styles.navChevron} size={18}/>
+                                        </button>
+                                        {cards.length > 0 && (
+                                            <button
+                                                type="button"
+                                                className={styles.navRow}
+                                                onClick={() => {
+                                                    if (!isPremium) { premiumGate.open('filters'); return; }
+                                                    setFilterView('accounts');
+                                                }}
+                                            >
+                                                <span className={styles.navLabel}>{t('transactions.filter_section_account')}</span>
+                                                {isPremium
+                                                    ? <span className={`${styles.navValue} ${filters.cardIds.length > 0 ? styles.navValueActive : ''}`}>{accountSummary}</span>
+                                                    : <span className={styles.navValue}><PremiumBadge/></span>}
+                                                <HiChevronRight className={styles.navChevron} size={18}/>
+                                            </button>
+                                        )}
+                                    </div>
+                                </section>
+                            </div>
+                            )}
+
+                            {filterView === 'categories' && (
+                            <div className={styles.filterBody}>
+                                {categoryOptions.length > 8 && (
+                                    <div className={styles.searchWrap}>
+                                        <input
+                                            type="search"
+                                            className={styles.searchInput}
+                                            placeholder={t('transactions.filter_search_category')}
+                                            value={categorySearch}
+                                            onChange={e => setCategorySearch(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                                <div className={styles.pickList}>
+                                    {searchedCategories.map(cat => {
+                                        const state = categoryState(cat.id);
+                                        const subs = subsInPeriod(cat.id);
+                                        const expanded = expandedCategoryId === cat.id || (searchQuery !== '' && subs.length > 0
+                                            && !categoryName(cat).toLocaleLowerCase(locale).includes(searchQuery));
+                                        const visibleSubs = searchQuery && !categoryName(cat).toLocaleLowerCase(locale).includes(searchQuery)
+                                            ? subs.filter(sub => sub.name.toLocaleLowerCase(locale).includes(searchQuery))
+                                            : subs;
+                                        const pickedSubs = subs.filter(sub => filters.subcategoryIds.includes(sub.id));
+                                        return (
+                                            <div key={cat.id} className={styles.pickItem}>
+                                                <div className={styles.pickRow}>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.pickMain}
+                                                        role="checkbox"
+                                                        aria-checked={state === 'all' ? true : state === 'some' ? 'mixed' : false}
+                                                        onClick={() => toggleCategory(cat.id)}
+                                                    >
+                                                        <span className={`${styles.checkbox} ${state !== 'none' ? styles.checkboxOn : ''}`}>
+                                                            {state === 'all' && <HiCheck size={14}/>}
+                                                            {state === 'some' && <HiMinus size={14}/>}
+                                                        </span>
+                                                        <span className={styles.pickIcon} aria-hidden="true">{cat.icon}</span>
+                                                        <span className={styles.pickText}>
+                                                            <span className={styles.pickName}>{categoryName(cat)}</span>
+                                                            {state === 'some' && (
+                                                                <span className={styles.pickSub}>{pickedSubs.map(sub => sub.name).join(', ')}</span>
+                                                            )}
+                                                        </span>
+                                                        <span className={styles.pickCount}>{periodCounts.categoryCounts.get(cat.id) ?? 0}</span>
+                                                    </button>
+                                                    {subs.length > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            className={styles.expandBtn}
+                                                            aria-expanded={expanded}
+                                                            aria-label={t('transactions.filter_subcategories')}
+                                                            onClick={() => setExpandedCategoryId(id => id === cat.id ? null : cat.id)}
+                                                        >
+                                                            <HiChevronDown className={expanded ? styles.expandOpen : ''} size={18}/>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {expanded && visibleSubs.map(sub => {
+                                                    const checked = state === 'all' || filters.subcategoryIds.includes(sub.id);
                                                     return (
                                                         <button
-                                                            key={subcategory.id}
-                                                            className={`${styles.filterListItem} ${styles.filterListItemSub} ${subcategoryActive ? styles.filterListItemActive : ''}`}
-                                                            onClick={() => toggleSubcategory(subcategory.id, cat.id)}
+                                                            key={sub.id}
+                                                            type="button"
+                                                            className={`${styles.pickMain} ${styles.pickSubRow}`}
+                                                            role="checkbox"
+                                                            aria-checked={checked}
+                                                            onClick={() => toggleSubcategory(sub.id, cat.id)}
                                                         >
-                                                            <span><span className={styles.filterSubBranch}>↳</span> {subcategory.name}</span>
-                                                            {subcategoryActive && <span className={styles.checkMark}>✓</span>}
+                                                            <span className={`${styles.checkbox} ${checked ? styles.checkboxOn : ''}`}>
+                                                                {checked && <HiCheck size={14}/>}
+                                                            </span>
+                                                            <span className={styles.pickText}>
+                                                                <span className={styles.pickName}>{sub.name}</span>
+                                                            </span>
+                                                            <span className={styles.pickCount}>{periodCounts.subcategoryCounts.get(sub.id) ?? 0}</span>
                                                         </button>
                                                     );
                                                 })}
-                                        </div>
-                                    );
-                                })}
-                                {hasDebtTxsThisMonth && (
-                                    <button
-                                        className={`${styles.filterListItem} ${filters.categoryIds.includes('__debts__') ? styles.filterListItemActive : ''}`}
-                                        onClick={() => toggleCategory('__debts__')}
-                                    >
-                                        <span>{t('transactions.filter_debt_payments')}</span>
-                                        {filters.categoryIds.includes('__debts__') &&
-                                            <span className={styles.checkMark}>✓</span>}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Account */}
-                        {cards.length > 0 && (
-                            <div className={styles.filterSection} style={{ position: 'relative' }}>
-                                <p className={styles.filterSectionLabel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    {t('transactions.filter_section_account')}
-                                    {!isPremium && <PremiumBadge />}
-                                </p>
-                                <div className={styles.filterList} style={!isPremium ? { filter: 'blur(2px)', pointerEvents: 'none' } : undefined}>
-                                    {cards.map(card => {
-                                        const active = filters.cardIds.includes(card.id);
-                                        return (
+                                            </div>
+                                        );
+                                    })}
+                                    {periodCounts.debtPayments > 0 && !searchQuery && (
+                                        <div className={styles.pickItem}>
                                             <button
-                                                key={card.id}
-                                                className={`${styles.filterListItem} ${active ? styles.filterListItemActive : ''}`}
-                                                tabIndex={isPremium ? undefined : -1}
-                                                aria-hidden={isPremium ? undefined : true}
-                                                onClick={() => toggleCard(card.id)}
+                                                type="button"
+                                                className={styles.pickMain}
+                                                role="checkbox"
+                                                aria-checked={filters.categoryIds.includes('__debts__')}
+                                                onClick={() => toggleCategory('__debts__')}
                                             >
-                                                <span>{card.name}</span>
-                                                {active && <span className={styles.checkMark}>✓</span>}
+                                                <span className={`${styles.checkbox} ${filters.categoryIds.includes('__debts__') ? styles.checkboxOn : ''}`}>
+                                                    {filters.categoryIds.includes('__debts__') && <HiCheck size={14}/>}
+                                                </span>
+                                                <span className={styles.pickText}>
+                                                    <span className={styles.pickName}>{t('transactions.filter_debt_payments')}</span>
+                                                </span>
+                                                <span className={styles.pickCount}>{periodCounts.debtPayments}</span>
                                             </button>
+                                        </div>
+                                    )}
+                                    {searchedCategories.length === 0 && (
+                                        <p className={styles.pickEmpty}>{t('transactions.filter_nothing_found')}</p>
+                                    )}
+                                </div>
+                            </div>
+                            )}
+
+                            {filterView === 'accounts' && (
+                            <div className={styles.filterBody}>
+                                <div className={styles.pickList}>
+                                    {cards.map(card => {
+                                        const checked = filters.cardIds.includes(card.id);
+                                        return (
+                                            <div key={card.id} className={styles.pickItem}>
+                                                <button
+                                                    type="button"
+                                                    className={styles.pickMain}
+                                                    role="checkbox"
+                                                    aria-checked={checked}
+                                                    onClick={() => toggleCard(card.id)}
+                                                >
+                                                    <span className={`${styles.checkbox} ${checked ? styles.checkboxOn : ''}`}>
+                                                        {checked && <HiCheck size={14}/>}
+                                                    </span>
+                                                    <span className={styles.pickText}>
+                                                        <span className={styles.pickName}>{card.name}</span>
+                                                    </span>
+                                                </button>
+                                            </div>
                                         );
                                     })}
                                 </div>
-                                {!isPremium && (
-                                    <button
-                                        onClick={() => premiumGate.open('filters')}
-                                        style={{
-                                            position: 'absolute', inset: 0, top: 28,
-                                            background: 'transparent', border: 'none', cursor: 'pointer',
-                                        }}
-                                        aria-label={t('premium.unlock_with_premium')}
-                                    />
-                                )}
                             </div>
-                        )}
+                            )}
 
-                        {/* Date Range */}
-                        <div className={styles.filterSection}>
-                            <p className={styles.filterSectionLabel}>{t('transactions.filter_section_date')}</p>
-                            <div className={styles.dateRow}>
-                                <div className={styles.dateField}>
-                                    <label className={styles.dateLabel}>{t('transactions.filter_date_from')}</label>
-                                    <Input
-                                        type="date"
-                                        className={styles.dateInput}
-                                        value={filters.dateFrom ?? ''}
-                                        onChange={e => setFilters(f => ({...f, dateFrom: e.target.value || null}))}
-                                    />
-                                </div>
-                                <div className={styles.dateField}>
-                                    <label className={styles.dateLabel}>{t('transactions.filter_date_to')}</label>
-                                    <Input
-                                        type="date"
-                                        className={styles.dateInput}
-                                        value={filters.dateTo ?? ''}
-                                        onChange={e => setFilters(f => ({...f, dateTo: e.target.value || null}))}
-                                    />
-                                </div>
+                            <div className={styles.filterFooter}>
+                                <button
+                                    type="button"
+                                    className={styles.filterResetBtn}
+                                    disabled={!hasAnyFilter}
+                                    onClick={resetFilters}
+                                >
+                                    {t('transactions.filter_clear_all')}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.filterApplyBtn}
+                                    onClick={closeFilterPanel}
+                                >
+                                    {filteredTxs.length > 0
+                                        ? t('transactions.filter_show_results', {count: filteredTxs.length})
+                                        : t('transactions.filter_show_none')}
+                                </button>
                             </div>
-                        </div>
-
                         </div>
                     </div>
                 </div>,

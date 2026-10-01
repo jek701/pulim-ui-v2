@@ -501,6 +501,19 @@ Recommended checks after changes:
 - The public bot link uses `VITE_TELEGRAM_BOT_USERNAME`.
 - Premium payment remains ATMOS-only; Telegram Stars are not used.
 
+## Telegram reminders
+
+- `profile.notifications.enabled` is the only client-editable notification setting;
+  delivery status and scheduling fields are server-owned.
+- `src/hooks/useNotificationSettings.ts` calls
+  `PATCH /v1/profile/notifications` optimistically and refreshes the profile query.
+- Settings shows delivery state and a `?start=notify` bot deep link.
+- `src/components/NotificationEnableBanner.tsx` appears only on Home when reminders
+  are enabled but the bot is not reachable. Its one-time dismissal is persisted as
+  `profile.notificationsPromptDismissed`.
+- The API owns all notification calculations, queueing, rate limiting, and Telegram
+  delivery. The UI only exposes status and consent controls.
+
 ## Known Technical Risks and Cleanup Targets
 
 - AI chat documents still store message arrays in one document; long-term, move messages to a paginated subcollection.
@@ -577,4 +590,5 @@ Root:
 - Calendar/planning: `src/pages/Calendar.tsx`, `src/components/PlannedExpenseModal.tsx`, `src/utils/recurrence.ts`.
 - Premium: `src/hooks/useEntitlements.ts`, `src/components/PremiumLock.tsx`, `src/components/PremiumModal.tsx`.
 - AI: `src/utils/ai.ts`, `src/utils/aiChat.ts`, `src/components/AskAIChat.tsx`.
-- Settings: `src/pages/Settings.tsx`, `src/hooks/useUserSettings.ts`.
+- Settings: `src/pages/Settings.tsx`, `src/hooks/useUserSettings.ts`,
+  `src/hooks/useNotificationSettings.ts`.

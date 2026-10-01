@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import BottomNav from './components/BottomNav';
 import AuthLanguageSelector from './components/AuthLanguageSelector';
 import TelegramLinkBanner from './components/TelegramLinkBanner';
+import NotificationEnableBanner from './components/NotificationEnableBanner';
 import PaymentResultModal from './components/PaymentResultModal';
 import PremiumModal from './components/PremiumModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
@@ -84,6 +85,7 @@ const AppShell = () => {
     <>
       <div className={styles.shell}>
         <TelegramLinkBanner />
+        <NotificationEnableBanner />
         <PageContent />
         <BottomNav />
       </div>

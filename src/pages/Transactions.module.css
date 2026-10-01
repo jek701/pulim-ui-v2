@@ -447,11 +447,10 @@
     margin: 0 auto;
     background: var(--bg);
     border-radius: 20px 20px 0 0;
-    padding: 0 0 max(40px, var(--app-content-bottom));
     max-height: 100%;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.3);
     animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -473,11 +472,17 @@
 }
 
 .filterSwipeArea {
+    flex-shrink: 0;
     touch-action: none;
     cursor: grab;
 }
 
 .filterSwipeArea:active { cursor: grabbing; }
+
+/* Picker screens keep a steady height, so the sheet doesn't jump while searching. */
+.filterPanelTall {
+    min-height: min(600px, 100%);
+}
 
 .filterPanelClosing {
     animation: slideDown 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
@@ -530,12 +535,6 @@
     font-weight: 700;
 }
 
-.clearAllBtn {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--accent);
-    padding: 4px 8px;
-}
 
 .closePanelBtn {
     width: 30px;
@@ -548,9 +547,29 @@
     justify-content: center;
 }
 
+.filterPanelSubtitle {
+    padding: 2px 20px 4px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text3);
+}
+
+.filterBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 20px;
+}
+
 /* ── Filter sections ── */
 .filterSection {
-    padding: 16px 20px 0;
+    padding: 18px 20px 0;
+}
+
+.filterSection + .filterSection {
+    margin-top: 2px;
 }
 
 .filterSectionLabel {
@@ -562,72 +581,279 @@
     margin-bottom: 10px;
 }
 
-.typeRow {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.filterHint {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text3);
+}
+
+/* Every option in the sheet is the same chip: one visual rule to learn. */
+.chipGroup {
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
-.typeBtn {
-    height: 36px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
+.optionChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
     background: var(--surface);
-    color: var(--text2);
-    transition: background 0.15s, color 0.15s;
+    color: var(--text1);
+    font-size: 14px;
+    font-weight: 500;
+    max-width: 100%;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.typeBtnActive {
+.optionChip > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.optionChipActive {
     background: var(--accent);
+    border-color: var(--accent);
     color: #fff;
 }
 
-.filterList {
+
+
+
+
+
+
+
+.sectionClearBtn {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 6px 4px;
+}
+
+/* ── Summary rows on the main screen ── */
+.navGroup {
+    border-radius: 14px;
     background: var(--surface);
-    border-radius: 12px;
     overflow: hidden;
 }
 
-.filterListItem {
+.navRow {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 10px;
     width: 100%;
-    padding: 12px 14px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text1);
-    border-bottom: 1px solid var(--border);
+    min-height: 52px;
+    padding: 0 12px 0 16px;
     text-align: left;
-    transition: background 0.12s;
 }
 
-.filterListItemSub {
-    padding-left: 28px;
-    font-size: 13px;
-    color: var(--text2);
+.navRow + .navRow {
+    border-top: 1px solid var(--border);
 }
 
-.filterSubBranch {
-    color: var(--text3);
-    margin-right: 3px;
-}
-
-.filterListItemActive {
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
-    color: var(--accent);
-}
-
-.checkMark {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--accent);
+.navLabel {
     flex-shrink: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text1);
+}
+
+.navValue {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    color: var(--text3);
+}
+
+.navValueActive {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.navChevron {
+    flex-shrink: 0;
+    color: var(--text3);
+}
+
+/* ── Picker screen (categories / accounts) ── */
+.searchWrap {
+    padding: 8px 20px 4px;
+}
+
+.searchInput {
+    width: 100%;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text1);
+    font-size: 15px;
+}
+
+.pickList {
+    margin: 10px 20px 0;
+    border-radius: 14px;
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.pickItem + .pickItem {
+    border-top: 1px solid var(--border);
+}
+
+.pickRow {
+    display: flex;
+    align-items: stretch;
+}
+
+.pickMain {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 8px 12px 8px 14px;
+    text-align: left;
+}
+
+.pickSubRow {
+    min-height: 44px;
+    padding-left: 48px;
+    background: color-mix(in srgb, var(--bg) 40%, var(--surface));
+}
+
+.checkbox {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.checkboxOn {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.pickIcon {
+    flex-shrink: 0;
+    font-size: 18px;
+}
+
+.pickText {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pickName,
+.pickSub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pickName {
+    font-size: 15px;
+    color: var(--text1);
+}
+
+.pickSub {
+    font-size: 12px;
+    color: var(--accent);
+}
+
+.pickCount {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--text3);
+    font-variant-numeric: tabular-nums;
+}
+
+.expandBtn {
+    flex-shrink: 0;
+    width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    border-left: 1px solid var(--border);
+}
+
+.expandBtn svg {
+    transition: transform 0.2s;
+}
+
+.expandOpen {
+    transform: rotate(180deg);
+}
+
+.pickEmpty {
+    padding: 20px 16px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text3);
+}
+
+.filterFooter {
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    padding: 12px 20px max(16px, var(--app-content-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.filterResetBtn {
+    height: 48px;
+    padding: 0 18px;
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--text1);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.filterResetBtn:disabled {
+    color: var(--text3);
+    opacity: 0.6;
+}
+
+.filterApplyBtn {
+    flex: 1;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 /* ── Date range ── */
 .dateRow {
+    margin-top: 12px;
     display: grid;
     grid-template-columns: repeat(2, calc(50% - 6px));
     align-items: center;

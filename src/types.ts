@@ -66,6 +66,23 @@ export interface UsageState {
   periodStart: number;
 }
 
+export type TelegramNotificationStatus = 'unknown' | 'reachable' | 'unreachable' | 'blocked';
+
+export interface NotificationSettings {
+  enabled: boolean;
+  telegram: {
+    chatId: string | null;
+    status: TelegramNotificationStatus;
+    lastError: string | null;
+    checkedAt: number;
+  };
+  nextDailyAt: number;
+  introSentAt: number | null;
+  sentDay: string;
+  sentCount: number;
+  lastSentAt: number | null;
+}
+
 export interface UserProfile {
   name?: string;
   salarySources: SalarySource[];  // replaces single salaryDay
@@ -91,6 +108,9 @@ export interface UserProfile {
   isPremium?: boolean;
   subscription?: SubscriptionState;
   usage?: UsageState;
+  createdAt?: number;
+  notifications?: NotificationSettings;
+  notificationsPromptDismissed?: boolean;
   updatedAt: number;
 }
 export type TransactionType = 'income' | 'expense';

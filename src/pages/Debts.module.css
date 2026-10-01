@@ -82,6 +82,185 @@
   color: var(--text);
 }
 
+.summaryCard {
+  margin: 0 16px 12px;
+  flex-shrink: 0;
+  background: var(--surface);
+  background:
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 38%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.summaryMain {
+  width: 100%;
+  min-height: 94px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.summaryIcon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: linear-gradient(145deg, var(--accent2), var(--accent));
+  color: #fff;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.summaryContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.summaryLabel,
+.summaryHint,
+.summaryAmounts span,
+.summaryGroupAmounts span,
+.summaryPerson span,
+.summaryPerson small {
+  display: block;
+}
+
+.summaryLabel {
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.summaryHint {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.summaryToggle {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  transition: background 0.16s ease;
+}
+
+.summaryToggle:active {
+  transform: none;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.summaryGroupIcon {
+  flex-shrink: 0;
+  color: var(--accent2);
+}
+
+.summaryToggleText {
+  min-width: 0;
+  flex: 1;
+}
+
+.summaryToggleText small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.summaryAmounts,
+.summaryGroupAmounts {
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryAmounts {
+  font-size: clamp(21px, 6.2vw, 27px);
+  line-height: 1.25;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.025em;
+}
+
+.summaryChevron {
+  flex-shrink: 0;
+  color: var(--text3);
+  transition: transform 0.2s ease;
+}
+
+.summaryChevronOpen { transform: rotate(180deg); }
+
+.summaryBreakdown {
+  max-height: 292px;
+  padding: 6px 14px 8px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface2) 34%, transparent);
+}
+
+.summaryGroup {
+  min-height: 56px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summaryGroup:last-child { border-bottom: 0; }
+
+.summaryAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface2));
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summaryPerson {
+  min-width: 0;
+  flex: 1;
+}
+
+.summaryPerson span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summaryPerson small {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.summaryGroupAmounts {
+  max-width: 58%;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .empty {
   display: flex;
   flex-direction: column;
@@ -241,6 +420,51 @@
   font-size: 14px;
   color: var(--text2);
   margin-bottom: 4px;
+}
+
+.personField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.personHint {
+  padding: 0 2px;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.savedPeople {
+  min-width: 0;
+}
+
+.savedPeopleList {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.savedPeopleList::-webkit-scrollbar { display: none; }
+
+.savedPersonBtn {
+  height: 32px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.savedPersonActive {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface2));
+  color: var(--accent);
 }
 
 /* Form styles */

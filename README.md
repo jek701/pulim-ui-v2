@@ -1,5 +1,19 @@
 # React + TypeScript + Vite
 
+## Telegram reminders
+
+The profile contains server-owned `notifications` delivery state and one user-facing
+`enabled` switch. Settings updates it through
+`PATCH /v1/profile/notifications`; the optimistic update lives in
+`src/hooks/useNotificationSettings.ts`. Users whose bot status is not `reachable`
+see a one-time Home banner linking to
+`https://t.me/{VITE_TELEGRAM_BOT_USERNAME}?start=notify`. Dismissing the banner stores
+`notificationsPromptDismissed` on the profile. All copy exists in en/ru/uz.
+
+The API worker, queue, Telegram rendering, rollout steps, indexes, and TTL setup are
+documented in `pulim-api-v2/README.md`. The UI does not schedule or calculate
+notifications.
+
 ## Phone authentication (Eskiz SMS)
 
 The primary registration and sign-in flow is phone + one-time code. The code is

@@ -21,6 +21,9 @@ export const useSwipeDismiss = (onDismiss: () => void) => {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  // Held in state (not just a ref) so the touch listeners attach when the sheet node
+  // mounts later than the hook — e.g. a panel rendered conditionally by its page.
+  const [element, setElement] = useState<HTMLElement | null>(null);
   const elementRef = useRef<HTMLElement | null>(null);
   const onDismissRef = useRef(onDismiss);
   const gestureRef = useRef<{
@@ -101,10 +104,18 @@ export const useSwipeDismiss = (onDismiss: () => void) => {
 
   const swipeRef = useCallback((node: HTMLElement | null) => {
     elementRef.current = node;
+    setElement(node);
+    if (!node) {
+      // The hook can outlive its sheet; start the next opening from rest, not from
+      // wherever the dismissing drag left it.
+      gestureRef.current = null;
+      setIsDragging(false);
+      setDragY(0);
+      setHasInteracted(false);
+    }
   }, []);
 
   useEffect(() => {
-    const element = elementRef.current;
     if (!element) return;
 
     const handleTouchStart = (event: TouchEvent) => {
@@ -132,17 +143,24 @@ export const useSwipeDismiss = (onDismiss: () => void) => {
       element.removeEventListener('touchend', handleTouchEnd);
       element.removeEventListener('touchcancel', cancelGesture);
     };
-  }, [beginGesture, cancelGesture, finishGesture, moveGesture]);
+  }, [element, beginGesture, cancelGesture, finishGesture, moveGesture]);
 
   const onPointerDown = useCallback<PointerEventHandler<HTMLElement>>((event) => {
     if (event.pointerType === 'touch' || !event.isPrimary || event.button !== 0) return;
     beginGesture(event.clientX, event.clientY, event.target, event.pointerId);
-    event.currentTarget.setPointerCapture(event.pointerId);
   }, [beginGesture]);
 
   const onPointerMove = useCallback<PointerEventHandler<HTMLElement>>((event) => {
     const gesture = gestureRef.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
+    // Capture only once the pointer actually drags: capturing on pointerdown
+    // retargets the click to the sheet, so no button inside it could be pressed.
+    if (
+      Math.abs(event.clientY - gesture.startY) > 4
+      && !event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     moveGesture(event.clientX, event.clientY, () => event.preventDefault());
   }, [moveGesture]);
 

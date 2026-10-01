@@ -3,6 +3,7 @@ import {useTranslation} from 'react-i18next';
 import {
     HiArrowRightOnRectangle,
     HiCalendarDays,
+    HiBell,
     HiCheck,
     HiChevronDown,
     HiChevronLeft,
@@ -30,6 +31,7 @@ import {useTransactions} from '../hooks/useTransactions';
 import {useBudgets} from '../hooks/useBudgets';
 import {useEntitlements} from '../hooks/useEntitlements';
 import {useUserSettings} from '../hooks/useUserSettings';
+import {useNotificationSettings} from '../hooks/useNotificationSettings';
 import {usePremiumGate, PremiumBadge} from '../components/PremiumLock';
 import {useConfirm} from '../components/ConfirmDialog';
 import dayjs from '../utils/dayjs';
@@ -154,6 +156,7 @@ const Settings = () => {
         setPlannedExpenseVisibility,
     } = useUserSettings(user?.uid ?? null);
     const {isPremium, isTrial, trialDaysLeft, aiUsed, canStartTrial} = useEntitlements();
+    const notificationSettings = useNotificationSettings(user?.uid ?? null);
     const premiumGate = usePremiumGate();
     const {confirm, node: confirmNode} = useConfirm();
 
@@ -353,6 +356,42 @@ const Settings = () => {
             <section className={styles.menuSection}>
                 <p className={styles.sectionLabel}>{t('settings.quick_settings')}</p>
                 <div className={styles.menuGroup}>
+                    <div className={styles.quickSettingRow}>
+                        <span className={`${styles.menuIcon} ${styles.menuIconAccent}`}><HiBell size={18}/></span>
+                        <span className={styles.menuCopy}>
+                            <span className={styles.menuTitle}>{t('settings.notifications_title')}</span>
+                            <span className={styles.menuSubtitle}>
+                                {profile?.notifications?.telegram.status === 'reachable'
+                                    ? t('settings.notifications_reachable')
+                                    : profile?.notifications?.telegram.status === 'blocked'
+                                        ? t('settings.notifications_blocked')
+                                        : t('settings.notifications_unreachable')}
+                            </span>
+                            {profile?.notifications?.telegram.status !== 'reachable' && import.meta.env.VITE_TELEGRAM_BOT_USERNAME && (
+                                <a
+                                    href={`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}?start=notify`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    {t('settings.notifications_open_bot')}
+                                </a>
+                            )}
+                            {notificationSettings.error && <span className={styles.menuSubtitle}>{notificationSettings.error}</span>}
+                        </span>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={profile?.notifications?.enabled !== false}
+                            aria-label={t('settings.notifications_toggle')}
+                            disabled={notificationSettings.saving || !profile?.notifications}
+                            className={`${styles.preferenceSwitch} ${profile?.notifications?.enabled !== false ? styles.preferenceSwitchOn : ''}`}
+                            onClick={() => {
+                                void notificationSettings.setEnabled(profile?.notifications?.enabled === false).catch(() => undefined);
+                            }}
+                        >
+                            <span className={styles.preferenceThumb}/>
+                        </button>
+                    </div>
                     <div className={styles.quickSettingRow}>
                         <span className={`${styles.menuIcon} ${styles.menuIconAccent}`}><HiPaperAirplane size={18}/></span>
                         <span className={styles.menuCopy}>

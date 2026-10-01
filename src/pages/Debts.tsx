@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiPlus, HiTrash, HiCheck, HiArrowPath, HiMinus } from 'react-icons/hi2';
+import { HiPlus, HiTrash, HiCheck, HiArrowPath, HiMinus, HiChevronDown, HiWallet, HiUserGroup } from 'react-icons/hi2';
 import { useApp } from '../context';
 import { useDebts } from '../hooks/useDebts';
 import type { NewDebt } from '../hooks/useDebts';
@@ -46,6 +46,7 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTrigger]);
   const [showPaid, setShowPaid] = useState(false);
+  const [showSummaryBreakdown, setShowSummaryBreakdown] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [payingDebt, setPayingDebt] = useState<Debt | null>(null);
   const [payAmount, setPayAmount] = useState('');
@@ -116,6 +117,45 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
 
   const filtered = debts.filter(d => d.direction === tab && d.isPaid === showPaid);
 
+  const summaryByCurrency = new Map<Currency, number>();
+  const summaryByPerson = new Map<string, { person: string; count: number; amounts: Map<Currency, number> }>();
+
+  filtered.forEach(debt => {
+    const total = calcTotal(debt.amount, debt);
+    const amount = showPaid ? total : Math.max(0, total - (debt.paidAmount || 0));
+    summaryByCurrency.set(debt.currency, (summaryByCurrency.get(debt.currency) || 0) + amount);
+
+    const personKey = debt.person.trim().toLocaleLowerCase(i18n.language);
+    const group = summaryByPerson.get(personKey) || {
+      person: debt.person.trim(),
+      count: 0,
+      amounts: new Map<Currency, number>(),
+    };
+    group.count += 1;
+    group.amounts.set(debt.currency, (group.amounts.get(debt.currency) || 0) + amount);
+    summaryByPerson.set(personKey, group);
+  });
+
+  const savedPeople = Array.from(
+    debts
+      .filter(debt => debt.direction === form.direction)
+      .reduce((people, debt) => {
+        const person = debt.person.trim();
+        if (person && !people.has(person.toLocaleLowerCase(i18n.language))) {
+          people.set(person.toLocaleLowerCase(i18n.language), person);
+        }
+        return people;
+      }, new Map<string, string>())
+      .values()
+  ).sort((a, b) => a.localeCompare(b, i18n.language));
+
+  const renderAmounts = (amounts: Map<Currency, number>) =>
+    Array.from(amounts.entries())
+      .sort(([currencyA], [currencyB]) => currencyA.localeCompare(currencyB))
+      .map(([currency, amount]) => (
+        <span key={currency}>{formatAmount(amount, currency)}</span>
+      ));
+
   if (loading) return <PageLoader />;
 
   const content = (
@@ -162,6 +202,60 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
           {t('debts.tab_paid')}
         </button>
       </div>
+
+      {filtered.length > 0 && (
+        <section className={styles.summaryCard}>
+          <div className={styles.summaryMain}>
+            <span className={styles.summaryIcon} aria-hidden="true">
+              <HiWallet size={22} />
+            </span>
+            <span className={styles.summaryContent}>
+              <span className={styles.summaryLabel}>
+                {t(showPaid ? 'debts.summary_total' : 'debts.summary_remaining')}
+              </span>
+              <span className={styles.summaryAmounts}>{renderAmounts(summaryByCurrency)}</span>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className={styles.summaryToggle}
+            onClick={() => setShowSummaryBreakdown(open => !open)}
+            aria-expanded={showSummaryBreakdown}
+          >
+            <HiUserGroup className={styles.summaryGroupIcon} size={20} />
+            <span className={styles.summaryToggleText}>
+              <span className={styles.summaryHint}>
+                {t(tab === 'i_owe' ? 'debts.creditors_count' : 'debts.debtors_count', {
+                  count: summaryByPerson.size,
+                })}
+              </span>
+              <small>{t(showSummaryBreakdown ? 'debts.summary_hide' : 'debts.summary_show')}</small>
+            </span>
+            <HiChevronDown
+              className={`${styles.summaryChevron} ${showSummaryBreakdown ? styles.summaryChevronOpen : ''}`}
+              size={20}
+            />
+          </button>
+
+          {showSummaryBreakdown && (
+            <div className={styles.summaryBreakdown}>
+              {Array.from(summaryByPerson.values())
+                .sort((a, b) => a.person.localeCompare(b.person, i18n.language))
+                .map(group => (
+                  <div key={group.person.toLocaleLowerCase(i18n.language)} className={styles.summaryGroup}>
+                    <span className={styles.summaryAvatar}>{group.person.charAt(0).toUpperCase()}</span>
+                    <span className={styles.summaryPerson}>
+                      <span>{group.person}</span>
+                      <small>{t('debts.records_count', { count: group.count })}</small>
+                    </span>
+                    <span className={styles.summaryGroupAmounts}>{renderAmounts(group.amounts)}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {filtered.length === 0 ? (
         <div className={styles.empty}>
@@ -342,7 +436,36 @@ const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: numb
             </button>
           </div>
 
-          <Input label={t('debts.person_label')} placeholder={t('debts.person_placeholder')} value={form.person} onChange={e => set('person', e.target.value)} />
+          <div className={styles.personField}>
+            <Input
+              label={t(form.direction === 'i_owe' ? 'debts.creditor_label' : 'debts.debtor_label')}
+              placeholder={t('debts.person_placeholder')}
+              value={form.person}
+              onChange={e => set('person', e.target.value)}
+              list="saved-debt-people"
+              autoComplete="off"
+            />
+            <datalist id="saved-debt-people">
+              {savedPeople.map(person => <option key={person} value={person} />)}
+            </datalist>
+            {savedPeople.length > 0 && (
+              <div className={styles.savedPeople}>
+                <p className={styles.personHint}>{t('debts.saved_people_hint')}</p>
+                <div className={styles.savedPeopleList}>
+                  {savedPeople.map(person => (
+                    <button
+                      key={person}
+                      type="button"
+                      className={`${styles.savedPersonBtn} ${form.person === person ? styles.savedPersonActive : ''}`}
+                      onClick={() => set('person', person)}
+                    >
+                      {person}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className={styles.amountRow}>
             <div>
