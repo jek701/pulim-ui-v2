@@ -1,0 +1,365 @@
+/* Owner-only feedback widget. Sits above every app layer, including modals. */
+
+.fab {
+  position: fixed;
+  z-index: 9000;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 78%, transparent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  opacity: 0.72;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+}
+
+.fab:active {
+  opacity: 1;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--expense);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.pickLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 9001;
+  cursor: crosshair;
+  touch-action: none;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.pickBox {
+  position: fixed;
+  pointer-events: none;
+  border: 2px solid #FF2D55;
+  border-radius: 6px;
+  background: rgba(255, 45, 85, 0.12);
+  transition: all 0.06s linear;
+}
+
+.pickBar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: calc(var(--app-content-top) + 10px);
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 14px;
+  cursor: default;
+}
+
+.pickActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pickActions button {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 9001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.overlay {
+  position: fixed;
+  top: var(--app-viewport-top);
+  left: 0;
+  right: 0;
+  height: var(--app-height);
+  z-index: 9002;
+  display: flex;
+  align-items: flex-end;
+  padding-top: var(--app-content-top);
+  background: var(--overlay);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 430px;
+  max-height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+}
+
+.header h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.body {
+  overflow-y: auto;
+  padding: 8px 20px calc(20px + var(--app-content-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview {
+  width: 100%;
+  max-height: 38vh;
+  object-fit: contain;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.where {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.muted {
+  font-size: 13px;
+  color: var(--text3);
+}
+
+.error {
+  font-size: 13px;
+  color: var(--expense);
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.primary,
+.secondary,
+.danger {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--r);
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondary {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.danger {
+  background: var(--expense-bg);
+  color: var(--expense);
+}
+
+.primary:disabled,
+.danger:disabled {
+  opacity: 0.5;
+}
+
+.link {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent2);
+  font-size: 14px;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  border-radius: var(--r);
+  background: var(--surface2);
+  overflow: hidden;
+}
+
+.itemHead {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 10px;
+  align-items: center;
+  padding: 12px;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.status {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusNew { background: rgba(10, 132, 255, 0.16); color: #0A84FF; }
+.statusProgress { background: rgba(255, 159, 10, 0.16); color: #FF9F0A; }
+.statusReply { background: var(--expense-bg); color: var(--expense); }
+.statusDone { background: var(--income-bg); color: var(--income); }
+.statusRejected { background: var(--surface3); color: var(--text2); }
+
+.date {
+  justify-self: end;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.comment {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lastReply {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fromClaude,
+.fromOwner {
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.fromClaude { background: var(--surface3); }
+.fromOwner { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+.author {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-total) + 16px);
+  transform: translateX(-50%);
+  z-index: 9003;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border-radius: var(--r);
+  background: var(--surface3);
+  color: var(--text);
+  font-size: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}

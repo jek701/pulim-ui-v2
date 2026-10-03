@@ -25,4 +25,6 @@ export const qk = {
   debts: (uid: string) => ['debts', uid] as const,
   deposits: (uid: string) => ['deposits', uid] as const,
   aiChats: (uid: string) => ['aiChats', uid] as const,
+  devNotesAccess: (uid: string) => ['devNotesAccess', uid] as const,
+  devNotes: (uid: string) => ['devNotes', uid] as const,
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppProvider, useApp } from './context';
 import { queryClient } from './api/queryClient';
@@ -18,7 +18,11 @@ import NotificationEnableBanner from './components/NotificationEnableBanner';
 import PaymentResultModal from './components/PaymentResultModal';
 import PremiumModal from './components/PremiumModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
+import { useDevNotesAccess } from './hooks/useDevNotes';
 import styles from './App.module.css';
+
+// Owner-only feedback widget: never downloaded unless the server enables it for this uid.
+const DevNotesRoot = lazy(() => import('./devNotes/DevNotesRoot'));
 
 const PageContent = () => {
   const { activeTab } = useApp();
@@ -38,6 +42,7 @@ const PageContent = () => {
 const AppShell = () => {
   const {
     user,
+    activeTab,
     authLoading,
     authProvider,
     profile,
@@ -47,6 +52,7 @@ const AppShell = () => {
     paymentResult,
     dismissPaymentResult,
   } = useApp();
+  const devNotesAccess = useDevNotesAccess(user?.uid ?? null);
   const [showPremiumDeepLink, setShowPremiumDeepLink] = useState(
     () => new URL(window.location.href).searchParams.get('upgrade') === '1',
   );
@@ -92,6 +98,9 @@ const AppShell = () => {
       <PaymentResultModal result={paymentResult} onClose={dismissPaymentResult} />
       {showPremiumDeepLink && (
         <PremiumModal feature="generic" onClose={() => setShowPremiumDeepLink(false)} />
+      )}
+      {devNotesAccess.data?.enabled && (
+        <Suspense fallback={null}><DevNotesRoot uid={user.uid} activeTab={activeTab} /></Suspense>
       )}
     </>
   );
