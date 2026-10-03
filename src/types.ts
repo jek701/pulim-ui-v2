@@ -218,6 +218,7 @@ export interface Card {
   includeInTotalBalance?: boolean; // debit/cash only; undefined means included
   limit?: number;        // credit only
   dueDay?: number;       // credit only (1–31)
+  color?: string;        // ACCOUNT_COLORS key; unset = auto by bank
   userId: string;
   createdAt: number;
 }

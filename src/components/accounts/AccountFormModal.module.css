@@ -1,0 +1,122 @@
+/* ── Step 1: type picker ───────────────────────────────────────────────── */
+.typeList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.typeTile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface2);
+  text-align: left;
+  color: var(--text);
+  transition: transform 0.12s, background 0.15s;
+  animation: tileIn 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+.typeTile:active { transform: scale(0.98); background: var(--surface3); }
+
+@keyframes tileIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.typeThumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 34px;
+  border-radius: 7px;
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.6);
+}
+
+.typeThumb::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  width: 11px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #F5D78E, #C9A24B);
+}
+
+.thumb_debit { background: linear-gradient(135deg, #7C3AED, #C026D3); }
+.thumb_credit { background: linear-gradient(135deg, #1F2937, #4B5563); }
+
+.thumb_cash {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 7px),
+    linear-gradient(135deg, #047857, #84CC16);
+}
+
+.thumb_cash::before {
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.typeText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.typeText strong { font-size: 15px; font-weight: 600; }
+.typeText small { font-size: 12.5px; color: var(--text3); }
+
+.typeChevron { color: var(--text3); flex-shrink: 0; }
+
+/* ── Step 2: form ──────────────────────────────────────────────────────── */
+.backLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: -8px 0 -6px -4px;
+  padding: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent2);
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 36px));
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 2px;
+}
+
+.swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  transition: transform 0.15s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
+.swatch:active { transform: scale(0.9); }
+
+.swatchActive {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text2);
+}

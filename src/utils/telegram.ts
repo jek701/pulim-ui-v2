@@ -26,6 +26,9 @@ export type TelegramWebApp = {
   setBackgroundColor: (color: string) => void;
   setBottomBarColor?: (color: string) => void;
   showConfirm?: (message: string, callback: (confirmed: boolean) => void) => void;
+  HapticFeedback?: {
+    impactOccurred?: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+  };
   onEvent: (event: string, callback: (...args: unknown[]) => void) => void;
   offEvent?: (event: string, callback: (...args: unknown[]) => void) => void;
 };
