@@ -19,8 +19,11 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Card, CardType, Currency } from '../../types';
+import type { Card, CardType } from '../../types';
 import { telegramApp, tgAtLeast } from '../../utils/telegram';
+import { formatTotalsByCurrency } from '../../utils/format';
+import PlasticSection, { PlasticList, PlasticStack } from '../plastic/PlasticSection';
+import sectionStyles from '../plastic/PlasticSection.module.css';
 import AccountPlastic, { HIDDEN_AMOUNT } from './AccountPlastic';
 import styles from './AccountsList.module.css';
 
@@ -51,13 +54,6 @@ const setTelegramVerticalSwipes = (enabled: boolean) => {
   else telegramApp.disableVerticalSwipes?.();
 };
 
-/** Per-currency totals, e.g. "12 400 000 UZS · 300 USD". */
-function sumByCurrency(cards: Card[], value: (c: Card) => number): string {
-  const totals = new Map<Currency, number>();
-  for (const c of cards) totals.set(c.currency, (totals.get(c.currency) ?? 0) + value(c));
-  return [...totals].map(([cur, n]) => `${n.toLocaleString('uz-Latn-UZ')} ${cur}`).join(' · ');
-}
-
 function SortablePlastic({ card, index, hidden, onOpen, wasDragged }: {
   card: Card;
   index: number;
@@ -69,7 +65,7 @@ function SortablePlastic({ card, index, hidden, onOpen, wasDragged }: {
   return (
     <div
       ref={setNodeRef}
-      className={`${styles.item} ${isDragging ? styles.dragging : ''}`}
+      className={`${sectionStyles.item} ${isDragging ? styles.dragging : ''}`}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -137,22 +133,20 @@ const AccountsList = ({ cards, hidden, onOpen, onReorder, onDraggingChange }: Pr
 
   let index = 0;
   return (
-    <div className={styles.list}>
+    <PlasticList>
       {SECTIONS.map(({ type, title }) => {
         const section = cards.filter(c => c.cardType === type);
         if (section.length === 0) return null;
         const total = type === 'credit'
-          ? t('accounts.section_debt', { amount: sumByCurrency(section, c => Math.max(0, c.balance)) })
-          : sumByCurrency(section.filter(c => c.includeInTotalBalance !== false), c => c.balance);
+          ? t('accounts.section_debt', { amount: formatTotalsByCurrency(section, c => Math.max(0, c.balance)) })
+          : formatTotalsByCurrency(section.filter(c => c.includeInTotalBalance !== false), c => c.balance);
         return (
-          <section key={type} className={styles.section}>
-            <header className={styles.sectionHead}>
-              <h2>
-                {t(title)}
-                <span className={styles.count}>{section.length}</span>
-              </h2>
-              {total && <span className={styles.sectionTotal}>{hidden ? HIDDEN_AMOUNT : total}</span>}
-            </header>
+          <PlasticSection
+            key={type}
+            title={t(title)}
+            count={section.length}
+            total={total && (hidden ? HIDDEN_AMOUNT : total)}
+          >
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -163,7 +157,7 @@ const AccountsList = ({ cards, hidden, onOpen, onReorder, onDraggingChange }: Pr
               onDragCancel={finishDrag}
             >
               <SortableContext items={section.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                <div className={styles.stack}>
+                <PlasticStack>
                   {section.map(card => (
                     <SortablePlastic
                       key={card.id}
@@ -174,14 +168,14 @@ const AccountsList = ({ cards, hidden, onOpen, onReorder, onDraggingChange }: Pr
                       wasDragged={wasDragged}
                     />
                   ))}
-                </div>
+                </PlasticStack>
               </SortableContext>
             </DndContext>
-          </section>
+          </PlasticSection>
         );
       })}
       {cards.length > 1 && <p className={styles.hint}>{t('accounts.reorder_hint')}</p>}
-    </div>
+    </PlasticList>
   );
 };
 

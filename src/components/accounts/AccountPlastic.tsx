@@ -4,7 +4,7 @@ import type { Card } from '../../types';
 import { resolveAccountColor } from '../../utils/accountColors';
 import { detectCardNetwork } from '../../utils/cardNetwork';
 import CardNetworkMark from './CardNetworkMark';
-import styles from './AccountPlastic.module.css';
+import styles from '../plastic/Plastic.module.css';
 
 export type PlasticData = Pick<Card, 'cardType' | 'name' | 'bank' | 'currency' | 'balance'>
   & Partial<Pick<Card, 'limit' | 'dueDay' | 'color' | 'includeInTotalBalance'>>;

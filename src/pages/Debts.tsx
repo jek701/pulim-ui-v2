@@ -1,535 +1,197 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiPlus, HiTrash, HiCheck, HiArrowPath, HiMinus, HiChevronDown, HiWallet, HiUserGroup } from 'react-icons/hi2';
 import { useApp } from '../context';
 import { useDebts } from '../hooks/useDebts';
-import type { NewDebt } from '../hooks/useDebts';
 import { useCards } from '../hooks/useCards';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumBanner } from '../components/PremiumLock';
 import { useConfirm } from '../components/ConfirmDialog';
-import { formatAmount, formatFullDate, toDateInput } from '../utils/format';
-import { CURRENCIES } from '../utils/currencies';
-import type { Currency, DebtDirection, CommissionType, Debt } from '../types';
-import Modal from '../components/Modal';
-import { Input, Select, Textarea } from '../components/FormField';
-import { NumberInput } from '../components/NumberInput';
+import { formatAmount, formatTotalsByCurrency } from '../utils/format';
+import { debtRemaining } from '../utils/debtMath';
+import type { Debt, DebtDirection } from '../types';
 import PageLoader from '../components/PageLoader';
+import PlasticSection, { PlasticItem, PlasticList, PlasticStack } from '../components/plastic/PlasticSection';
+import EmptyState from '../components/plastic/EmptyState';
+import DebtPlastic from '../components/debts/DebtPlastic';
+import DebtSheet from '../components/debts/DebtSheet';
+import DebtFormModal from '../components/debts/DebtFormModal';
+import DebtEditModal from '../components/debts/DebtEditModal';
+import PayDebtModal from '../components/debts/PayDebtModal';
 import styles from './Debts.module.css';
 
-const EMPTY_FORM = (): NewDebt => ({
-  direction: 'i_owe',
-  person: '',
-  amount: 0,
-  currency: 'UZS',
-  isPaid: false,
-  commission: undefined,
-  dueDate: undefined,
-  comment: undefined,
-});
+type Overlay =
+  | { kind: 'sheet'; id: string }
+  | { kind: 'add' }
+  | { kind: 'edit'; id: string }
+  | { kind: 'pay'; id: string; full: boolean }
+  | null;
 
-const Debts = ({ embedded, addTrigger }: { embedded?: boolean; addTrigger?: number }) => {
+const DIRECTIONS: DebtDirection[] = ['i_owe', 'owe_me'];
+
+/** Who owes how much, merged across that person's records (case-insensitive name). */
+function groupByPerson(debts: Debt[], locale: string) {
+  const groups = new Map<string, { person: string; items: Debt[] }>();
+  for (const d of debts) {
+    const key = d.person.trim().toLocaleLowerCase(locale);
+    const group = groups.get(key) ?? { person: d.person.trim(), items: [] };
+    group.items.push(d);
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => a.person.localeCompare(b.person, locale));
+}
+
+/** Debts tab of the Accounts page. `addTrigger` bumps when the page FAB is tapped. */
+const Debts = ({ addTrigger, onEmptyChange }: { addTrigger?: number; onEmptyChange?: (empty: boolean) => void }) => {
   const { t, i18n } = useTranslation();
   const { user } = useApp();
-  const { debts, add, togglePaid, pay, remove, loading } = useDebts(user?.uid ?? null);
+  const { debts, add, togglePaid, pay, update, remove, loading } = useDebts(user?.uid ?? null);
   const { cards } = useCards(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
   const { confirm, node: confirmNode } = useConfirm();
-  const [tab, setTab] = useState<DebtDirection>('i_owe');
+  const [overlay, setOverlay] = useState<Overlay>(null);
+  const [peopleOpen, setPeopleOpen] = useState<Record<DebtDirection, boolean>>({ i_owe: false, owe_me: false });
+  const [showPaid, setShowPaid] = useState(false);
+
+  const isEmpty = !loading && debts.length === 0;
+  useEffect(() => { onEmptyChange?.(isEmpty); }, [isEmpty, onEmptyChange]);
+
+  const requestAdd = () => {
+    if (!isPremium) { premiumGate.open('debts'); return; }
+    setOverlay({ kind: 'add' });
+  };
 
   useEffect(() => {
-    if (addTrigger && addTrigger > 0) {
-      if (!isPremium) { premiumGate.open('debts'); return; }
-      setShowAdd(true);
-    }
+    if (addTrigger && addTrigger > 0) requestAdd();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addTrigger]);
-  const [showPaid, setShowPaid] = useState(false);
-  const [showSummaryBreakdown, setShowSummaryBreakdown] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [payingDebt, setPayingDebt] = useState<Debt | null>(null);
-  const [payAmount, setPayAmount] = useState('');
-  const [payCardId, setPayCardId] = useState('');
-  const [form, setForm] = useState<NewDebt>(EMPTY_FORM());
-  const [hasCommission, setHasCommission] = useState(false);
-  const [commType, setCommType] = useState<CommissionType>('percent');
-  const [commValue, setCommValue] = useState('');
-  const [amountStr, setAmountStr] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [accountId, setAccountId] = useState('');
-  const [saving, setSaving] = useState(false);
 
-  const set = <K extends keyof NewDebt>(k: K, v: NewDebt[K]) =>
-    setForm(f => ({ ...f, [k]: v }));
+  const debt = overlay && 'id' in overlay ? debts.find(d => d.id === overlay.id) : undefined;
 
-  const calcTotal = (amount: number, debt?: { commission?: { type: CommissionType; value: number } }) => {
-    if (!debt?.commission) return amount;
-    const c = debt.commission;
-    return c.type === 'percent' ? amount + amount * (c.value / 100) : amount + c.value;
+  const handleDelete = async (id: string) => {
+    const target = debts.find(d => d.id === id);
+    if (!target) return;
+    setOverlay(null);
+    const ok = await confirm({
+      title: t('debts.confirm_delete'),
+      message: `${target.person} · ${formatAmount(target.amount, target.currency)}`,
+      warning: t('common.action_irreversible'),
+      confirmLabel: t('common.delete'),
+    });
+    if (ok) await remove(id);
   };
-
-  const handleAdd = async () => {
-    if (!form.person.trim() || form.amount <= 0 || !accountId) return;
-    setSaving(true);
-    try {
-      const amount = Number(form.amount);
-      const data: NewDebt = {
-        ...form,
-        amount,
-        commission: hasCommission && commValue
-          ? { type: commType, value: parseFloat(commValue) }
-          : undefined,
-        dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
-      };
-      // The server records the debt and (if an account is chosen) the initial
-      // cash movement + balance change atomically.
-      await add(data, accountId || undefined);
-
-      setShowAdd(false);
-      setForm(EMPTY_FORM());
-      setHasCommission(false);
-      setCommValue('');
-      setAmountStr('');
-      setDueDate('');
-      setAccountId('');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handlePay = async () => {
-    if (!payingDebt) return;
-    const amount = parseFloat(payAmount);
-    if (!amount || amount <= 0) return;
-    setSaving(true);
-    try {
-      // Atomic: increment paidAmount, auto-complete, record the transaction + balance.
-      await pay(payingDebt.id, amount, payCardId || undefined);
-
-      setPayingDebt(null);
-      setPayAmount('');
-      setPayCardId('');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const filtered = debts.filter(d => d.direction === tab && d.isPaid === showPaid);
-
-  const summaryByCurrency = new Map<Currency, number>();
-  const summaryByPerson = new Map<string, { person: string; count: number; amounts: Map<Currency, number> }>();
-
-  filtered.forEach(debt => {
-    const total = calcTotal(debt.amount, debt);
-    const amount = showPaid ? total : Math.max(0, total - (debt.paidAmount || 0));
-    summaryByCurrency.set(debt.currency, (summaryByCurrency.get(debt.currency) || 0) + amount);
-
-    const personKey = debt.person.trim().toLocaleLowerCase(i18n.language);
-    const group = summaryByPerson.get(personKey) || {
-      person: debt.person.trim(),
-      count: 0,
-      amounts: new Map<Currency, number>(),
-    };
-    group.count += 1;
-    group.amounts.set(debt.currency, (group.amounts.get(debt.currency) || 0) + amount);
-    summaryByPerson.set(personKey, group);
-  });
-
-  const savedPeople = Array.from(
-    debts
-      .filter(debt => debt.direction === form.direction)
-      .reduce((people, debt) => {
-        const person = debt.person.trim();
-        if (person && !people.has(person.toLocaleLowerCase(i18n.language))) {
-          people.set(person.toLocaleLowerCase(i18n.language), person);
-        }
-        return people;
-      }, new Map<string, string>())
-      .values()
-  ).sort((a, b) => a.localeCompare(b, i18n.language));
-
-  const renderAmounts = (amounts: Map<Currency, number>) =>
-    Array.from(amounts.entries())
-      .sort(([currencyA], [currencyB]) => currencyA.localeCompare(currencyB))
-      .map(([currency, amount]) => (
-        <span key={currency}>{formatAmount(amount, currency)}</span>
-      ));
 
   if (loading) return <PageLoader />;
 
-  const content = (
-    <>
-      {!embedded && (
-        <div className={styles.header}>
-          <h1>{t('debts.heading')}</h1>
-          <button className={styles.addBtn} onClick={() => { if (!isPremium) { premiumGate.open('debts'); return; } setShowAdd(true); }}>
-            <HiPlus size={18} /> {t('common.add')}
-          </button>
-        </div>
-      )}
+  const paidDebts = debts.filter(d => d.isPaid);
+  let index = 0;
+  const renderStack = (items: Debt[]) => (
+    <PlasticStack>
+      {items.map(d => (
+        <PlasticItem key={d.id} index={index++} label={d.person} onOpen={() => setOverlay({ kind: 'sheet', id: d.id })}>
+          <DebtPlastic debt={d} />
+        </PlasticItem>
+      ))}
+    </PlasticStack>
+  );
 
+  return (
+    <>
       {!isPremium && <PremiumBanner feature="debts" />}
 
-      {/* Direction tabs */}
-      <div className={styles.dirTabs}>
-        <button
-          className={`${styles.dirBtn} ${tab === 'i_owe' ? styles.dirActive : ''}`}
-          onClick={() => setTab('i_owe')}
-        >
-          {t('debts.tab_i_owe')}
-        </button>
-        <button
-          className={`${styles.dirBtn} ${tab === 'owe_me' ? styles.dirActive : ''}`}
-          onClick={() => setTab('owe_me')}
-        >
-          {t('debts.tab_owe_me')}
-        </button>
-      </div>
-
-      {/* Paid toggle */}
-      <div className={styles.paidRow}>
-        <button
-          className={`${styles.paidBtn} ${!showPaid ? styles.paidActive : ''}`}
-          onClick={() => setShowPaid(false)}
-        >
-          {t('debts.tab_active')}
-        </button>
-        <button
-          className={`${styles.paidBtn} ${showPaid ? styles.paidActive : ''}`}
-          onClick={() => setShowPaid(true)}
-        >
-          {t('debts.tab_paid')}
-        </button>
-      </div>
-
-      {filtered.length > 0 && (
-        <section className={styles.summaryCard}>
-          <div className={styles.summaryMain}>
-            <span className={styles.summaryIcon} aria-hidden="true">
-              <HiWallet size={22} />
-            </span>
-            <span className={styles.summaryContent}>
-              <span className={styles.summaryLabel}>
-                {t(showPaid ? 'debts.summary_total' : 'debts.summary_remaining')}
-              </span>
-              <span className={styles.summaryAmounts}>{renderAmounts(summaryByCurrency)}</span>
-            </span>
-          </div>
-
-          <button
-            type="button"
-            className={styles.summaryToggle}
-            onClick={() => setShowSummaryBreakdown(open => !open)}
-            aria-expanded={showSummaryBreakdown}
-          >
-            <HiUserGroup className={styles.summaryGroupIcon} size={20} />
-            <span className={styles.summaryToggleText}>
-              <span className={styles.summaryHint}>
-                {t(tab === 'i_owe' ? 'debts.creditors_count' : 'debts.debtors_count', {
-                  count: summaryByPerson.size,
-                })}
-              </span>
-              <small>{t(showSummaryBreakdown ? 'debts.summary_hide' : 'debts.summary_show')}</small>
-            </span>
-            <HiChevronDown
-              className={`${styles.summaryChevron} ${showSummaryBreakdown ? styles.summaryChevronOpen : ''}`}
-              size={20}
-            />
-          </button>
-
-          {showSummaryBreakdown && (
-            <div className={styles.summaryBreakdown}>
-              {Array.from(summaryByPerson.values())
-                .sort((a, b) => a.person.localeCompare(b.person, i18n.language))
-                .map(group => (
-                  <div key={group.person.toLocaleLowerCase(i18n.language)} className={styles.summaryGroup}>
-                    <span className={styles.summaryAvatar}>{group.person.charAt(0).toUpperCase()}</span>
-                    <span className={styles.summaryPerson}>
-                      <span>{group.person}</span>
-                      <small>{t('debts.records_count', { count: group.count })}</small>
-                    </span>
-                    <span className={styles.summaryGroupAmounts}>{renderAmounts(group.amounts)}</span>
-                  </div>
-                ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {filtered.length === 0 ? (
-        <div className={styles.empty}>
-          <p>🤝</p>
-          <p>{t('debts.empty', { status: showPaid ? t('common.paid') : t('common.active') })}</p>
-        </div>
+      {debts.length === 0 ? (
+        <EmptyState
+          title={t('debts.empty_title')}
+          hint={t('debts.empty_hint')}
+          actionLabel={t('debts.btn_add')}
+          onAction={requestAdd}
+          ghosts={[['#047857', '#34D399'], ['#374151', '#6B7280'], ['#B91C1C', '#F97316']]}
+          emoji="🤝"
+        />
       ) : (
-        <div className={styles.list}>
-          {filtered.map(debt => {
-            const total = calcTotal(debt.amount, debt);
-            const paid = debt.paidAmount || 0;
-            const remaining = Math.max(0, total - paid);
-            const progress = Math.min(1, paid / total);
-            const hasComm = !!debt.commission;
+        <PlasticList>
+          {DIRECTIONS.map(direction => {
+            const items = debts.filter(d => d.direction === direction && !d.isPaid);
+            if (items.length === 0) return null;
+            const open = peopleOpen[direction];
+            const people = groupByPerson(items, i18n.language);
             return (
-              <div key={debt.id} className={`${styles.debtCard} ${debt.isPaid ? styles.paid : ''}`}>
-                <div className={styles.debtTop}>
-                  <div className={styles.avatar}>
-                    {debt.person.charAt(0).toUpperCase()}
-                  </div>
-                  <div className={styles.debtInfo}>
-                    <p className={styles.debtPerson}>{debt.person}</p>
-                    {debt.comment && <p className={styles.debtComment}>{debt.comment}</p>}
-                    {debt.dueDate && (
-                      <p className={styles.debtDue}>{t('debts.due_label')}: {formatFullDate(debt.dueDate, i18n.language)}</p>
-                    )}
-                  </div>
-                  <div className={styles.debtActions}>
-                    {!debt.isPaid && (
-                      <button
-                        className={styles.payBtn}
-                        onClick={() => { setPayingDebt(debt); setPayAmount(''); setPayCardId(cards[0]?.id ?? ''); }}
-                        title={t('debts.pay_partial')}
-                      >
-                        <HiMinus size={15} />
-                      </button>
-                    )}
-                    <button
-                      className={styles.paidToggle}
-                      onClick={() => {
-                        if (debt.isPaid) {
-                          togglePaid(debt.id, false);
-                        } else {
-                          setPayingDebt(debt);
-                          setPayAmount(String(remaining));
-                          setPayCardId(cards[0]?.id ?? '');
-                        }
-                      }}
-                      title={debt.isPaid ? t('debts.mark_unpaid') : t('debts.mark_paid')}
-                    >
-                      {debt.isPaid ? <HiArrowPath size={15} /> : <HiCheck size={15} />}
-                    </button>
-                    <button className={styles.delBtn} aria-label={t('common.delete')} onClick={async () => {
-                      const ok = await confirm({
-                        title: t('debts.confirm_delete'),
-                        message: `${debt.person} · ${formatAmount(debt.amount, debt.currency)}`,
-                        warning: t('common.action_irreversible'),
-                        confirmLabel: t('common.delete'),
-                      });
-                      if (ok) remove(debt.id);
-                    }}>
-                      <HiTrash size={15} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className={styles.debtAmounts}>
-                  <div>
-                    <p className={styles.amtLabel}>{t('debts.label_total')}</p>
-                    <p className={styles.amtVal}>{formatAmount(total, debt.currency)}</p>
-                  </div>
-                  {paid > 0 && (
-                    <div>
-                      <p className={styles.amtLabel}>{t('debts.label_paid')}</p>
-                      <p className={styles.paidAmtVal}>{formatAmount(paid, debt.currency)}</p>
-                    </div>
-                  )}
-                  {hasComm && (
-                    <div>
-                      <p className={styles.amtLabel}>{t('debts.label_commission')}</p>
-                      <p className={styles.commVal}>
-                        {debt.commission!.type === 'percent'
-                          ? `+${debt.commission!.value}%`
-                          : `+${formatAmount(debt.commission!.value, debt.currency)}`}
-                      </p>
-                    </div>
-                  )}
-                  {!debt.isPaid && paid > 0 && (
-                    <div>
-                      <p className={styles.amtLabel}>{t('debts.label_remaining')}</p>
-                      <p className={styles.remainingVal}>{formatAmount(remaining, debt.currency)}</p>
-                    </div>
-                  )}
-                </div>
-
-                {paid > 0 && !debt.isPaid && (
-                  <div className={styles.progressWrap}>
-                    <div className={styles.progressBar} style={{ width: `${progress * 100}%` }} />
+              <PlasticSection
+                key={direction}
+                title={direction === 'i_owe' ? t('debts.tab_i_owe') : t('debts.tab_owe_me')}
+                count={items.length}
+                total={formatTotalsByCurrency(items, debtRemaining)}
+                toggle={{
+                  open,
+                  onToggle: () => setPeopleOpen(p => ({ ...p, [direction]: !p[direction] })),
+                  label: t(open ? 'debts.summary_hide' : 'debts.summary_show'),
+                }}
+              >
+                {open && (
+                  <div className={styles.people}>
+                    {people.map(g => (
+                      <div key={g.person} className={styles.personRow}>
+                        <span className={`${styles.avatar} ${direction === 'i_owe' ? styles.avatarOwe : styles.avatarOwed}`}>
+                          {g.person.charAt(0).toUpperCase()}
+                        </span>
+                        <span className={styles.personName}>
+                          <span>{g.person}</span>
+                          <small>{t('debts.records_count', { count: g.items.length })}</small>
+                        </span>
+                        <span className={styles.personAmounts}>
+                          {formatTotalsByCurrency(g.items, debtRemaining).split(' · ').map(a => <span key={a}>{a}</span>)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
+                {renderStack(items)}
+              </PlasticSection>
             );
           })}
-        </div>
-      )}
-
-      {/* Pay partial modal */}
-      {payingDebt && (
-        <Modal
-          title={t('debts.modal_pay')}
-          onClose={() => { setPayingDebt(null); setPayAmount(''); setPayCardId(''); }}
-          footer={
-            <button
-              className={`${styles.saveBtn} ${saving ? styles.disabled : ''}`}
-              onClick={handlePay}
-              disabled={saving || !payAmount || parseFloat(payAmount) <= 0 || !payCardId}
+          {paidDebts.length > 0 && (
+            <PlasticSection
+              title={t('debts.section_paid')}
+              count={paidDebts.length}
+              toggle={{ open: showPaid, onToggle: () => setShowPaid(v => !v) }}
             >
-              {saving ? t('common.saving') : t('debts.btn_confirm_payment')}
-            </button>
-          }
-        >
-          <p className={styles.payInfo}>
-            {t('debts.pay_info', {
-              person: payingDebt.person,
-              amount: formatAmount(
-                Math.max(0, calcTotal(payingDebt.amount, payingDebt) - (payingDebt.paidAmount || 0)),
-                payingDebt.currency
-              ),
-            })}
-          </p>
-          <div>
-            <p className={styles.fieldLabel}>{t('debts.payment_amount_label', { currency: payingDebt.currency })}</p>
-            <NumberInput
-              className={styles.amtInput}
-              placeholder="0"
-              value={payAmount}
-              onChange={setPayAmount}
-              autoFocus
-            />
-          </div>
-          {cards.length > 0 && (
-            <Select
-              label={t(payingDebt.direction === 'owe_me' ? 'debts.deposit_to_card' : 'debts.pay_from_card')}
-              value={payCardId}
-              onChange={e => setPayCardId(e.target.value)}
-              options={cards.map(c => ({ value: c.id, label: `${c.name} (${formatAmount(c.balance, c.currency)})` }))}
-            />
+              {showPaid && renderStack(paidDebts)}
+            </PlasticSection>
           )}
-        </Modal>
+        </PlasticList>
       )}
 
-      {showAdd && (
-        <Modal
-          title={t('debts.modal_add')}
-          onClose={() => { setShowAdd(false); setForm(EMPTY_FORM()); setHasCommission(false); setCommValue(''); setAmountStr(''); setDueDate(''); setAccountId(''); }}
-          footer={
-            <button
-              className={`${styles.saveBtn} ${saving || !accountId ? styles.disabled : ''}`}
-              onClick={handleAdd}
-              disabled={saving || !accountId}
-            >
-              {saving ? t('common.saving') : t('debts.btn_add')}
-            </button>
-          }
-        >
-          <div className={styles.formDirRow}>
-            <button
-              className={`${styles.formDirBtn} ${form.direction === 'i_owe' ? styles.formDirActive : ''}`}
-              onClick={() => set('direction', 'i_owe')}
-            >
-              {t('debts.tab_i_owe')}
-            </button>
-            <button
-              className={`${styles.formDirBtn} ${form.direction === 'owe_me' ? styles.formDirActive : ''}`}
-              onClick={() => set('direction', 'owe_me')}
-            >
-              {t('debts.tab_owe_me')}
-            </button>
-          </div>
-
-          <div className={styles.personField}>
-            <Input
-              label={t(form.direction === 'i_owe' ? 'debts.creditor_label' : 'debts.debtor_label')}
-              placeholder={t('debts.person_placeholder')}
-              value={form.person}
-              onChange={e => set('person', e.target.value)}
-              list="saved-debt-people"
-              autoComplete="off"
-            />
-            <datalist id="saved-debt-people">
-              {savedPeople.map(person => <option key={person} value={person} />)}
-            </datalist>
-            {savedPeople.length > 0 && (
-              <div className={styles.savedPeople}>
-                <p className={styles.personHint}>{t('debts.saved_people_hint')}</p>
-                <div className={styles.savedPeopleList}>
-                  {savedPeople.map(person => (
-                    <button
-                      key={person}
-                      type="button"
-                      className={`${styles.savedPersonBtn} ${form.person === person ? styles.savedPersonActive : ''}`}
-                      onClick={() => set('person', person)}
-                    >
-                      {person}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className={styles.amountRow}>
-            <div>
-              <p className={styles.fieldLabel}>{t('common.amount')}</p>
-              <NumberInput
-                className={styles.amtInput}
-                placeholder="0"
-                value={amountStr}
-                onChange={v => { setAmountStr(v); set('amount', parseFloat(v) || 0); }}
-              />
-            </div>
-            <Select
-              label={t('common.currency')}
-              value={form.currency}
-              onChange={e => set('currency', e.target.value as Currency)}
-              options={CURRENCIES.map(c => ({ value: c.code, label: c.code }))}
-            />
-          </div>
-
-          <div>
-            <label className={styles.checkRow}>
-              <input type="checkbox" checked={hasCommission} onChange={e => setHasCommission(e.target.checked)} />
-              <span>{t('debts.commission_label')}</span>
-            </label>
-            {hasCommission && (
-              <div className={styles.commRow}>
-                <Select
-                  value={commType}
-                  onChange={e => setCommType(e.target.value as CommissionType)}
-                  options={[
-                    { value: 'percent', label: t('debts.commission_percent') },
-                    { value: 'fixed',   label: t('debts.commission_fixed') },
-                  ]}
-                />
-                <NumberInput
-                  className={styles.amtInput}
-                  placeholder={commType === 'percent' ? 'e.g. 5' : t('common.amount')}
-                  value={commValue}
-                  onChange={setCommValue}
-                />
-              </div>
-            )}
-          </div>
-
-          <Select
-            label={t(form.direction === 'i_owe' ? 'debts.deposit_to_card' : 'debts.withdraw_from_card')}
-            value={accountId}
-            onChange={e => setAccountId(e.target.value)}
-            options={[
-              { value: '', label: '—' },
-              ...cards.map(c => ({ value: c.id, label: `${c.name} (${formatAmount(c.balance, c.currency)})` })),
-            ]}
-          />
-
-          <Input label={t('debts.due_date_label')} type="date" value={dueDate} min={toDateInput(Date.now())} onChange={e => setDueDate(e.target.value)} />
-          <Textarea label={t('debts.comment_label')} placeholder={t('debts.comment_placeholder')} value={form.comment ?? ''} onChange={e => set('comment', e.target.value || undefined)} rows={2} />
-        </Modal>
+      {overlay?.kind === 'sheet' && debt && (
+        <DebtSheet
+          debt={debt}
+          onPayPart={() => setOverlay({ kind: 'pay', id: debt.id, full: false })}
+          onPayAll={() => setOverlay({ kind: 'pay', id: debt.id, full: true })}
+          onReopen={() => { setOverlay(null); void togglePaid(debt.id, false); }}
+          onEdit={() => setOverlay({ kind: 'edit', id: debt.id })}
+          onDelete={() => handleDelete(debt.id)}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+      {overlay?.kind === 'add' && (
+        <DebtFormModal debts={debts} cards={cards} onAdd={add} onClose={() => setOverlay(null)} />
+      )}
+      {overlay?.kind === 'edit' && debt && (
+        <DebtEditModal debt={debt} onUpdate={update} onClose={() => setOverlay(null)} />
+      )}
+      {overlay?.kind === 'pay' && debt && (
+        <PayDebtModal
+          debt={debt}
+          cards={cards}
+          initialAmount={overlay.full ? Math.round(debtRemaining(debt) * 100) / 100 : undefined}
+          // Atomic: increment paidAmount, auto-complete, record the transaction + balance.
+          onPay={(amount, cardId) => pay(debt.id, amount, cardId)}
+          onClose={() => setOverlay(null)}
+        />
       )}
       {premiumGate.node}
       {confirmNode}
     </>
   );
-
-  return embedded ? content : <div className={styles.page}>{content}</div>;
 };
 
 export default Debts;

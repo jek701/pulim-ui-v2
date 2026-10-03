@@ -240,6 +240,7 @@ export interface SavingsGoal {
   savedAmount: number;
   currency: Currency;
   deadline: number;  // timestamp
+  color?: string;    // ACCOUNT_COLORS key; unset = auto by name
   userId: string;
   createdAt: number;
 }

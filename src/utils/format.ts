@@ -52,6 +52,12 @@ export const formatDate = (
   return d.year() === now.year() ? d.format('D MMM') : d.format('D MMM YYYY');
 };
 
+/** "15 окт", or "15 окт 2027" outside the current year. */
+export const formatShortDate = (ts: number, locale = 'en-US'): string => {
+  const d = dayjs(ts).locale(localeOf(locale));
+  return d.year() === dayjs().year() ? d.format('D MMM') : d.format('D MMM YYYY');
+};
+
 export const formatFullDate = (ts: number, locale = 'en-US'): string =>
   dayjs(ts).locale(localeOf(locale)).format('D MMM YYYY');
 
@@ -72,3 +78,10 @@ export const ordinal = (n: number): string => {
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
+
+/** Per-currency totals in one line, e.g. "12 400 000 UZS · 300 USD". Empty when no items. */
+export function formatTotalsByCurrency<T extends { currency: Currency }>(items: T[], value: (item: T) => number): string {
+  const totals = new Map<Currency, number>();
+  for (const item of items) totals.set(item.currency, (totals.get(item.currency) ?? 0) + value(item));
+  return [...totals].map(([cur, n]) => formatAmount(Math.round(n * 100) / 100, cur)).join(' · ');
+}

@@ -6,7 +6,7 @@ import { convert, getRateToBase, BASE_CURRENCY } from '../../utils/nbuRates';
 import { NumberInput } from '../NumberInput';
 import { Select } from '../FormField';
 import Modal from '../Modal';
-import styles from './forms.module.css';
+import styles from '../plastic/forms.module.css';
 
 interface Props {
   cards: Card[];

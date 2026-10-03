@@ -1,0 +1,33 @@
+.personField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.savedPeopleList {
+  display: flex;
+  gap: 7px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.savedPeopleList::-webkit-scrollbar { display: none; }
+
+.savedPersonBtn {
+  height: 32px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.savedPersonActive {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface2));
+  color: var(--accent2);
+}

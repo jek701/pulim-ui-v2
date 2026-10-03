@@ -4,8 +4,8 @@ import type { Card } from '../../types';
 import { formatAmount } from '../../utils/format';
 import Modal from '../Modal';
 import AccountPlastic, { HIDDEN_AMOUNT } from './AccountPlastic';
-import formStyles from './forms.module.css';
-import styles from './AccountSheet.module.css';
+import formStyles from '../plastic/forms.module.css';
+import { SheetActions, SheetStats, type SheetAction } from '../plastic/SheetParts';
 
 interface Props {
   card: Card;
@@ -32,38 +32,22 @@ const AccountSheet = ({
     isCredit && card.balance > 0 && { key: 'refill', icon: <HiArrowDownTray size={20} />, label: t('cards.refill_btn'), onClick: onRefill, accent: true },
     { key: 'edit', icon: <HiPencil size={20} />, label: t('common.edit'), onClick: onEdit },
     { key: 'delete', icon: <HiTrash size={20} />, label: t('common.delete'), onClick: onDelete, danger: true },
-  ].filter(Boolean) as { key: string; icon: React.ReactNode; label: string; onClick: () => void; accent?: boolean; danger?: boolean }[];
+  ].filter(Boolean) as SheetAction[];
 
   return (
     <Modal title={card.name} onClose={onClose}>
       <AccountPlastic card={card} size="lg" hidden={hidden} />
 
       {isCredit && (
-        <div className={styles.stats}>
-          <div>
-            <span>{t('cards.label_debt')}</span>
-            <strong className={card.balance > 0 ? styles.debt : ''}>{money(Math.max(0, card.balance))}</strong>
-          </div>
-          <div>
-            <span>{t('cards.label_limit')}</span>
-            <strong>{money(card.limit ?? 0)}</strong>
-          </div>
-        </div>
+        <SheetStats
+          items={[
+            { label: t('cards.label_debt'), value: money(Math.max(0, card.balance)), tone: card.balance > 0 ? 'negative' : undefined },
+            { label: t('cards.label_limit'), value: money(card.limit ?? 0) },
+          ]}
+        />
       )}
 
-      <div className={styles.actions}>
-        {actions.map(a => (
-          <button
-            key={a.key}
-            type="button"
-            className={`${styles.action} ${a.accent ? styles.actionAccent : ''} ${a.danger ? styles.actionDanger : ''}`}
-            onClick={a.onClick}
-          >
-            <span className={styles.actionIcon}>{a.icon}</span>
-            <span className={styles.actionLabel}>{a.label}</span>
-          </button>
-        ))}
-      </div>
+      <SheetActions actions={actions} />
 
       {!isCredit && (
         <label className={formStyles.switchRow}>

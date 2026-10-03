@@ -9,6 +9,7 @@ import { usePremiumGate, PremiumCornerStar } from '../components/PremiumLock';
 import { useConfirm } from '../components/ConfirmDialog';
 import { formatAmount } from '../utils/format';
 import PageLoader from '../components/PageLoader';
+import EmptyState from '../components/plastic/EmptyState';
 import AccountsList from '../components/accounts/AccountsList';
 import AccountSheet from '../components/accounts/AccountSheet';
 import AccountFormModal from '../components/accounts/AccountFormModal';
@@ -54,6 +55,8 @@ const Accounts = () => {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [hidden, setHidden] = useState(readHidden);
   const [dragging, setDragging] = useState(false);
+  // Savings/debts report when they show their own empty-state button, so the FAB hides.
+  const [tabEmpty, setTabEmpty] = useState(false);
 
   const byId = (id: string) => cards.find(c => c.id === id);
   const overlayCard = overlay && 'id' in overlay ? byId(overlay.id) : undefined;
@@ -91,7 +94,7 @@ const Accounts = () => {
     if (ok) await remove(id);
   };
 
-  const switchView = (v: AccountView) => { setView(v); setAddTrigger(0); };
+  const switchView = (v: AccountView) => { setView(v); setAddTrigger(0); setTabEmpty(false); };
 
   const TAB_LABELS: Record<AccountView, string> = {
     accounts: t('accounts.tab_accounts'),
@@ -159,18 +162,13 @@ const Accounts = () => {
 
       {view === 'accounts' && (
         loading ? <PageLoader /> : cards.length === 0 ? (
-          <div className={styles.empty}>
-            <div className={styles.emptyArt} aria-hidden>
-              <span className={styles.ghost1} />
-              <span className={styles.ghost2} />
-              <span className={styles.ghost3} />
-            </div>
-            <h2>{t('accounts.empty_title')}</h2>
-            <p>{t('accounts.empty_hint')}</p>
-            <button className={styles.emptyBtn} onClick={requestAddAccount}>
-              <HiPlus size={18} /> {t('accounts.empty_btn')}
-            </button>
-          </div>
+          <EmptyState
+            title={t('accounts.empty_title')}
+            hint={t('accounts.empty_hint')}
+            actionLabel={t('accounts.empty_btn')}
+            onAction={requestAddAccount}
+            ghosts={[['#047857', '#84CC16'], ['#1F2937', '#4B5563'], ['#7C3AED', '#C026D3']]}
+          />
         ) : (
           <AccountsList
             cards={cards}
@@ -181,10 +179,10 @@ const Accounts = () => {
           />
         )
       )}
-      {view === 'savings' && <Savings embedded addTrigger={addTrigger} />}
-      {view === 'debts'   && <Debts   embedded addTrigger={addTrigger} />}
+      {view === 'savings' && <Savings addTrigger={addTrigger} onEmptyChange={setTabEmpty} />}
+      {view === 'debts'   && <Debts addTrigger={addTrigger} onEmptyChange={setTabEmpty} />}
 
-      {!(view === 'accounts' && cards.length === 0) && (
+      {!(view === 'accounts' ? cards.length === 0 : tabEmpty) && (
         <button className={styles.fab} onClick={handleFabClick}>
           <HiPlus size={20} />
           {FAB_LABELS[view]}

@@ -5,7 +5,7 @@ import { formatAmount } from '../../utils/format';
 import { NumberInput } from '../NumberInput';
 import { Select } from '../FormField';
 import Modal from '../Modal';
-import styles from './forms.module.css';
+import styles from '../plastic/forms.module.css';
 
 const REFILL_CHIPS: Record<Currency, number[]> = {
   UZS: [100_000, 500_000, 1_000_000],

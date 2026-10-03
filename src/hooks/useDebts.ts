@@ -5,6 +5,9 @@ import type { Debt } from '../types';
 
 export type NewDebt = Omit<Debt, 'id' | 'userId' | 'createdAt' | 'paidAmount'>;
 
+/** Editable fields; `dueDate: null` removes the due date. */
+export type DebtPatch = { person?: string; comment?: string; dueDate?: number | null };
+
 export function useDebts(userId: string | null) {
   const uid = userId ?? '';
   const qc = useQueryClient();
@@ -38,10 +41,15 @@ export function useDebts(userId: string | null) {
     invalidateAll();
   };
 
+  const update = async (id: string, patch: DebtPatch) => {
+    await api.patch(`/v1/debts/${id}`, patch);
+    qc.invalidateQueries({ queryKey: qk.debts(uid) });
+  };
+
   const remove = async (id: string) => {
     await api.del(`/v1/debts/${id}`);
     qc.invalidateQueries({ queryKey: qk.debts(uid) });
   };
 
-  return { debts: q.data ?? [], loading: q.isLoading, add, togglePaid, pay, remove };
+  return { debts: q.data ?? [], loading: q.isLoading, add, togglePaid, pay, update, remove };
 }

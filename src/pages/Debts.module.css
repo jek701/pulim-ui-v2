@@ -1,546 +1,73 @@
-.page {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: calc(var(--nav-total) + 20px);
-}
-
-.header {
+/* Per-person breakdown, opened from a section header. */
+.people {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 20px 12px;
-}
-
-.ctaBar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 20px 12px;
-}
-
-.header h1 {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.addBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  background: var(--accent);
-  border-radius: 18px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.dirTabs {
-  display: flex;
-  gap: 0;
-  padding: 0 16px 0;
-  margin-bottom: 8px;
-}
-
-.dirBtn {
-  flex: 1;
-  height: 40px;
+  flex-direction: column;
+  padding: 4px 0;
+  border-radius: 16px;
   background: var(--surface);
-  color: var(--text3);
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.15s;
+  animation: peopleIn 0.22s ease both;
 }
 
-.dirBtn:first-child { border-radius: var(--r) 0 0 var(--r); }
-.dirBtn:last-child { border-radius: 0 var(--r) var(--r) 0; }
-
-.dirActive {
-  background: var(--accent);
-  color: #fff;
+@keyframes peopleIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
 }
 
-.paidRow {
-  display: flex;
-  gap: 6px;
-  padding: 0 16px 12px;
-}
-
-.paidBtn {
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 14px;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--surface);
-  color: var(--text3);
-}
-
-.paidActive {
-  background: var(--surface2);
-  color: var(--text);
-}
-
-.summaryCard {
-  margin: 0 16px 12px;
-  flex-shrink: 0;
-  background: var(--surface);
-  background:
-    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 38%),
-    var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-}
-
-.summaryMain {
-  width: 100%;
-  min-height: 94px;
-  padding: 16px;
+.personRow {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
+  padding: 10px 14px;
 }
 
-.summaryIcon {
-  width: 44px;
-  height: 44px;
+.personRow + .personRow { border-top: 1px solid var(--border); }
+
+.avatar {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 14px;
-  background: linear-gradient(145deg, var(--accent2), var(--accent));
-  color: #fff;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
-.summaryContent {
-  min-width: 0;
-  flex: 1;
-}
-
-.summaryLabel,
-.summaryHint,
-.summaryAmounts span,
-.summaryGroupAmounts span,
-.summaryPerson span,
-.summaryPerson small {
-  display: block;
-}
-
-.summaryLabel {
-  margin-bottom: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text2);
-}
-
-.summaryHint {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text2);
-}
-
-.summaryToggle {
-  width: 100%;
-  min-height: 54px;
-  padding: 0 14px 0 18px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  border-top: 1px solid var(--border);
-  text-align: left;
-  transition: background 0.16s ease;
-}
-
-.summaryToggle:active {
-  transform: none;
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
-.summaryGroupIcon {
-  flex-shrink: 0;
-  color: var(--accent2);
-}
-
-.summaryToggleText {
-  min-width: 0;
-  flex: 1;
-}
-
-.summaryToggleText small {
-  display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--text3);
-}
-
-.summaryAmounts,
-.summaryGroupAmounts {
-  font-variant-numeric: tabular-nums;
-}
-
-.summaryAmounts {
-  font-size: clamp(21px, 6.2vw, 27px);
-  line-height: 1.25;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.025em;
-}
-
-.summaryChevron {
-  flex-shrink: 0;
-  color: var(--text3);
-  transition: transform 0.2s ease;
-}
-
-.summaryChevronOpen { transform: rotate(180deg); }
-
-.summaryBreakdown {
-  max-height: 292px;
-  padding: 6px 14px 8px;
-  overflow-y: auto;
-  border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface2) 34%, transparent);
-}
-
-.summaryGroup {
-  min-height: 56px;
-  padding: 0 3px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.summaryGroup:last-child { border-bottom: 0; }
-
-.summaryAvatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: color-mix(in srgb, var(--accent) 18%, var(--surface2));
-  color: var(--accent);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
+  color: #fff;
 }
 
-.summaryPerson {
-  min-width: 0;
+.avatarOwe { background: linear-gradient(135deg, #B91C1C, #F97316); }
+.avatarOwed { background: linear-gradient(135deg, #047857, #34D399); }
+
+.personName {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.summaryPerson span {
+.personName span {
+  font-size: 14px;
+  font-weight: 600;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: 600;
 }
 
-.summaryPerson small {
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--text3);
-}
-
-.summaryGroupAmounts {
-  max-width: 58%;
-  flex-shrink: 0;
-  text-align: right;
-  font-size: 13px;
-  line-height: 1.45;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 60px 0;
-  color: var(--text3);
-  font-size: 14px;
-}
-
-.empty p:first-child { font-size: 40px; }
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 16px;
-}
-
-.debtCard {
-  background: var(--surface);
-  border-radius: var(--r);
-  padding: 14px;
-  animation: fadeInUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-}
-
-.list .debtCard:nth-child(1) { animation-delay: 0ms; }
-.list .debtCard:nth-child(2) { animation-delay: 60ms; }
-.list .debtCard:nth-child(3) { animation-delay: 120ms; }
-.list .debtCard:nth-child(4) { animation-delay: 180ms; }
-.list .debtCard:nth-child(5) { animation-delay: 240ms; }
-.list .debtCard:nth-child(n+6) { animation-delay: 300ms; }
-
-.paid {
-  opacity: 0.55;
-}
-
-.debtTop {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.debtInfo { flex: 1; }
-
-.debtPerson {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.debtComment {
-  font-size: 13px;
-  color: var(--text2);
-}
-
-.debtDue {
-  font-size: 12px;
-  color: var(--expense);
-  margin-top: 3px;
-}
-
-.debtActions {
-  display: flex;
-  gap: 6px;
-}
-
-.paidToggle,
-.delBtn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--surface2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text2);
-}
-
-.paidToggle { color: var(--income); }
-.delBtn { color: var(--text3); }
-.payBtn { color: var(--accent2); }
-
-.debtAmounts {
-  display: flex;
-  gap: 16px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
-.amtLabel {
-  font-size: 11px;
-  color: var(--text3);
-  margin-bottom: 3px;
-}
-
-.amtVal {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.commVal {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--expense);
-}
-
-.totalVal {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent2);
-}
-
-.paidAmtVal {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--income);
-}
-
-.remainingVal {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--expense);
-}
-
-.progressWrap {
-  margin-top: 10px;
-  height: 4px;
-  background: var(--surface2);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progressBar {
-  height: 100%;
-  background: var(--income);
-  border-radius: 2px;
-  transition: width 0.4s ease;
-}
-
-.payInfo {
-  font-size: 14px;
-  color: var(--text2);
-  margin-bottom: 4px;
-}
-
-.personField {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.personHint {
-  padding: 0 2px;
+.personName small {
   font-size: 12px;
   color: var(--text3);
 }
 
-.savedPeople {
-  min-width: 0;
-}
-
-.savedPeopleList {
+.personAmounts {
   display: flex;
-  gap: 7px;
-  margin-top: 8px;
-  padding-bottom: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.savedPeopleList::-webkit-scrollbar { display: none; }
-
-.savedPersonBtn {
-  height: 32px;
-  padding: 0 12px;
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface2);
-  color: var(--text2);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.savedPersonActive {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface2));
-  color: var(--accent);
-}
-
-/* Form styles */
-.formDirRow {
-  display: flex;
-  gap: 8px;
-  background: var(--surface2);
-  border-radius: var(--r);
-  padding: 4px;
-}
-
-.formDirBtn {
-  flex: 1;
-  height: 40px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text2);
-  transition: all 0.2s;
-}
-
-.formDirActive {
-  background: var(--accent);
-  color: #fff;
-}
-
-.amountRow {
-  display: grid;
-  grid-template-columns: 1fr 120px;
-  gap: 10px;
-}
-
-.checkRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-end;
   font-size: 14px;
-  color: var(--text2);
-  cursor: pointer;
-  margin-bottom: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.checkRow input { cursor: pointer; accent-color: var(--accent); }
-
-.commRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+@media (prefers-reduced-motion: reduce) {
+  .people { animation: none; }
 }
-
-.fieldLabel {
-  font-size: 13px;
-  color: var(--text2);
-  margin-bottom: 6px;
-}
-
-.amtInput {
-  width: 100%;
-  height: 44px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 0 12px;
-  font-size: 15px;
-  color: var(--text);
-}
-
-.saveBtn {
-  width: 100%;
-  height: 52px;
-  background: var(--accent);
-  border-radius: var(--r);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  transition: opacity 0.2s;
-}
-
-.disabled { opacity: 0.5; }

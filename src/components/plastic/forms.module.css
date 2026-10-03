@@ -159,3 +159,30 @@
   border-color: transparent;
   color: #fff;
 }
+
+.summaryValue { font-size: 16px; font-weight: 700; }
+
+/* ── Two-option segmented toggle inside forms (e.g. debt direction) ───────── */
+.segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r);
+  background: var(--surface2);
+}
+
+.segmentBtn {
+  height: 38px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmentActive {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}

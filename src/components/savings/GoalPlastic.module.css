@@ -1,0 +1,77 @@
+.goal { gap: 8px; }
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  font-size: 19px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pct {
+  flex-shrink: 0;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #fff;
+  transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.bar i.barDone { background: linear-gradient(90deg, #FDE68A, #F59E0B); }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chipDone {
+  background: rgba(253, 230, 138, 0.35);
+}
+
+.chipOverdue {
+  background: rgba(255, 69, 58, 0.45);
+}
+
+/* Large variant (goal sheet). */
+.goalLg .emoji {
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar i { transition: none; }
+}

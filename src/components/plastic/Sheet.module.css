@@ -28,12 +28,30 @@
   text-overflow: ellipsis;
 }
 
-.stats .debt { color: var(--expense); }
+.stats .negative { color: var(--expense); }
+.stats .positive { color: var(--income); }
+
+.note {
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--surface2);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 .actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  justify-content: space-around;
   gap: 8px;
+}
+
+/* Up to four equal columns; fewer actions spread across the width. */
+.actions > * {
+  flex: 1 1 0;
+  max-width: 25%;
 }
 
 .action {

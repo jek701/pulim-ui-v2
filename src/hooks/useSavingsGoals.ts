@@ -9,7 +9,11 @@ export type NewSavingsGoal = {
   targetAmount: number;
   currency: Currency;
   deadline: number;
+  color?: string;
 };
+
+/** What can change after creation; savedAmount and currency only move via contributions. */
+export type SavingsGoalPatch = Partial<Pick<NewSavingsGoal, 'name' | 'icon' | 'targetAmount' | 'deadline' | 'color'>>;
 
 export function useSavingsGoals(userId: string | null) {
   const uid = userId ?? '';
@@ -34,10 +38,15 @@ export function useSavingsGoals(userId: string | null) {
     qc.invalidateQueries({ queryKey: qk.cards(uid) });
   };
 
+  const update = async (id: string, patch: SavingsGoalPatch) => {
+    await api.patch(`/v1/savings-goals/${id}`, patch);
+    qc.invalidateQueries({ queryKey: qk.savingsGoals(uid) });
+  };
+
   const remove = async (id: string) => {
     await api.del(`/v1/savings-goals/${id}`);
     qc.invalidateQueries({ queryKey: qk.savingsGoals(uid) });
   };
 
-  return { goals: q.data ?? [], loading: q.isLoading, add, contribute, remove };
+  return { goals: q.data ?? [], loading: q.isLoading, add, contribute, update, remove };
 }

@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HiCheck, HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
+import { HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
 import type { Card, CardType, Currency } from '../../types';
 import type { NewCard } from '../../hooks/useCards';
 import { CURRENCIES } from '../../utils/currencies';
 import { ordinal } from '../../utils/format';
-import { ACCOUNT_COLORS, autoAccountColorKey } from '../../utils/accountColors';
+import { autoAccountColorKey } from '../../utils/accountColors';
 import { PremiumCornerStar } from '../PremiumLock';
 import { Input, Select } from '../FormField';
 import { NumberInput } from '../NumberInput';
 import Modal from '../Modal';
+import ColorSwatches from '../plastic/ColorSwatches';
 import AccountPlastic from './AccountPlastic';
-import formStyles from './forms.module.css';
+import formStyles from '../plastic/forms.module.css';
 import styles from './AccountFormModal.module.css';
 
 type Props = {
@@ -234,22 +235,7 @@ const AccountFormModal = (props: Props) => {
 
       <div>
         <label className={formStyles.fieldLabel}>{t('accounts.color_label')}</label>
-        <div className={styles.swatches} role="radiogroup" aria-label={t('accounts.color_label')}>
-          {ACCOUNT_COLORS.map(c => (
-            <button
-              key={c.key}
-              type="button"
-              role="radio"
-              aria-checked={selectedColor === c.key}
-              aria-label={c.key}
-              className={`${styles.swatch} ${selectedColor === c.key ? styles.swatchActive : ''}`}
-              style={{ background: `linear-gradient(135deg, ${c.from}, ${c.to})` }}
-              onClick={() => setColor(c.key)}
-            >
-              {selectedColor === c.key && <HiCheck size={16} />}
-            </button>
-          ))}
-        </div>
+        <ColorSwatches value={selectedColor} onChange={setColor} label={t('accounts.color_label')} />
       </div>
 
       {!isCredit && (

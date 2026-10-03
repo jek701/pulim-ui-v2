@@ -44,6 +44,16 @@ export function autoAccountColorKey(card: Pick<Card, 'cardType' | 'bank'>): stri
   return ACCOUNT_COLORS[hash(bank) % ACCOUNT_COLORS.length].key;
 }
 
+/** Gradient for any plastic: the stored key, else a stable pick from `fallbackText`. */
+export function colorByKey(key: string | undefined, fallbackText: string): AccountColor {
+  return BY_KEY.get(key ?? '') ?? BY_KEY.get(autoColorKeyByText(fallbackText))!;
+}
+
+export function autoColorKeyByText(text: string): string {
+  const s = text.trim().toLowerCase();
+  return s ? ACCOUNT_COLORS[hash(s) % ACCOUNT_COLORS.length].key : ACCOUNT_COLORS[0].key;
+}
+
 export function resolveAccountColor(card: Pick<Card, 'cardType' | 'bank' | 'color'>): AccountColor {
   return BY_KEY.get(card.color ?? '') ?? BY_KEY.get(autoAccountColorKey(card))!;
 }
