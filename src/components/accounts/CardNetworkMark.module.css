@@ -1,8 +1,6 @@
 /* All sizes are in em so the plastic controls the mark's scale. */
 
 .visa,
-.humo,
-.uzcard,
 .mir,
 .amex {
   display: inline-flex;
@@ -21,26 +19,17 @@
   letter-spacing: 0.02em;
 }
 
-.humo {
-  gap: 0.25em;
-  font-size: 0.9em;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.humo::before {
-  content: '';
-  width: 0.75em;
-  height: 0.75em;
-  border-radius: 50%;
-  border: 0.2em solid currentColor;
-}
-
+/* Official wordmarks: one colour, slightly translucent so they sit in the plastic. */
+.humo,
 .uzcard {
-  font-size: 0.82em;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  display: block;
+  flex-shrink: 0;
+  color: #fff;
+  opacity: 0.85;
 }
+
+.humo { height: 1.05em; width: calc(1.05em * 79.01 / 20); }
+.uzcard { height: 0.8em; width: calc(0.8em * 105 / 20); }
 
 .mir {
   font-size: 1em;

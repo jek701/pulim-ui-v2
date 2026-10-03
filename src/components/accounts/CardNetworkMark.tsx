@@ -1,4 +1,5 @@
 import type { CardNetwork } from '../../utils/cardNetwork';
+import { HUMO_MARK, UZCARD_MARK } from './networkMarks';
 import styles from './CardNetworkMark.module.css';
 
 const LABEL: Record<CardNetwork, string> = {
@@ -38,9 +39,14 @@ const CardNetworkMark = ({ network }: { network: CardNetwork }) => {
     case 'visa':
       return <span className={styles.visa} role="img" aria-label={label}>VISA</span>;
     case 'humo':
-      return <span className={styles.humo} role="img" aria-label={label}>HUMO</span>;
-    case 'uzcard':
-      return <span className={styles.uzcard} role="img" aria-label={label}>UZCARD</span>;
+    case 'uzcard': {
+      const mark = network === 'humo' ? HUMO_MARK : UZCARD_MARK;
+      return (
+        <svg className={styles[network]} viewBox={mark.viewBox} role="img" aria-label={label}>
+          <path fill="currentColor" fillRule="evenodd" d={mark.d} />
+        </svg>
+      );
+    }
     case 'mir':
       return <span className={styles.mir} role="img" aria-label={label}>МИР</span>;
   }
