@@ -6,6 +6,12 @@
   flex-direction: column;
 }
 
+/* While a card is dragged the page must not scroll under the finger. */
+.pageLocked {
+  overflow: hidden;
+  touch-action: none;
+}
+
 .header {
   display: flex;
   align-items: center;

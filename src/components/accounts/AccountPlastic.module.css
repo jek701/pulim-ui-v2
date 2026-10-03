@@ -102,6 +102,14 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+.network {
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.lg .network { font-size: 22px; }
+
 .cashMark {
   flex-shrink: 0;
   opacity: 0.85;

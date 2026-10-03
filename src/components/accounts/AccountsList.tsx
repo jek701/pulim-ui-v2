@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -19,7 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Card, CardType, Currency } from '../../types';
-import { telegramApp } from '../../utils/telegram';
+import { telegramApp, tgAtLeast } from '../../utils/telegram';
 import AccountPlastic, { HIDDEN_AMOUNT } from './AccountPlastic';
 import styles from './AccountsList.module.css';
 
@@ -28,6 +29,27 @@ const SECTIONS: { type: CardType; title: string }[] = [
   { type: 'credit', title: 'accounts.section_credit' },
   { type: 'cash', title: 'accounts.section_cash' },
 ];
+
+/**
+ * Y-axis only, and never outside the section's stack — a card can't be dragged
+ * sideways or into another section.
+ */
+const restrictToSection: Modifier = ({ transform, draggingNodeRect, containerNodeRect }) => {
+  let y = transform.y;
+  if (draggingNodeRect && containerNodeRect) {
+    const minY = containerNodeRect.top - draggingNodeRect.top;
+    const maxY = containerNodeRect.bottom - draggingNodeRect.bottom;
+    y = Math.min(Math.max(y, minY), maxY);
+  }
+  return { ...transform, x: 0, y };
+};
+
+/** Telegram's swipe-down-to-minimise would fight a vertical drag. */
+const setTelegramVerticalSwipes = (enabled: boolean) => {
+  if (!telegramApp || !tgAtLeast('7.7')) return;
+  if (enabled) telegramApp.enableVerticalSwipes?.();
+  else telegramApp.disableVerticalSwipes?.();
+};
 
 /** Per-currency totals, e.g. "12 400 000 UZS · 300 USD". */
 function sumByCurrency(cards: Card[], value: (c: Card) => number): string {
@@ -70,23 +92,39 @@ interface Props {
   hidden: boolean;
   onOpen: (card: Card) => void;
   onReorder: (ids: string[]) => void;
+  /** True while a card is being dragged; the page locks its scroll meanwhile. */
+  onDraggingChange?: (dragging: boolean) => void;
 }
 
 /** Accounts grouped into Cards / Credit / Cash; long-press drag reorders within a section. */
-const AccountsList = ({ cards, hidden, onOpen, onReorder }: Props) => {
+const AccountsList = ({ cards, hidden, onOpen, onReorder, onDraggingChange }: Props) => {
   const { t } = useTranslation();
   // Suppresses the click that follows a drop so a reorder doesn't open the sheet.
   const lastDragEnd = useRef(0);
   const wasDragged = () => Date.now() - lastDragEnd.current < 250;
 
+  // MouseSensor, not PointerSensor: pointer events also fire for touches, so a
+  // plain scroll gesture used to start a drag. Touch drags need a still hold.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 280, tolerance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const handleDragEnd = (section: Card[]) => (event: DragEndEvent) => {
+  const handleDragStart = () => {
+    onDraggingChange?.(true);
+    setTelegramVerticalSwipes(false);
+    telegramApp?.HapticFeedback?.impactOccurred?.('medium');
+  };
+
+  const finishDrag = () => {
     lastDragEnd.current = Date.now();
+    onDraggingChange?.(false);
+    setTelegramVerticalSwipes(true);
+  };
+
+  const handleDragEnd = (section: Card[]) => (event: DragEndEvent) => {
+    finishDrag();
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const ids = section.map(c => c.id);
@@ -118,9 +156,11 @@ const AccountsList = ({ cards, hidden, onOpen, onReorder }: Props) => {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
-              onDragStart={() => telegramApp?.HapticFeedback?.impactOccurred?.('medium')}
+              modifiers={[restrictToSection]}
+              autoScroll={false}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd(section)}
-              onDragCancel={() => { lastDragEnd.current = Date.now(); }}
+              onDragCancel={finishDrag}
             >
               <SortableContext items={section.map(c => c.id)} strategy={verticalListSortingStrategy}>
                 <div className={styles.stack}>

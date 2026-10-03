@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { HiBanknotes, HiEyeSlash } from 'react-icons/hi2';
 import type { Card } from '../../types';
 import { resolveAccountColor } from '../../utils/accountColors';
+import { detectCardNetwork } from '../../utils/cardNetwork';
+import CardNetworkMark from './CardNetworkMark';
 import styles from './AccountPlastic.module.css';
 
 export type PlasticData = Pick<Card, 'cardType' | 'name' | 'bank' | 'currency' | 'balance'>
@@ -32,6 +34,7 @@ const AccountPlastic = ({ card, size = 'sm', hidden, placeholderName, className,
   const available = isCredit ? limit - card.balance : card.balance;
   const usedPct = isCredit && limit > 0 ? Math.min(100, Math.max(0, (card.balance / limit) * 100)) : 0;
   const excluded = !isCredit && card.includeInTotalBalance === false;
+  const network = detectCardNetwork(card);
 
   const topLabel = (!isCash && card.bank.trim()) || t(`accounts.type_${card.cardType}_title`);
 
@@ -47,7 +50,9 @@ const AccountPlastic = ({ card, size = 'sm', hidden, placeholderName, className,
         <span className={styles.bank}>{topLabel}</span>
         {isCash
           ? <HiBanknotes className={styles.cashMark} size={size === 'lg' ? 28 : 20} aria-hidden />
-          : <span className={styles.circles} aria-hidden><i /><i /></span>}
+          : network
+            ? <span className={styles.network}><CardNetworkMark network={network} /></span>
+            : <span className={styles.circles} aria-hidden><i /><i /></span>}
       </div>
 
       {size === 'lg' && !isCash && <span className={styles.emv} aria-hidden />}

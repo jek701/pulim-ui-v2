@@ -53,6 +53,7 @@ const Accounts = () => {
   const [addTrigger, setAddTrigger] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [hidden, setHidden] = useState(readHidden);
+  const [dragging, setDragging] = useState(false);
 
   const byId = (id: string) => cards.find(c => c.id === id);
   const overlayCard = overlay && 'id' in overlay ? byId(overlay.id) : undefined;
@@ -107,7 +108,7 @@ const Accounts = () => {
   const viewIndex = VIEWS.indexOf(view);
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${dragging ? styles.pageLocked : ''}`}>
       <div className={styles.header}>
         <h1>{t('accounts.heading')}</h1>
         {view === 'accounts' && cards.length > 0 && (
@@ -176,6 +177,7 @@ const Accounts = () => {
             hidden={hidden}
             onOpen={card => setOverlay({ kind: 'sheet', id: card.id })}
             onReorder={ids => { void saveCardOrder(ids); }}
+            onDraggingChange={setDragging}
           />
         )
       )}

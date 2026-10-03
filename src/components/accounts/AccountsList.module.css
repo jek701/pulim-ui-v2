@@ -65,6 +65,7 @@
   border-radius: 18px;
   cursor: pointer;
   touch-action: manipulation;
+  -webkit-touch-callout: none;
   outline: none;
   /* `backwards`, not `both`: a held end-state transform would override dnd-kit's
      inline transform and freeze siblings while dragging. */
@@ -73,7 +74,8 @@
 }
 
 .item > * { transition: transform 0.15s ease, box-shadow 0.2s ease; }
-.item:active > * { transform: scale(0.985); }
+/* Delayed so a finger that is just scrolling past doesn't make cards pulse. */
+.item:active > * { transform: scale(0.985); transition-delay: 120ms; }
 .item:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent2); }
 
 @keyframes itemIn {
