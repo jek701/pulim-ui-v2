@@ -52,6 +52,7 @@ import HomeWidgetsSettings from '../components/HomeWidgetsSettings';
 import {resolveHomeWidgets, type HomeWidgetSetting} from '../utils/homeWidgets';
 import {DEFAULT_CATEGORIES} from '../utils/defaultCategories';
 import {SHORTCUT_INSTALL_URL} from '../utils/shortcut';
+import {telegramBotUsername} from '../utils/telegram';
 import styles from './Settings.module.css';
 import CommunicationCenter from '../communications/CommunicationCenter';
 import {useCommunications} from '../hooks/useCommunications';
@@ -383,9 +384,9 @@ const Settings = () => {
                                         ? t('settings.notifications_blocked')
                                         : t('settings.notifications_unreachable')}
                             </span>
-                            {profile?.notifications?.telegram.status !== 'reachable' && import.meta.env.VITE_TELEGRAM_BOT_USERNAME && (
+                            {profile?.notifications?.telegram.status !== 'reachable' && telegramBotUsername() && (
                                 <a
-                                    href={`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}?start=notify`}
+                                    href={`https://t.me/${telegramBotUsername()}?start=notify`}
                                     target="_blank"
                                     rel="noreferrer"
                                 >
@@ -419,9 +420,9 @@ const Settings = () => {
                                     ? t('settings.telegram_entry_hint')
                                     : t('settings.telegram_entry_not_linked')}
                             </span>
-                            {(!profile?.telegramChatIds || profile.telegramChatIds.length === 0) && import.meta.env.VITE_TELEGRAM_BOT_USERNAME && (
+                            {(!profile?.telegramChatIds || profile.telegramChatIds.length === 0) && telegramBotUsername() && (
                                 <a
-                                    href={`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME}`}
+                                    href={`https://t.me/${telegramBotUsername()}`}
                                     target="_blank"
                                     rel="noreferrer"
                                 >

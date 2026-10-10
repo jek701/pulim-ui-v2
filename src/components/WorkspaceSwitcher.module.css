@@ -95,7 +95,23 @@
 .memberEmpty { border: 1px dashed var(--border); background: transparent; }
 .memberEmpty .avatar { color: var(--text3); background: var(--surface2); }
 
-.linkCard { margin-top: 14px; padding: 14px; border: 1px solid rgba(124,58,237,.22); border-radius: 14px; background: rgba(124,58,237,.08); }
-.linkCard p { margin-bottom: 10px; color: var(--text2); font-size: 12px; }
-.linkCard button { width: 100%; min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 11px; color: #fff; background: var(--accent); font-size: 13px; font-weight: 700; }
+.invitePanel { margin-top: 16px; display: flex; flex-direction: column; gap: 9px; }
+.inviteTitle { color: var(--text2); font-size: 12px; font-weight: 700; }
+.inviteAction {
+  width: 100%; min-height: 58px; padding: 10px 14px; border-radius: 14px; display: flex; align-items: center; gap: 12px; text-align: left;
+  color: #fff; background: linear-gradient(135deg, #6d28d9, #9333ea);
+}
+.inviteAction:disabled { opacity: .55; }
+.inviteAction > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.inviteAction b { font-size: 14px; font-weight: 750; }
+.inviteAction small { font-size: 11px; opacity: .82; }
+.inviteActionIcon { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px; background: rgba(255,255,255,.18); }
+.inviteActionSecondary { color: var(--accent2); border: 1px solid rgba(124,58,237,.25); background: rgba(124,58,237,.10); }
+.inviteActionSecondary .inviteActionIcon { background: rgba(124,58,237,.14); }
+.copyLink { min-height: 40px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; color: var(--text2); font-size: 13px; font-weight: 650; }
+.copyLink small { width: 100%; text-align: center; color: var(--text3); font-size: 11px; font-weight: 500; }
+.inviteStatus { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border-radius: 13px; background: var(--surface2); color: var(--text2); font-size: 12px; line-height: 1.45; }
+.inviteStatus svg { flex: 0 0 auto; margin-top: 1px; }
+.inviteStatusOk { color: var(--text); background: rgba(48,209,88,.10); }
+.inviteStatusOk svg { color: #30d158; }
 .error { margin-top: 12px; color: var(--expense); font-size: 12px; text-align: center; }

@@ -2,6 +2,7 @@ import {useTranslation} from 'react-i18next';
 import {FaTelegramPlane} from 'react-icons/fa';
 import {HiXMark} from 'react-icons/hi2';
 import {useApp} from '../context';
+import {telegramBotUsername} from '../utils/telegram';
 import styles from './TelegramLinkBanner.module.css';
 
 const NotificationEnableBanner = () => {
@@ -12,7 +13,7 @@ const NotificationEnableBanner = () => {
     saveProfile,
     showTelegramLinkPrompt,
   } = useApp();
-  const username = import.meta.env.VITE_TELEGRAM_BOT_USERNAME?.trim();
+  const username = telegramBotUsername();
   const settings = profile?.notifications;
   const visible = activeTab === 'home'
     && Boolean(username)

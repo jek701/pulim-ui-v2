@@ -1,15 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
-import { HiCheck, HiClipboardDocument, HiPlus, HiUser, HiUsers } from 'react-icons/hi2';
+import { useEffect, useRef, useState } from 'react';
+import { HiCheck, HiCheckCircle, HiClipboardDocument, HiPaperAirplane, HiPlus, HiUser, HiUserPlus, HiUsers } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context';
 import { useHousehold } from '../hooks/useHousehold';
+import { ApiError } from '../api/client';
 import type { HouseholdInvite } from '../types';
+import { openTelegramLink, telegramApp, tgAtLeast } from '../utils/telegram';
 import Modal from './Modal';
 import styles from './WorkspaceSwitcher.module.css';
 
-const inviteTokenFromUrl = () => new URL(window.location.href).searchParams.get('familyInvite');
+/** Invites arrive as `?familyInvite=` (bot button, web) or `startapp=family_<token>` (t.me link). */
+const FAMILY_START_PREFIX = 'family_';
+const HANDLED_INVITE_KEY = 'pulim.familyInviteHandled';
 
-const cleanInviteUrl = () => {
+const handledInvite = () => {
+  try { return sessionStorage.getItem(HANDLED_INVITE_KEY); } catch { return null; }
+};
+
+const inviteTokenFromLaunch = (): string | null => {
+  const fromUrl = new URL(window.location.href).searchParams.get('familyInvite');
+  const startParam = telegramApp?.initDataUnsafe?.start_param;
+  const fromStart = startParam?.startsWith(FAMILY_START_PREFIX) ? startParam.slice(FAMILY_START_PREFIX.length) : null;
+  const token = fromUrl || fromStart;
+  // start_param stays in the init data for the whole session; don't reopen a handled invite.
+  return token && token !== handledInvite() ? token : null;
+};
+
+const cleanInviteUrl = (token: string | null) => {
+  if (token) {
+    try { sessionStorage.setItem(HANDLED_INVITE_KEY, token); } catch { /* storage can be unavailable */ }
+  }
   const url = new URL(window.location.href);
   url.searchParams.delete('familyInvite');
   window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
@@ -19,8 +39,8 @@ const WorkspaceSwitcher = () => {
   const { t } = useTranslation();
   const { user, workspace, setWorkspace } = useApp();
   const family = useHousehold(user?.uid ?? null);
-  const [showSetup, setShowSetup] = useState(() => Boolean(inviteTokenFromUrl()));
-  const [inviteToken, setInviteToken] = useState<string | null>(inviteTokenFromUrl);
+  const [inviteToken, setInviteToken] = useState<string | null>(inviteTokenFromLaunch);
+  const [showSetup, setShowSetup] = useState(() => Boolean(inviteToken));
 
   useEffect(() => {
     if (!family.householdLoading && workspace === 'household' && !family.household) {
@@ -69,8 +89,8 @@ const WorkspaceSwitcher = () => {
       {showSetup && (
         <FamilySetup
           inviteToken={inviteToken}
-          onInviteHandled={() => { setInviteToken(null); cleanInviteUrl(); }}
-          onClose={() => { setShowSetup(false); if (inviteToken) cleanInviteUrl(); }}
+          onInviteHandled={() => { cleanInviteUrl(inviteToken); setInviteToken(null); }}
+          onClose={() => { setShowSetup(false); if (inviteToken) { cleanInviteUrl(inviteToken); setInviteToken(null); } }}
         />
       )}
     </>
@@ -90,7 +110,6 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
   const [error, setError] = useState('');
   const [invite, setInvite] = useState<HouseholdInvite | null>(null);
   const [incoming, setIncoming] = useState<HouseholdInvite | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!inviteToken) return;
@@ -102,15 +121,6 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [inviteToken]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const inviteUrl = useMemo(() => {
-    if (!invite) return '';
-    // Never copy the current query/hash: inside Telegram the hash carries this
-    // user's signed tgWebAppData, which would sign the partner in as them.
-    const url = new URL(window.location.pathname, window.location.origin);
-    url.searchParams.set('familyInvite', invite.token);
-    return url.toString();
-  }, [invite]);
 
   const create = async () => {
     if (!name.trim()) return;
@@ -125,13 +135,6 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
     } finally { setLoading(false); }
   };
 
-  const makeInvite = async () => {
-    setLoading(true); setError('');
-    try { setInvite(await family.createInvite()); }
-    catch (err) { setError((err as Error).message); }
-    finally { setLoading(false); }
-  };
-
   const accept = async () => {
     if (!inviteToken) return;
     setLoading(true); setError('');
@@ -142,13 +145,6 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
       onClose();
     } catch (err) { setError((err as Error).message); }
     finally { setLoading(false); }
-  };
-
-  const copy = async () => {
-    if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
   };
 
   if (inviteToken) {
@@ -188,19 +184,9 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
             </div>
           )}
         </div>
-        {invite ? (
-          <div className={styles.linkCard}>
-            <p>{t('family.share_link')}</p>
-            <button type="button" onClick={copy}>
-              {copied ? <HiCheck size={17} /> : <HiClipboardDocument size={17} />}
-              {copied ? t('family.copied') : t('family.copy_link')}
-            </button>
-          </div>
-        ) : family.household.members.length < 2 ? (
-          <button className={styles.secondary} type="button" disabled={loading} onClick={makeInvite}>
-            <HiPlus size={17} />{t('family.invite_partner')}
-          </button>
-        ) : null}
+        {family.household.members.length < 2 && (
+          <InvitePanel householdName={family.household.name} invite={invite} onInvite={setInvite} />
+        )}
         {error && <p className={styles.error}>{error}</p>}
       </Modal>
     );
@@ -226,6 +212,176 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
       </div>
       {error && <p className={styles.error}>{error}</p>}
     </Modal>
+  );
+};
+
+type PickState =
+  | { phase: 'waiting' }
+  | { phase: 'delivered' | 'not_delivered'; name: string }
+  | { phase: 'timeout' };
+
+const PICK_POLL_MS = 1500;
+const PICK_POLL_ATTEMPTS = 14;
+
+/** Never derived from window.location: inside Telegram its hash carries signed tgWebAppData. */
+const fallbackInviteLink = (token: string) => {
+  const url = new URL('/', window.location.origin);
+  url.searchParams.set('familyInvite', token);
+  return url.toString();
+};
+
+/**
+ * Invite actions, best first: Telegram's contact picker (the bot notifies a partner who
+ * already uses Pulim), an invite card sent from the user's own account, and a plain link.
+ */
+const InvitePanel = ({ householdName, invite, onInvite }: {
+  householdName: string;
+  invite: HouseholdInvite | null;
+  onInvite: (invite: HouseholdInvite) => void;
+}) => {
+  const { t } = useTranslation();
+  const { user } = useApp();
+  const family = useHousehold(user?.uid ?? null);
+  const [busy, setBusy] = useState<'pick' | 'share' | null>(null);
+  const [pick, setPick] = useState<PickState | null>(null);
+  const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
+
+  const canPick = Boolean(telegramApp?.requestChat) && tgAtLeast('9.6');
+  const canShareCard = Boolean(telegramApp?.shareMessage) && tgAtLeast('8.0');
+
+  const ensureInvite = async () => {
+    if (invite) return invite;
+    const created = await family.createInvite();
+    onInvite(created);
+    return created;
+  };
+  const linkOf = (current: HouseholdInvite) => current.link || fallbackInviteLink(current.token);
+  const showError = (err: unknown) => {
+    setError(err instanceof ApiError && err.code === 'INVITE_LIMIT' ? t('family.invite_limit') : t('family.invite_error'));
+  };
+
+  const watchDelivery = async (token: string) => {
+    for (let attempt = 0; attempt < PICK_POLL_ATTEMPTS; attempt += 1) {
+      await new Promise(resolve => window.setTimeout(resolve, PICK_POLL_MS));
+      if (!alive.current) return;
+      const status = await family.getInviteStatus(token).catch(() => null);
+      const delivery = status?.delivery;
+      if (delivery?.status === 'delivered' || delivery?.status === 'not_delivered') {
+        setPick({ phase: delivery.status, name: delivery.recipientName || t('family.member') });
+        return;
+      }
+    }
+    if (alive.current) setPick({ phase: 'timeout' });
+  };
+
+  const pickContact = async () => {
+    if (!telegramApp?.requestChat) return;
+    setBusy('pick'); setError(''); setPick(null);
+    try {
+      const current = await ensureInvite();
+      const { buttonId } = await family.prepareInvitePick(current.token);
+      telegramApp.requestChat(buttonId, picked => {
+        if (!picked) return;
+        setPick({ phase: 'waiting' });
+        void watchDelivery(current.token);
+      });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const shareLink = async (current: HouseholdInvite) => {
+    const link = linkOf(current);
+    const text = t('family.share_text', { name: householdName });
+    if (telegramApp) {
+      openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
+    } else if (navigator.share) {
+      await navigator.share({ text, url: link }).catch(() => undefined);
+    } else {
+      await copy(current);
+    }
+  };
+
+  const sendToChat = async () => {
+    setBusy('share'); setError('');
+    try {
+      const current = await ensureInvite();
+      if (canShareCard && telegramApp?.shareMessage) {
+        try {
+          const { messageId } = await family.prepareInviteShare(current.token);
+          telegramApp.shareMessage(messageId, sent => { if (sent) setShared(true); });
+          return;
+        } catch {
+          // Fall through to a plain link share, which needs nothing from the bot.
+        }
+      }
+      await shareLink(current);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const copy = async (current?: HouseholdInvite) => {
+    setError('');
+    try {
+      const target = current ?? await ensureInvite();
+      await navigator.clipboard.writeText(linkOf(target));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  return (
+    <div className={styles.invitePanel}>
+      <p className={styles.inviteTitle}>{t('family.invite_partner')}</p>
+      {canPick && (
+        <button className={styles.inviteAction} type="button" disabled={busy !== null} onClick={pickContact}>
+          <span className={styles.inviteActionIcon}><HiUserPlus size={19} /></span>
+          <span><b>{t('family.pick_contact')}</b><small>{t('family.pick_contact_hint')}</small></span>
+        </button>
+      )}
+      <button
+        className={`${styles.inviteAction} ${canPick ? styles.inviteActionSecondary : ''}`}
+        type="button"
+        disabled={busy !== null}
+        onClick={sendToChat}
+      >
+        <span className={styles.inviteActionIcon}><HiPaperAirplane size={18} /></span>
+        <span><b>{t('family.send_to_chat')}</b><small>{t('family.send_to_chat_hint')}</small></span>
+      </button>
+      <button className={styles.copyLink} type="button" onClick={() => void copy()}>
+        {copied ? <HiCheck size={16} /> : <HiClipboardDocument size={16} />}
+        {copied ? t('family.copied') : t('family.copy_link')}
+        <small>{t('family.link_valid')}</small>
+      </button>
+
+      {pick?.phase === 'waiting' && <p className={styles.inviteStatus}>{t('family.invite_sending')}</p>}
+      {pick?.phase === 'delivered' && (
+        <p className={`${styles.inviteStatus} ${styles.inviteStatusOk}`}>
+          <HiCheckCircle size={17} />{t('family.invite_delivered', { name: pick.name })}
+        </p>
+      )}
+      {pick?.phase === 'not_delivered' && (
+        <p className={styles.inviteStatus}>{t('family.invite_not_delivered', { name: pick.name })}</p>
+      )}
+      {pick?.phase === 'timeout' && <p className={styles.inviteStatus}>{t('family.invite_timeout')}</p>}
+      {shared && (
+        <p className={`${styles.inviteStatus} ${styles.inviteStatusOk}`}>
+          <HiCheckCircle size={17} />{t('family.invite_shared')}
+        </p>
+      )}
+      {error && <p className={styles.error}>{error}</p>}
+    </div>
   );
 };
 

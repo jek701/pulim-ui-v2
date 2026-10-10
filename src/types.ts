@@ -272,6 +272,19 @@ export interface HouseholdInvite {
   householdId?: string;
   householdName: string;
   expiresAt: number;
+  /** t.me link that opens the Mini App on this invite. */
+  link?: string;
+}
+
+export interface HouseholdInviteStatus {
+  token: string;
+  status: 'pending' | 'accepted';
+  expiresAt: number;
+  delivery: {
+    status: 'awaiting_pick' | 'delivered' | 'not_delivered';
+    recipientName?: string;
+    updatedAt: number;
+  } | null;
 }
 
 export interface Budget {

@@ -33,6 +33,11 @@ export type TelegramWebApp = {
   };
   onEvent: (event: string, callback: (...args: unknown[]) => void) => void;
   offEvent?: (event: string, callback: (...args: unknown[]) => void) => void;
+  openTelegramLink?: (url: string) => void;
+  /** Bot API 8.0: sends a message prepared with savePreparedInlineMessage to a chat the user picks. */
+  shareMessage?: (id: string, callback?: (sent: boolean) => void) => void;
+  /** Bot API 9.6: opens the picker for a button prepared with savePreparedKeyboardButton. */
+  requestChat?: (id: string, callback?: (shared: boolean) => void) => void;
 };
 
 const rawWebApp = (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
@@ -74,4 +79,17 @@ export const tgShowConfirm = (message: string): Promise<boolean> | null => {
   } catch {
     return null;
   }
+};
+
+/** Bot username from the env, without the `@` some deployments include. */
+export const telegramBotUsername = (): string =>
+  (import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? '').trim().replace(/^@/, '');
+
+/** Opens a t.me link inside Telegram when running as a Mini App, otherwise in a new tab. */
+export const openTelegramLink = (url: string): void => {
+  if (telegramApp?.openTelegramLink && tgAtLeast('6.1')) {
+    telegramApp.openTelegramLink(url);
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 };

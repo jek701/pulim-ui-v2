@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { qk } from '../api/queryClient';
-import type { Budget, Card, Category, Currency, Household, HouseholdInvite, Transaction } from '../types';
+import type { Budget, Card, Category, Currency, Household, HouseholdInvite, HouseholdInviteStatus, Transaction } from '../types';
+import { telegramApp } from '../utils/telegram';
 import type { NewCard } from './useCards';
 import type { NewTransaction } from './useTransactions';
 
@@ -53,6 +54,14 @@ export function useHousehold(userId: string | null) {
     return created;
   };
   const createInvite = () => api.post<HouseholdInvite>('/v1/households/current/invites', {});
+  const invitePath = (token: string) => `/v1/households/current/invites/${encodeURIComponent(token)}`;
+  // The server binds prepared Telegram buttons/messages to the account in this init data.
+  const telegramBody = () => ({ telegramInitData: telegramApp?.initData ?? '' });
+  const prepareInvitePick = (token: string) =>
+    api.post<{ buttonId: string }>(`${invitePath(token)}/pick`, telegramBody());
+  const prepareInviteShare = (token: string) =>
+    api.post<{ messageId: string }>(`${invitePath(token)}/share`, telegramBody());
+  const getInviteStatus = (token: string) => api.get<HouseholdInviteStatus>(invitePath(token));
   const getInvite = (token: string) => api.get<HouseholdInvite>(`/v1/households/invites/${encodeURIComponent(token)}`);
   const acceptInvite = async (token: string) => {
     const accepted = await api.post<Household>(`/v1/households/invites/${encodeURIComponent(token)}/accept`, {});
@@ -92,6 +101,9 @@ export function useHousehold(userId: string | null) {
     create,
     createInvite,
     getInvite,
+    prepareInvitePick,
+    prepareInviteShare,
+    getInviteStatus,
     acceptInvite,
     addTransaction,
     removeTransaction,
