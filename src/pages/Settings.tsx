@@ -55,6 +55,7 @@ import {SHORTCUT_INSTALL_URL} from '../utils/shortcut';
 import styles from './Settings.module.css';
 import CommunicationCenter from '../communications/CommunicationCenter';
 import {useCommunications} from '../hooks/useCommunications';
+import {communicationsEnabled} from '../communications/config';
 
 const COLORS = ['#30D158', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF9F0A', '#FF375F', '#FF453A', '#5AC8FA', '#FFD60A', '#636366'];
 const ICON_SUGGESTIONS = ['💼', '💻', '📈', '🎁', '🏪', '💰', '🍔', '🚗', '🛍️', '💡', '🎮', '🏥', '📚', '🏠', '✈️', '💈', '📦', '🏦', '🎓', '🍕'];
@@ -166,7 +167,7 @@ const Settings = () => {
     const {isPremium, isTrial, trialDaysLeft, aiUsed, canStartTrial} = useEntitlements();
     const notificationSettings = useNotificationSettings(user?.uid ?? null);
     const shortcut = useShortcutToken(user?.uid ?? null, isPremium);
-    const communications = useCommunications(user?.uid ?? null);
+    const communications = useCommunications(communicationsEnabled ? user?.uid ?? null : null);
     // The plain key exists only in this state, right after it is issued.
     const [shortcutKey, setShortcutKey] = useState<string | null>(null);
     const [shortcutBusy, setShortcutBusy] = useState(false);
@@ -443,13 +444,15 @@ const Settings = () => {
                             </button>
                         )}
                     </div>
-                    <MenuRow
-                        icon={<HiEnvelope size={19}/>}
-                        title={t('settings.messages_title')}
-                        subtitle={t('settings.messages_hint')}
-                        value={communications.unread ? String(communications.unread) : undefined}
-                        onClick={() => setView('messages')}
-                    />
+                    {communicationsEnabled && (
+                        <MenuRow
+                            icon={<HiEnvelope size={19}/>}
+                            title={t('settings.messages_title')}
+                            subtitle={t('settings.messages_hint')}
+                            value={communications.unread ? String(communications.unread) : undefined}
+                            onClick={() => setView('messages')}
+                        />
+                    )}
                     <MenuRow
                         icon={<HiDevicePhoneMobile size={19}/>}
                         title={t('settings.shortcut_title')}

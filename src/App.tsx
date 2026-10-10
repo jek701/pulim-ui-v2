@@ -16,6 +16,7 @@ import AuthLanguageSelector from './components/AuthLanguageSelector';
 import TelegramLinkBanner from './components/TelegramLinkBanner';
 import NotificationEnableBanner from './components/NotificationEnableBanner';
 import CommunicationSurface from './communications/CommunicationSurface';
+import { communicationsEnabled } from './communications/config';
 import PaymentResultModal from './components/PaymentResultModal';
 import PremiumModal from './components/PremiumModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
@@ -97,7 +98,7 @@ const AppShell = () => {
         <BottomNav />
       </div>
       <PaymentResultModal result={paymentResult} onClose={dismissPaymentResult} />
-      <CommunicationSurface />
+      {communicationsEnabled && <CommunicationSurface />}
       {showPremiumDeepLink && (
         <PremiumModal feature="generic" onClose={() => setShowPremiumDeepLink(false)} />
       )}
