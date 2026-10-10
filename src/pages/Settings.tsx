@@ -10,7 +10,10 @@ import {
     HiChevronRight,
     HiChevronUp,
     HiCircleStack,
+    HiClipboardDocument,
+    HiDevicePhoneMobile,
     HiExclamationTriangle,
+    HiKey,
     HiLanguage,
     HiLockClosed,
     HiPencil,
@@ -32,6 +35,7 @@ import {useBudgets} from '../hooks/useBudgets';
 import {useEntitlements} from '../hooks/useEntitlements';
 import {useUserSettings} from '../hooks/useUserSettings';
 import {useNotificationSettings} from '../hooks/useNotificationSettings';
+import {useShortcutToken} from '../hooks/useShortcutToken';
 import {usePremiumGate, PremiumBadge} from '../components/PremiumLock';
 import {useConfirm} from '../components/ConfirmDialog';
 import dayjs from '../utils/dayjs';
@@ -46,6 +50,7 @@ import EmojiInput from '../components/EmojiInput';
 import HomeWidgetsSettings from '../components/HomeWidgetsSettings';
 import {resolveHomeWidgets, type HomeWidgetSetting} from '../utils/homeWidgets';
 import {DEFAULT_CATEGORIES} from '../utils/defaultCategories';
+import {SHORTCUT_INSTALL_URL} from '../utils/shortcut';
 import styles from './Settings.module.css';
 
 const COLORS = ['#30D158', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF9F0A', '#FF375F', '#FF453A', '#5AC8FA', '#FFD60A', '#636366'];
@@ -81,7 +86,7 @@ const isDefaultCategory = (category: { name: string; icon: string; type: Categor
     ))
 );
 
-type SettingsView = 'home' | 'account' | 'widgets' | 'language' | 'planning' | 'categories' | 'budgets' | 'data';
+type SettingsView = 'home' | 'account' | 'widgets' | 'language' | 'planning' | 'categories' | 'budgets' | 'data' | 'shortcut';
 
 interface MenuRowProps {
     icon: ReactNode;
@@ -157,6 +162,12 @@ const Settings = () => {
     } = useUserSettings(user?.uid ?? null);
     const {isPremium, isTrial, trialDaysLeft, aiUsed, canStartTrial} = useEntitlements();
     const notificationSettings = useNotificationSettings(user?.uid ?? null);
+    const shortcut = useShortcutToken(user?.uid ?? null, isPremium);
+    // The plain key exists only in this state, right after it is issued.
+    const [shortcutKey, setShortcutKey] = useState<string | null>(null);
+    const [shortcutBusy, setShortcutBusy] = useState(false);
+    const [shortcutError, setShortcutError] = useState(false);
+    const [shortcutCopied, setShortcutCopied] = useState(false);
     const premiumGate = usePremiumGate();
     const {confirm, node: confirmNode} = useConfirm();
 
@@ -428,6 +439,15 @@ const Settings = () => {
                             </button>
                         )}
                     </div>
+                    <MenuRow
+                        icon={<HiDevicePhoneMobile size={19}/>}
+                        title={t('settings.shortcut_title')}
+                        subtitle={t('settings.shortcut_menu_desc')}
+                        value={isPremium
+                            ? (shortcut.status?.active ? t('settings.shortcut_connected') : undefined)
+                            : t('premium.badge')}
+                        onClick={() => setView('shortcut')}
+                    />
                     <MenuRow
                         icon={<HiLanguage size={19}/>}
                         title={t('settings.section_language')}
@@ -822,6 +842,167 @@ const Settings = () => {
         </>
     );
 
+    const runShortcutAction = async (action: () => Promise<void>) => {
+        setShortcutBusy(true);
+        setShortcutError(false);
+        try {
+            await action();
+        } catch {
+            setShortcutError(true);
+        } finally {
+            setShortcutBusy(false);
+        }
+    };
+
+    const issueShortcutKey = async () => {
+        if (shortcut.status?.active) {
+            const ok = await confirm({
+                title: t('settings.shortcut_regenerate_confirm'),
+                detail: t('settings.shortcut_regenerate_detail'),
+                confirmLabel: t('settings.shortcut_regenerate'),
+            });
+            if (!ok) return;
+        }
+        await runShortcutAction(async () => {
+            setShortcutCopied(false);
+            setShortcutKey(await shortcut.issue());
+        });
+    };
+
+    const revokeShortcutKey = async () => {
+        const ok = await confirm({
+            title: t('settings.shortcut_revoke_confirm'),
+            detail: t('settings.shortcut_revoke_detail'),
+            confirmLabel: t('settings.shortcut_revoke'),
+        });
+        if (!ok) return;
+        await runShortcutAction(async () => {
+            await shortcut.revoke();
+            setShortcutKey(null);
+        });
+    };
+
+    const copyShortcutKey = async () => {
+        if (!shortcutKey) return;
+        try {
+            await navigator.clipboard.writeText(shortcutKey);
+            setShortcutCopied(true);
+        } catch {
+            // Clipboard can be blocked inside some webviews; the key stays selectable.
+            setShortcutCopied(false);
+        }
+    };
+
+    const renderShortcut = () => {
+        const status = shortcut.status;
+        return (
+            <>
+                <SubpageHeader
+                    title={t('settings.shortcut_title')}
+                    subtitle={t('settings.shortcut_page_hint')}
+                    icon={<HiDevicePhoneMobile size={25}/>}
+                    onBack={() => setView('home')}
+                />
+                {!isPremium ? (
+                    <section className={styles.detailSection}>
+                        <div className={styles.premiumNotice}><PremiumBadge/>{t('settings.shortcut_premium_hint')}</div>
+                        <button className={styles.saveBtn} type="button" onClick={() => premiumGate.open('generic')}>
+                            {t('settings.shortcut_premium_cta')}
+                        </button>
+                    </section>
+                ) : (
+                    <>
+                        <section className={styles.detailSection}>
+                            <p className={styles.sectionLabel}>{t('settings.shortcut_steps_title')}</p>
+                            <ol className={styles.shortcutSteps}>
+                                <li>{t('settings.shortcut_step_key')}</li>
+                                <li>{t('settings.shortcut_step_install')}</li>
+                                <li>{t('settings.shortcut_step_run')}</li>
+                            </ol>
+                        </section>
+
+                        <section className={styles.detailSection}>
+                            <p className={styles.sectionLabel}>{t('settings.shortcut_key_title')}</p>
+                            {shortcutKey ? (
+                                <div className={styles.shortcutKeyCard}>
+                                    <code className={styles.shortcutKey}>{shortcutKey}</code>
+                                    <p className={styles.shortcutKeyHint}>{t('settings.shortcut_new_key_hint')}</p>
+                                    <button className={styles.saveBtn} type="button" onClick={copyShortcutKey}>
+                                        <span className={styles.shortcutBtnLabel}>
+                                            {shortcutCopied ? <HiCheck size={18}/> : <HiClipboardDocument size={18}/>}
+                                            {shortcutCopied ? t('settings.shortcut_copied') : t('settings.shortcut_copy')}
+                                        </span>
+                                    </button>
+                                </div>
+                            ) : status?.active ? (
+                                <div className={styles.methodList}>
+                                    <div className={styles.methodRow}>
+                                        <span className={styles.shortcutKeyMeta}>
+                                            <strong>{t('settings.shortcut_key_active', {hint: status.hint ?? ''})}</strong>
+                                            <small>
+                                                {status.createdAt ? t('settings.shortcut_key_created', {date: dayjs(status.createdAt).format('D MMM YYYY')}) : ''}
+                                                {' · '}
+                                                {status.lastUsedAt
+                                                    ? t('settings.shortcut_key_last_used', {date: dayjs(status.lastUsedAt).format('D MMM, HH:mm')})
+                                                    : t('settings.shortcut_key_never_used')}
+                                            </small>
+                                        </span>
+                                        <span className={styles.connectedBadge}><HiCheck size={13}/>{t('settings.shortcut_connected')}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    className={`${styles.saveBtn} ${shortcutBusy || shortcut.loading ? styles.disabled : ''}`}
+                                    type="button"
+                                    disabled={shortcutBusy || shortcut.loading}
+                                    onClick={() => void issueShortcutKey()}
+                                >
+                                    <span className={styles.shortcutBtnLabel}><HiKey size={18}/>{t('settings.shortcut_create_key')}</span>
+                                </button>
+                            )}
+                            {shortcutError && <p className={styles.shortcutError}>{t('settings.shortcut_error')}</p>}
+                        </section>
+
+                        {(shortcutKey || status?.active) && (
+                            <section className={styles.detailSection}>
+                                {SHORTCUT_INSTALL_URL ? (
+                                    <a className={styles.shortcutInstall} href={SHORTCUT_INSTALL_URL} target="_blank" rel="noreferrer">
+                                        <HiDevicePhoneMobile size={18}/>{t('settings.shortcut_install')}
+                                    </a>
+                                ) : (
+                                    <p className={styles.hint}>{t('settings.shortcut_install_soon')}</p>
+                                )}
+                            </section>
+                        )}
+
+                        {status?.active && (
+                            <section className={styles.detailSection}>
+                                <div className={styles.dangerCard}>
+                                    <button
+                                        className={styles.shortcutSecondary}
+                                        type="button"
+                                        disabled={shortcutBusy}
+                                        onClick={() => void issueShortcutKey()}
+                                    >
+                                        <HiKey size={16}/>{t('settings.shortcut_regenerate')}
+                                    </button>
+                                    <button
+                                        className={styles.dangerBtn}
+                                        type="button"
+                                        disabled={shortcutBusy}
+                                        onClick={() => void revokeShortcutKey()}
+                                    >
+                                        <HiTrash size={16}/>{t('settings.shortcut_revoke')}
+                                    </button>
+                                </div>
+                            </section>
+                        )}
+                    </>
+                )}
+            </>
+        );
+    };
+
     const categoryTypeLabel = catForm.type === 'expense'
         ? t('settings.type_expense')
         : catForm.type === 'income'
@@ -838,6 +1019,7 @@ const Settings = () => {
         categories: renderCategories,
         budgets: renderBudgets,
         data: renderData,
+        shortcut: renderShortcut,
     };
 
     return (
