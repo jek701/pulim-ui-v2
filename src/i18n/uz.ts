@@ -868,6 +868,8 @@ const uz = {
         shortcut_revoke_detail: 'Kalit o‘chiriladi va buyruq xarajatlarni yozmay qo‘yadi.',
         shortcut_error: 'Bajarib bo‘lmadi. Qayta urinib ko‘ring.',
         notifications_title: 'Telegram eslatmalari',
+        messages_title: 'Xabarlar va jo‘natmalar',
+        messages_hint: 'Pulim yangiliklari, kiruvchi xabarlar va marketing sozlamalari',
         notifications_toggle: 'Telegram eslatmalarini yoqish',
         notifications_reachable: 'Eslatishga arzigulik narsa bo‘lsa, har tong Telegram’ga keladi',
         notifications_blocked: 'Siz botni bloklagansiz. Eslatmalar uchun blokdan chiqaring',

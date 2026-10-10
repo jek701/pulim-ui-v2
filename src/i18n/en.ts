@@ -868,6 +868,8 @@ const en = {
     shortcut_revoke_detail: 'The key will be deleted and the shortcut will stop recording expenses.',
     shortcut_error: 'That did not work. Please try again.',
     notifications_title: 'Telegram reminders',
+    messages_title: 'Messages & campaigns',
+    messages_hint: 'Pulim news, inbox, and marketing message preferences',
     notifications_toggle: 'Enable Telegram reminders',
     notifications_reachable: 'Arrive in Telegram each morning when there is something useful to say',
     notifications_blocked: 'You blocked the bot. Unblock it to receive reminders',

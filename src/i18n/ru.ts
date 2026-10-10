@@ -878,6 +878,8 @@ const ru = {
     shortcut_revoke_detail: 'Ключ будет удалён, и команда перестанет записывать расходы.',
     shortcut_error: 'Не получилось. Попробуйте ещё раз.',
     notifications_title: 'Напоминания в Telegram',
+    messages_title: 'Сообщения и рассылки',
+    messages_hint: 'Новости Pulim, входящие и настройки маркетинговых сообщений',
     notifications_toggle: 'Включить напоминания в Telegram',
     notifications_reachable: 'Приходят в Telegram каждое утро, если есть о чём напомнить',
     notifications_blocked: 'Вы заблокировали бота. Разблокируйте, чтобы получать напоминания',

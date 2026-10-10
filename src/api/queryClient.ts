@@ -28,4 +28,8 @@ export const qk = {
   devNotesAccess: (uid: string) => ['devNotesAccess', uid] as const,
   devNotes: (uid: string) => ['devNotes', uid] as const,
   shortcutToken: (uid: string) => ['shortcutToken', uid] as const,
+  communicationInbox: (uid: string) => ['communicationInbox', uid] as const,
+  communicationPreferences: (uid: string) => ['communicationPreferences', uid] as const,
+  communicationAdminAccess: (uid: string) => ['communicationAdminAccess', uid] as const,
+  communicationCampaigns: (uid: string) => ['communicationCampaigns', uid] as const,
 };
