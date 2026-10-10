@@ -963,15 +963,17 @@ const Settings = () => {
                             {shortcutError && <p className={styles.shortcutError}>{t('settings.shortcut_error')}</p>}
                         </section>
 
-                        {(shortcutKey || status?.active) && (
+                        {shortcutKey && (
                             <section className={styles.detailSection}>
-                                {SHORTCUT_INSTALL_URL ? (
-                                    <a className={styles.shortcutInstall} href={SHORTCUT_INSTALL_URL} target="_blank" rel="noreferrer">
-                                        <HiDevicePhoneMobile size={18}/>{t('settings.shortcut_install')}
-                                    </a>
-                                ) : (
-                                    <p className={styles.hint}>{t('settings.shortcut_install_soon')}</p>
-                                )}
+                                <a
+                                    className={styles.shortcutInstall}
+                                    href={SHORTCUT_INSTALL_URL}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={() => void copyShortcutKey()}
+                                >
+                                    <HiDevicePhoneMobile size={18}/>{t('settings.shortcut_copy_install')}
+                                </a>
                             </section>
                         )}
 

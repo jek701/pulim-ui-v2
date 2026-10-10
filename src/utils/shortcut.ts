@@ -1,6 +1,5 @@
 /**
- * iCloud link to the shared "Pulim" Shortcut for iPhone. The Shortcut asks for the
- * personal key on install. Empty until the Shortcut is published — the install
- * button stays hidden until then.
+ * Signed Shortcut bundled with the web app. The Shortcut asks for the personal
+ * key on install, so the same file is safe to serve to every user.
  */
-export const SHORTCUT_INSTALL_URL = '';
+export const SHORTCUT_INSTALL_URL = '/pulim-expense.shortcut';
