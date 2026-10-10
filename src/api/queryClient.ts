@@ -32,4 +32,9 @@ export const qk = {
   communicationPreferences: (uid: string) => ['communicationPreferences', uid] as const,
   communicationAdminAccess: (uid: string) => ['communicationAdminAccess', uid] as const,
   communicationCampaigns: (uid: string) => ['communicationCampaigns', uid] as const,
+  household: (uid: string) => ['household', uid] as const,
+  householdTransactions: (uid: string) => ['householdTransactions', uid] as const,
+  householdCards: (uid: string) => ['householdCards', uid] as const,
+  householdCategories: (uid: string) => ['householdCategories', uid] as const,
+  householdBudgets: (uid: string) => ['householdBudgets', uid] as const,
 };

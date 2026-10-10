@@ -201,6 +201,12 @@ const Transactions = () => {
             return true;
         });
     }, [periodTxs, filters.types, filters.categoryIds, filters.subcategoryIds, filters.cardIds]);
+    // Household expenses paid from one of the user's cards belong to that card's
+    // ledger, but not to the user's personal spending plan or analytics.
+    const analyticsTxs = useMemo(
+        () => filteredTxs.filter(transaction => transaction.scope !== 'household'),
+        [filteredTxs],
+    );
 
     /**
      * Day groups, with same-day refunds folded into the purchase they belong to.
@@ -241,7 +247,7 @@ const Transactions = () => {
         let income = 0;
         let expense = 0;
         let hasUnconverted = false;
-        for (const tx of filteredTxs) {
+        for (const tx of analyticsTxs) {
             if (tx.source === 'transfer') continue;
             let valueInBase: number | null = null;
             if (tx.currency === BASE_CURRENCY) valueInBase = tx.amount;
@@ -255,7 +261,7 @@ const Transactions = () => {
             else if (tx.type === 'expense') expense += valueInBase;
         }
         return {income, expense, hasUnconverted};
-    }, [filteredTxs]);
+    }, [analyticsTxs]);
 
     // Operation counts per category/subcategory inside the chosen period, so the
     // filter only offers options that can actually match and shows how many will.
@@ -596,7 +602,7 @@ const Transactions = () => {
                     <ChartView
                         chartType={viewMode}
                         filters={filters}
-                        transactions={filteredTxs}
+                        transactions={analyticsTxs}
                         categories={categories}
                         budgets={budgets}
                         viewDate={viewDate}
@@ -634,6 +640,7 @@ const Transactions = () => {
                             // money today, so fold them back in for the day total.
                             const dayTxs = txs.flatMap(tx => [tx, ...(grouped.mergedInto.get(tx.id) ?? [])]);
                             for (const t of dayTxs) {
+                                if (t.scope === 'household') continue;
                                 if (t.source === 'transfer') continue;
                                 const valueInBase = t.currency === BASE_CURRENCY
                                     ? t.amount
@@ -659,9 +666,9 @@ const Transactions = () => {
                                         {txs.map(tx => {
                                             const isReturn = tx.source === 'return';
                                             const cat = getCategory(tx.categoryId);
-                                            const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : tx.source === 'subscription' ? '📡' : cat?.icon ?? '📦';
-                                            const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? '#636366';
-                                            const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || t('common.transaction'));
+                                            const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : tx.source === 'subscription' ? '📡' : cat?.icon ?? tx.categoryIcon ?? '📦';
+                                            const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? tx.categoryColor ?? '#636366';
+                                            const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || tx.categoryName || t('common.transaction'));
                                             // A partially refunded expense shows what was actually spent; the
                                             // original figure stays visible, struck through, underneath. This
                                             // matches the month summary, which already nets refunds off expenses.
@@ -696,8 +703,16 @@ const Transactions = () => {
                                                                     <HiPaperAirplane size={12}/>
                                                                 </span>
                                                             )}
+                                                            {tx.scope === 'household' && (
+                                                                <span className={styles.familyBadge}>{t('family.badge')}</span>
+                                                            )}
                                                             <span className={styles.txTime}>{formatTime(tx.createdAt, locale)}</span>
                                                         </p>
+                                                        {tx.scope === 'household' && (
+                                                            <p className={styles.familyMeta}>
+                                                                {t('family.added_by', {name: tx.createdByName || t('family.member')})}
+                                                            </p>
+                                                        )}
                                                         {tx.comment && <p className={styles.txComment}>{tx.comment}</p>}
                                                         {isReturn && refundOriginName && (
                                                             <p className={styles.txComment}>{refundOriginName}</p>
@@ -732,7 +747,7 @@ const Transactions = () => {
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        <div className={styles.txActions}>
+                                                        {tx.scope !== 'household' && <div className={styles.txActions}>
                                                             {isReturnableTransaction(tx) && (
                                                                 <button className={styles.returnBtn}
                                                                         onClick={() => setReturnTx(tx)}
@@ -752,7 +767,7 @@ const Transactions = () => {
                                                                     onClick={() => handleDelete(tx)}>
                                                                 <HiTrash size={13}/>
                                                             </button>
-                                                        </div>
+                                                        </div>}
                                                     </div>
                                                 </div>
                                                 {isExpanded && mergedRefunds.map(refund => (

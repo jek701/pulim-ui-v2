@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { HiBanknotes, HiEyeSlash } from 'react-icons/hi2';
+import { HiBanknotes, HiEyeSlash, HiUsers } from 'react-icons/hi2';
 import type { Card } from '../../types';
 import { resolveAccountColor } from '../../utils/accountColors';
 import { detectCardNetwork } from '../../utils/cardNetwork';
@@ -7,7 +7,7 @@ import CardNetworkMark from './CardNetworkMark';
 import styles from '../plastic/Plastic.module.css';
 
 export type PlasticData = Pick<Card, 'cardType' | 'name' | 'bank' | 'currency' | 'balance'>
-  & Partial<Pick<Card, 'limit' | 'dueDay' | 'color' | 'includeInTotalBalance'>>;
+  & Partial<Pick<Card, 'limit' | 'dueDay' | 'color' | 'includeInTotalBalance' | 'familyAccess' | 'isHouseholdAccount'>>;
 
 export const HIDDEN_AMOUNT = '••••••';
 
@@ -70,6 +70,11 @@ const AccountPlastic = ({ card, size = 'sm', hidden, placeholderName, className,
           </span>
         </div>
         <div className={styles.chips}>
+          {(card.familyAccess?.enabled || card.isHouseholdAccount) && (
+            <span className={styles.chip}>
+              <HiUsers size={12} /> {t(card.isHouseholdAccount ? 'family.common_chip' : 'family.connected_chip')}
+            </span>
+          )}
           {excluded && (
             <span className={styles.chip} title={t('cards.exclude_from_total')}>
               <HiEyeSlash size={12} /> {t('accounts.excluded_chip')}

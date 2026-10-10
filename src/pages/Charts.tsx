@@ -53,7 +53,8 @@ const Charts = () => {
 
   const monthTxs = useMemo(() => transactions.filter(transaction => {
     const date = new Date(transaction.date);
-    return date.getMonth() === viewDate.month
+    return transaction.scope !== 'household'
+      && date.getMonth() === viewDate.month
       && date.getFullYear() === viewDate.year
       && transaction.currency === activeCurrency
       && getTransactionKind(transaction) !== 'transfer';

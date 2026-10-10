@@ -339,6 +339,24 @@
     font-variant-numeric: tabular-nums;
 }
 
+.familyBadge {
+    display: inline-flex;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 99px;
+    color: var(--accent2);
+    background: rgba(124, 58, 237, 0.12);
+    font-size: 8px;
+    font-weight: 750;
+    vertical-align: 2px;
+}
+
+.familyMeta {
+    margin-top: 3px;
+    color: var(--accent2);
+    font-size: 10px;
+}
+
 .txComment {
     font-size: 12px;
     color: var(--text3);

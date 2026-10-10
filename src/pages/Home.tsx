@@ -48,7 +48,7 @@ const Home = () => {
     const m = now.getMonth(), y = now.getFullYear();
     const uzs = transactions.filter(t => {
       const d = new Date(t.date);
-      return d.getMonth() === m && d.getFullYear() === y && t.currency === 'UZS';
+      return t.scope !== 'household' && d.getMonth() === m && d.getFullYear() === y && t.currency === 'UZS';
     });
     // Refunds are stored as `type: 'income'` with `source: 'return'`. They are money
     // coming back from a purchase, so they reduce spending instead of counting as
@@ -101,7 +101,7 @@ const Home = () => {
     const m = now.getMonth(), y = now.getFullYear();
     return transactions.filter(t => {
       const d = new Date(t.date);
-      return d.getMonth() === m && d.getFullYear() === y;
+      return t.scope !== 'household' && d.getMonth() === m && d.getFullYear() === y;
     });
   }, [now, transactions]);
 
@@ -413,9 +413,9 @@ const Home = () => {
                   {txs.map(tx => {
                     const isReturn = tx.source === 'return';
                     const cat = getCategory(tx.categoryId);
-                    const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : cat?.icon ?? '📦';
-                    const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? '#636366';
-                    const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || t('common.transaction'));
+                    const icon = isReturn ? '↩' : tx.source === 'debt_payment' ? '💳' : tx.source === 'savings' ? '🐷' : tx.source === 'transfer' ? '🔄' : cat?.icon ?? tx.categoryIcon ?? '📦';
+                    const color = isReturn ? '#30d158' : tx.source ? '#636366' : cat?.color ?? tx.categoryColor ?? '#636366';
+                    const name = isReturn ? t('return.history_label') : (tx.sourceLabel || categoryName(cat) || tx.categoryName || t('common.transaction'));
                     // Same rule as History: a partially refunded expense shows what was
                     // actually spent, so the dashboard and the list never disagree.
                     const refunded = tx.type === 'expense' ? (tx.returnedAmount ?? 0) : 0;
@@ -426,7 +426,13 @@ const Home = () => {
                           <span>{icon}</span>
                         </div>
                         <div className={styles.txMid}>
-                          <p className={styles.txName}>{name}</p>
+                          <p className={styles.txName}>
+                            {name}
+                            {tx.scope === 'household' && <span className={styles.familyBadge}>{t('family.badge')}</span>}
+                          </p>
+                          {tx.scope === 'household' && (
+                            <p className={styles.familyMeta}>{t('family.added_by', { name: tx.createdByName || t('family.member') })}</p>
+                          )}
                           {tx.comment && <p className={styles.txComment2}>{tx.comment}</p>}
                         </div>
                         <div className={styles.txRight}>

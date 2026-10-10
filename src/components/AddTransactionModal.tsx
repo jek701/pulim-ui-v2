@@ -218,6 +218,16 @@ const AddTransactionModal: React.FC<Props> = ({
         ? Math.max((card.limit ?? card.balance) - card.balance, 0)
         : card.balance;
 
+    const accountOwnerLabel = (card: Card) => card.isHouseholdAccount
+        ? t('family.shared_money')
+        : card.ownerName
+            ? t('family.member_card', {name: card.ownerName})
+            : '';
+
+    const accountAmountLabel = (card: Card) => card.balanceHidden
+        ? '••••••'
+        : formatAmount(accountDisplayAmount(card), card.currency);
+
     const renderCardOption = (card: Card) => (
         <button
             type="button"
@@ -232,11 +242,12 @@ const AddTransactionModal: React.FC<Props> = ({
                 <span className={styles.accountName}>{card.name}</span>
                 <span className={styles.accountMeta}>
                     {t(`add_transaction.account_${card.cardType}`)}{card.bank ? ` · ${card.bank}` : ''}
+                    {accountOwnerLabel(card) ? ` · ${accountOwnerLabel(card)}` : ''}
                 </span>
             </span>
             <span className={styles.accountAmount}>
-                <span>{formatAmount(accountDisplayAmount(card), card.currency)}</span>
-                <small>{t(card.cardType === 'credit' ? 'add_transaction.account_available' : 'add_transaction.account_balance')}</small>
+                <span>{accountAmountLabel(card)}</span>
+                <small>{card.balanceHidden ? t('family.balance_hidden') : t(card.cardType === 'credit' ? 'add_transaction.account_available' : 'add_transaction.account_balance')}</small>
             </span>
             {cardId === card.id && <HiCheck className={styles.accountCheck} size={18}/>}
         </button>
@@ -388,11 +399,12 @@ const AddTransactionModal: React.FC<Props> = ({
                                             <span className={styles.accountName}>{selectedCard.name}</span>
                                             <span className={styles.accountMeta}>
                                                 {t(`add_transaction.account_${selectedCard.cardType}`)}
-                                                {selectedCard.bank ? ` · ${selectedCard.bank}` : ''} · {selectedCard.currency}
+                                                {selectedCard.bank ? ` · ${selectedCard.bank}` : ''}
+                                                {accountOwnerLabel(selectedCard) ? ` · ${accountOwnerLabel(selectedCard)}` : ''} · {selectedCard.currency}
                                             </span>
                                         </span>
                                         <span className={styles.selectedAmount}>
-                                            {formatAmount(accountDisplayAmount(selectedCard), selectedCard.currency)}
+                                            {accountAmountLabel(selectedCard)}
                                         </span>
                                     </>
                                 ) : (

@@ -182,6 +182,9 @@ export interface Transaction {
   currency: Currency;
   type: TransactionType;
   categoryId: string;
+  categoryName?: string;
+  categoryIcon?: string;
+  categoryColor?: string;
   subcategoryId?: string;
   cardId?: string;
   comment?: string;
@@ -196,6 +199,13 @@ export interface Transaction {
   baseAmount?: number;           // amount converted to base currency (UZS) at transaction time
   fxRate?: number;               // 1 unit of `currency` = fxRate units of UZS, snapshot at create time
   fxRateSource?: 'NBU' | 'manual';
+  /** A household transaction can also appear in the personal ledger of the account owner. */
+  scope?: 'personal' | 'household';
+  householdId?: string;
+  createdBy?: string;
+  createdByName?: string;
+  accountOwnerId?: string;
+  accountOwnerName?: string;
   date: number;
   userId: string;
   createdAt: number;
@@ -220,8 +230,48 @@ export interface Card {
   limit?: number;        // credit only
   dueDay?: number;       // credit only (1–31)
   color?: string;        // ACCOUNT_COLORS key; unset = auto by bank
+  scope?: 'personal' | 'household';
+  householdId?: string;
+  createdBy?: string;
+  familyAccess?: {
+    householdId: string;
+    enabled: boolean;
+    showBalance: boolean;
+    updatedAt: number;
+  };
+  ownerUserId?: string;
+  ownerName?: string;
+  isHouseholdAccount?: boolean;
+  balanceHidden?: boolean;
   userId: string;
   createdAt: number;
+}
+
+export type HouseholdRole = 'owner' | 'member';
+
+export interface HouseholdMember {
+  userId: string;
+  name: string;
+  role: HouseholdRole;
+  joinedAt: number;
+}
+
+export interface Household {
+  id: string;
+  name: string;
+  currency: Currency;
+  ownerUserId: string;
+  memberIds: string[];
+  members: HouseholdMember[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface HouseholdInvite {
+  token: string;
+  householdId?: string;
+  householdName: string;
+  expiresAt: number;
 }
 
 export interface Budget {

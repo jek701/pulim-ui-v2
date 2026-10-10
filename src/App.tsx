@@ -20,6 +20,8 @@ import { communicationsEnabled } from './communications/config';
 import PaymentResultModal from './components/PaymentResultModal';
 import PremiumModal from './components/PremiumModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
+import HouseholdSpace from './pages/HouseholdSpace';
+import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import { useDevNotesAccess } from './hooks/useDevNotes';
 import styles from './App.module.css';
 
@@ -27,7 +29,10 @@ import styles from './App.module.css';
 const DevNotesRoot = lazy(() => import('./devNotes/DevNotesRoot'));
 
 const PageContent = () => {
-  const { activeTab } = useApp();
+  const { activeTab, workspace } = useApp();
+  if (workspace === 'household') {
+    return <div key={`household-${activeTab}`} className={styles.pageAnim}><HouseholdSpace /></div>;
+  }
   return (
     <div key={activeTab} className={styles.pageAnim}>
       {activeTab === 'home'         && <Home />}
@@ -94,6 +99,7 @@ const AppShell = () => {
       <div className={styles.shell}>
         <TelegramLinkBanner />
         <NotificationEnableBanner />
+        <WorkspaceSwitcher />
         <PageContent />
         <BottomNav />
       </div>

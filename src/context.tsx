@@ -44,6 +44,8 @@ interface AppContextType {
   startPaymentMonitoring: (orderId: string) => void;
   paymentResult: PaymentResult | null;
   dismissPaymentResult: () => void;
+  workspace: 'personal' | 'household';
+  setWorkspace: (workspace: 'personal' | 'household') => void;
 }
 
 export type PaymentResult =
@@ -240,6 +242,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [telegramLinkPending, setTelegramLinkPending] = useState(false);
   const [telegramLinkError, setTelegramLinkError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(initialActiveTab);
+  const [workspace, setWorkspaceState] = useState<'personal' | 'household'>(() => {
+    try { return localStorage.getItem('pulim.workspace') === 'household' ? 'household' : 'personal'; }
+    catch { return 'personal'; }
+  });
+  const setWorkspace = useCallback((next: 'personal' | 'household') => {
+    setWorkspaceState(next);
+    try { localStorage.setItem('pulim.workspace', next); } catch { /* storage can be unavailable */ }
+    setCategoryFilter(null);
+    setHistoryFilters(EMPTY_HISTORY_FILTERS);
+    setActiveTab(current => current === 'subscriptions' || current === 'calendar' || current === 'charts' ? 'home' : current);
+  }, []);
   const [transactionDeepLinkId, setTransactionDeepLinkId] = useState<string | null>(initialTransactionDeepLink);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [historyFilters, setHistoryFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
@@ -748,6 +761,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       transactionDeepLinkId, clearTransactionDeepLink,
       startPaymentMonitoring,
       paymentResult, dismissPaymentResult,
+      workspace, setWorkspace,
     }}>
       {children}
     </AppContext.Provider>

@@ -23,25 +23,40 @@ const TAB_PREFETCH: Record<Tab, { key: (uid: string) => readonly unknown[]; path
 };
 
 const BottomNav = () => {
-  const { activeTab, setActiveTab, user, requestTabReset } = useApp();
+  const { activeTab, setActiveTab, user, requestTabReset, workspace } = useApp();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const prefetch = (tab: Tab) => {
     const uid = user?.uid;
     if (!uid || tab === activeTab) return;
+    if (workspace === 'household') {
+      const entries = tab === 'home'
+        ? [[qk.householdTransactions(uid), '/v1/households/current/transactions'], [qk.householdCards(uid), '/v1/households/current/cards'], [qk.householdBudgets(uid), '/v1/households/current/budgets']]
+        : tab === 'transactions'
+          ? [[qk.householdTransactions(uid), '/v1/households/current/transactions'], [qk.householdCategories(uid), '/v1/households/current/categories']]
+          : tab === 'cards'
+            ? [[qk.householdCards(uid), '/v1/households/current/cards']]
+            : [];
+      for (const [key, path] of entries as [readonly unknown[], string][]) {
+        queryClient.prefetchQuery({ queryKey: key, queryFn: () => api.get(path) });
+      }
+      return;
+    }
     for (const { key, path } of TAB_PREFETCH[tab]) {
       queryClient.prefetchQuery({ queryKey: key(uid), queryFn: () => api.get(path) });
     }
   };
 
-  const TABS: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number }> }[] = [
+  const personalTabs: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number }> }[] = [
     { id: 'home',          label: t('nav.home'),     Icon: HiHome },
     { id: 'transactions',  label: t('nav.history'),  Icon: HiArrowsRightLeft },
     { id: 'cards',         label: t('nav.accounts'), Icon: HiCreditCard },
     { id: 'subscriptions', label: t('nav.subs'),      Icon: HiArrowPath },
     { id: 'settings',      label: t('nav.settings'),  Icon: HiCog6Tooth },
   ];
+  const familyTabs = personalTabs.filter(tab => tab.id !== 'subscriptions');
+  const TABS = workspace === 'household' ? familyTabs : personalTabs;
 
   return (
     <nav className={styles.nav}>

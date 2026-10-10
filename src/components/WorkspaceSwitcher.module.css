@@ -1,0 +1,101 @@
+.wrap {
+  min-height: 54px;
+  padding: 8px 14px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, var(--bg) 72%, transparent);
+  z-index: 30;
+}
+
+.switcher {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+.option {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 650;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.option span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.active { color: var(--text); background: var(--surface2); box-shadow: 0 2px 8px rgba(0,0,0,.14); }
+.familyActive { color: #fff; background: linear-gradient(135deg, #6d28d9, #9333ea); box-shadow: 0 4px 14px rgba(124,58,237,.28); }
+
+.manage {
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(124,58,237,.25);
+  border-radius: 14px;
+  color: var(--accent2);
+  background: rgba(124,58,237,.10);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.heroIcon {
+  width: 64px;
+  height: 64px;
+  margin: 2px auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, #6d28d9, #a855f7);
+  box-shadow: 0 12px 30px rgba(124,58,237,.28);
+}
+
+.inviteIntro { text-align: center; margin-bottom: 20px; }
+.inviteIntro h3 { font-size: 19px; margin-bottom: 7px; }
+.inviteIntro p, .centerMuted { color: var(--text2); font-size: 13px; line-height: 1.5; }
+.centerMuted { text-align: center; }
+
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field span { color: var(--text2); font-size: 12px; font-weight: 650; }
+.field input { height: 48px; padding: 0 14px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface2); font-size: 15px; }
+
+.privacyNote { display: flex; gap: 11px; margin-top: 14px; padding: 13px; border-radius: 13px; background: rgba(48,209,88,.08); }
+.privacyNote > span { font-size: 18px; }
+.privacyNote p { color: var(--text2); font-size: 12px; line-height: 1.45; }
+.privacyNote strong { color: var(--text); display: block; margin-bottom: 2px; }
+
+.primary, .secondary {
+  width: 100%; min-height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 750;
+}
+.primary { color: #fff; background: linear-gradient(135deg, #6d28d9, #9333ea); }
+.primary:disabled { opacity: .45; }
+.secondary { color: var(--accent2); border: 1px solid rgba(124,58,237,.25); background: rgba(124,58,237,.10); margin-top: 14px; }
+
+.memberList { display: flex; flex-direction: column; gap: 9px; }
+.member { display: flex; align-items: center; gap: 11px; padding: 12px; border-radius: 14px; background: var(--surface2); }
+.avatar { width: 38px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 13px; color: #fff; background: linear-gradient(135deg, #7c3aed, #a855f7); font-weight: 800; }
+.member > span:nth-child(2) { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.member strong { font-size: 14px; }
+.member small { color: var(--text3); font-size: 11px; }
+.member em { color: var(--accent2); font-size: 10px; font-style: normal; font-weight: 750; }
+.memberEmpty { border: 1px dashed var(--border); background: transparent; }
+.memberEmpty .avatar { color: var(--text3); background: var(--surface2); }
+
+.linkCard { margin-top: 14px; padding: 14px; border: 1px solid rgba(124,58,237,.22); border-radius: 14px; background: rgba(124,58,237,.08); }
+.linkCard p { margin-bottom: 10px; color: var(--text2); font-size: 12px; }
+.linkCard button { width: 100%; min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 11px; color: #fff; background: var(--accent); font-size: 13px; font-weight: 700; }
+.error { margin-top: 12px; color: var(--expense); font-size: 12px; text-align: center; }
