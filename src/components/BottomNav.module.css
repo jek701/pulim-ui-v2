@@ -13,7 +13,7 @@
   isolation: isolate;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
-  border-radius: 24px;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 72%, transparent);
   box-shadow:
     0 14px 38px rgba(0, 0, 0, 0.18),
@@ -61,7 +61,7 @@
   gap: 1px;
   overflow: hidden;
   border: 0;
-  border-radius: 18px;
+  border-radius: 999px;
   background: transparent;
   box-shadow: none;
   color: var(--text3);
@@ -77,7 +77,7 @@
   left: 7px;
   width: calc((100% - 14px) / var(--tab-count));
   border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  border-radius: 18px;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--surface3) 46%, transparent);
   box-shadow:
     0 5px 14px rgba(0, 0, 0, 0.1),
