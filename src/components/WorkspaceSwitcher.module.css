@@ -1,25 +1,17 @@
-.wrap {
-  min-height: 42px;
-  padding: 7px 16px 1px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  z-index: 30;
-}
-
 .current {
-  max-width: min(58%, 230px);
-  height: 34px;
-  padding: 0 10px;
+  max-width: 140px;
+  height: 30px;
+  padding: 0 9px;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   gap: 6px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--text2);
   background: var(--surface);
-  box-shadow: 0 3px 12px rgba(0,0,0,.06);
-  font-size: 11px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  font-size: 10px;
   font-weight: 700;
 }
 .current span {

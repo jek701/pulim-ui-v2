@@ -8,8 +8,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 20px 20px 12px;
 }
+
+.identity { min-width: 0; flex: 1; }
+.titleRow { display: flex; align-items: center; gap: 8px; min-width: 0; }
 
 .greeting {
   font-size: 13px;
@@ -18,12 +22,17 @@
 }
 
 .name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 22px;
   font-weight: 700;
   text-transform: capitalize;
 }
 
 .monthPill {
+  flex: 0 0 auto;
   background: var(--surface);
   border-radius: 20px;
   padding: 6px 13px;

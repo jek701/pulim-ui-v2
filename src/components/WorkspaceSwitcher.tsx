@@ -57,19 +57,17 @@ const WorkspaceSwitcher = () => {
 
   return (
     <>
-      <div className={styles.wrap}>
-        <button
-          className={`${styles.current} ${workspace === 'household' ? styles.currentFamily : ''}`}
-          type="button"
-          aria-haspopup="dialog"
-          aria-expanded={showChooser}
-          onClick={() => setShowChooser(true)}
-        >
-          {workspace === 'household' ? <HiUsers size={15} /> : <HiUser size={15} />}
-          <span>{workspace === 'household' ? family.household?.name || t('family.shared') : t('family.personal')}</span>
-          <HiChevronDown size={14} />
-        </button>
-      </div>
+      <button
+        className={`${styles.current} ${workspace === 'household' ? styles.currentFamily : ''}`}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={showChooser}
+        onClick={() => setShowChooser(true)}
+      >
+        {workspace === 'household' ? <HiUsers size={15} /> : <HiUser size={15} />}
+        <span>{workspace === 'household' ? family.household?.name || t('family.shared') : t('family.personal')}</span>
+        <HiChevronDown size={14} />
+      </button>
 
       {showChooser && (
         <Modal title={t('family.workspace_label')} onClose={() => setShowChooser(false)}>

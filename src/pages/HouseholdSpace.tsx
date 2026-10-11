@@ -31,6 +31,7 @@ import GoalPlastic from '../components/savings/GoalPlastic';
 import GoalSheet from '../components/savings/GoalSheet';
 import GoalFormModal from '../components/savings/GoalFormModal';
 import ContributeModal from '../components/savings/ContributeModal';
+import WorkspaceSwitcher from '../components/WorkspaceSwitcher';
 import styles from './HouseholdSpace.module.css';
 
 const HouseholdSpace = () => {
@@ -111,9 +112,12 @@ const FamilyHome = ({ family, onAdd }: { family: FamilyState; onAdd: () => void 
   return (
     <div className={styles.page}>
       <header className={styles.heroHeader}>
-        <div>
+        <div className={styles.heroIdentity}>
           <p>{t('family.shared_budget')}</p>
-          <h1>{family.household?.name}</h1>
+          <div className={styles.heroTitleRow}>
+            <h1>{family.household?.name}</h1>
+            <WorkspaceSwitcher />
+          </div>
         </div>
         <div className={styles.avatars}>
           {family.household?.members.map(member => (

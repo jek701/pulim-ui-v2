@@ -16,6 +16,7 @@ import ExchangeRatesWidget from '../components/ExchangeRatesWidget';
 import AskAIWidget from '../components/AskAIWidget';
 import AskAIChat from '../components/AskAIChat';
 import BalanceDetails from '../components/BalanceDetails';
+import WorkspaceSwitcher from '../components/WorkspaceSwitcher';
 import type { NewTransaction } from '../hooks/useTransactions';
 import type { Currency } from '../types';
 import { resolveHomeWidgets, type HomeWidgetId } from '../utils/homeWidgets';
@@ -462,9 +463,12 @@ const Home = () => {
     <div className={styles.page}>
       {/* Header */}
       <div className={styles.header}>
-        <div>
+        <div className={styles.identity}>
           <p className={styles.greeting}>{greeting()}</p>
-          <h1 className={styles.name}>{userName}</h1>
+          <div className={styles.titleRow}>
+            <h1 className={styles.name}>{userName}</h1>
+            <WorkspaceSwitcher />
+          </div>
         </div>
         <span className={styles.monthPill}>{formatMonth(now, i18n.language)}</span>
       </div>

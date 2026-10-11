@@ -21,7 +21,6 @@ import PaymentResultModal from './components/PaymentResultModal';
 import PremiumModal from './components/PremiumModal';
 import PhoneNameSetup from './pages/PhoneNameSetup';
 import HouseholdSpace from './pages/HouseholdSpace';
-import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import { useDevNotesAccess } from './hooks/useDevNotes';
 import styles from './App.module.css';
 
@@ -99,7 +98,6 @@ const AppShell = () => {
       <div className={styles.shell}>
         <TelegramLinkBanner />
         <NotificationEnableBanner />
-        <WorkspaceSwitcher />
         <PageContent />
         <BottomNav />
       </div>
