@@ -6,6 +6,7 @@ import {
   HiCreditCard,
   HiEye,
   HiEyeSlash,
+  HiFlag,
   HiPlus,
   HiPencil,
   HiShieldCheck,
@@ -26,6 +27,10 @@ import AccountPlastic, { HIDDEN_AMOUNT } from '../components/accounts/AccountPla
 import PageLoader from '../components/PageLoader';
 import { useConfirm } from '../components/ConfirmDialog';
 import { usePremiumGate } from '../components/PremiumLock';
+import GoalPlastic from '../components/savings/GoalPlastic';
+import GoalSheet from '../components/savings/GoalSheet';
+import GoalFormModal from '../components/savings/GoalFormModal';
+import ContributeModal from '../components/savings/ContributeModal';
 import styles from './HouseholdSpace.module.css';
 
 const HouseholdSpace = () => {
@@ -193,7 +198,7 @@ const FamilyTransactionRow = ({ transaction, cards, categories, onEdit, onDelete
     <div className={styles.transactionRow}>
       <span className={styles.categoryIcon} style={{ background: `${category?.color ?? '#7c3aed'}22` }}>{category?.icon ?? '💸'}</span>
       <div className={styles.transactionMain}>
-        <div><b>{category ? categoryName(category) : t('common.transaction')}</b><span>{formatTime(transaction.createdAt, i18n.language)}</span></div>
+        <div><b>{category ? categoryName(category) : transaction.sourceLabel || t('common.transaction')}</b><span>{formatTime(transaction.createdAt, i18n.language)}</span></div>
         <p>{source} · {transaction.createdByName || t('family.member')}</p>
         {transaction.comment && <small>{transaction.comment}</small>}
       </div>
@@ -278,13 +283,28 @@ const FamilyTransactions = ({ family, onAdd, onEdit }: {
   );
 };
 
+type FamilyGoalOverlay =
+  | { kind: 'sheet'; id: string }
+  | { kind: 'add' }
+  | { kind: 'edit'; id: string }
+  | { kind: 'contribute'; id: string }
+  | null;
+
 const FamilyAccounts = ({ family }: { family: FamilyState }) => {
   const { t } = useTranslation();
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
+  const { confirm, node: confirmNode } = useConfirm();
   const [showAdd, setShowAdd] = useState(false);
+  const [goalOverlay, setGoalOverlay] = useState<FamilyGoalOverlay>(null);
   const shared = family.cards.filter(card => card.isHouseholdAccount);
   const personal = family.cards.filter(card => !card.isHouseholdAccount);
+  const selectedGoal = goalOverlay && 'id' in goalOverlay
+    ? family.goals.find(goal => goal.id === goalOverlay.id)
+    : undefined;
+  const contributionCards = selectedGoal
+    ? family.cards.filter(card => card.currency === selectedGoal.currency)
+    : [];
 
   // Shared accounts follow the same free-plan limits as personal ones.
   const requestAdd = () => {
@@ -293,6 +313,19 @@ const FamilyAccounts = ({ family }: { family: FamilyState }) => {
       return;
     }
     setShowAdd(true);
+  };
+
+  const removeGoal = async (id: string) => {
+    const goal = family.goals.find(item => item.id === id);
+    if (!goal) return;
+    setGoalOverlay(null);
+    const ok = await confirm({
+      title: t('savings.confirm_delete'),
+      message: `${goal.name} · ${formatAmount(goal.savedAmount, goal.currency)} / ${formatAmount(goal.targetAmount, goal.currency)}`,
+      warning: t('common.action_irreversible'),
+      confirmLabel: t('common.delete'),
+    });
+    if (ok) await family.removeGoal(id);
   };
 
   return (
@@ -318,9 +351,53 @@ const FamilyAccounts = ({ family }: { family: FamilyState }) => {
         ))}</div> : <p className={styles.mutedHint}>{t('family.no_shared_cards')}</p>}
       </section>
 
+      <section className={styles.accountSection}>
+        <div className={styles.sectionHeader}>
+          <div><h2>{t('family.shared_goals')}</h2><p>{t('family.shared_goals_hint')}</p></div>
+          <button className={styles.sectionAction} type="button" onClick={() => setGoalOverlay({ kind: 'add' })}>
+            <HiPlus size={15} />{t('common.add')}
+          </button>
+        </div>
+        {family.goals.length ? (
+          <div className={styles.goalList}>
+            {family.goals.map(goal => (
+              <button key={goal.id} type="button" onClick={() => setGoalOverlay({ kind: 'sheet', id: goal.id })}>
+                <GoalPlastic goal={goal} />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button className={styles.goalEmpty} type="button" onClick={() => setGoalOverlay({ kind: 'add' })}>
+            <HiFlag size={24} /><b>{t('family.add_shared_goal')}</b><span>{t('family.add_shared_goal_hint')}</span>
+          </button>
+        )}
+      </section>
+
       {shared.length > 0 && <button className={styles.fab} type="button" onClick={requestAdd}><HiPlus size={20} />{t('family.add_common_account')}</button>}
       {showAdd && <AccountFormModal isPremium={isPremium} onLockedType={() => premiumGate.open('credit_cash')} onAdd={family.addSharedCard} onClose={() => setShowAdd(false)} />}
+      {goalOverlay?.kind === 'sheet' && selectedGoal && (
+        <GoalSheet
+          goal={selectedGoal}
+          onContribute={() => setGoalOverlay({ kind: 'contribute', id: selectedGoal.id })}
+          onEdit={() => setGoalOverlay({ kind: 'edit', id: selectedGoal.id })}
+          onDelete={() => void removeGoal(selectedGoal.id)}
+          onClose={() => setGoalOverlay(null)}
+        />
+      )}
+      {goalOverlay?.kind === 'add' && <GoalFormModal onAdd={family.addGoal} onClose={() => setGoalOverlay(null)} />}
+      {goalOverlay?.kind === 'edit' && selectedGoal && (
+        <GoalFormModal goal={selectedGoal} onUpdate={family.updateGoal} onClose={() => setGoalOverlay(null)} />
+      )}
+      {goalOverlay?.kind === 'contribute' && selectedGoal && (
+        <ContributeModal
+          goal={selectedGoal}
+          cards={contributionCards}
+          onContribute={(amount, cardId) => family.contributeGoal(selectedGoal.id, amount, cardId)}
+          onClose={() => setGoalOverlay(null)}
+        />
+      )}
       {premiumGate.node}
+      {confirmNode}
     </div>
   );
 };

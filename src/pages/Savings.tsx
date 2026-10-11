@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context';
 import { useSavingsGoals } from '../hooks/useSavingsGoals';
+import { useHousehold } from '../hooks/useHousehold';
 import { useCards } from '../hooks/useCards';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumBanner } from '../components/PremiumLock';
@@ -26,8 +27,9 @@ type Overlay =
 /** Savings goals tab of the Accounts page. `addTrigger` bumps when the page FAB is tapped. */
 const Savings = ({ addTrigger, onEmptyChange }: { addTrigger?: number; onEmptyChange?: (empty: boolean) => void }) => {
   const { t } = useTranslation();
-  const { user } = useApp();
+  const { user, setWorkspace, setActiveTab } = useApp();
   const { goals, loading, add, contribute, update, remove } = useSavingsGoals(user?.uid ?? null);
+  const family = useHousehold(user?.uid ?? null);
   const { cards } = useCards(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
@@ -35,7 +37,7 @@ const Savings = ({ addTrigger, onEmptyChange }: { addTrigger?: number; onEmptyCh
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [showDone, setShowDone] = useState(false);
 
-  const isEmpty = !loading && goals.length === 0;
+  const isEmpty = !loading && goals.length === 0 && family.goals.length === 0;
   useEffect(() => { onEmptyChange?.(isEmpty); }, [isEmpty, onEmptyChange]);
 
   const requestAdd = () => {
@@ -73,7 +75,7 @@ const Savings = ({ addTrigger, onEmptyChange }: { addTrigger?: number; onEmptyCh
     <>
       {!isPremium && <PremiumBanner feature="savings" />}
 
-      {goals.length === 0 ? (
+      {goals.length === 0 && family.goals.length === 0 ? (
         <EmptyState
           title={t('savings.empty')}
           hint={t('savings.empty_hint')}
@@ -114,6 +116,26 @@ const Savings = ({ addTrigger, onEmptyChange }: { addTrigger?: number; onEmptyCh
                   ))}
                 </PlasticStack>
               )}
+            </PlasticSection>
+          )}
+          {family.goals.length > 0 && (
+            <PlasticSection
+              title={`${t('family.shared_goals')} · ${family.household?.name ?? t('family.shared')}`}
+              count={family.goals.length}
+              total={formatTotalsByCurrency(family.goals, item => item.savedAmount)}
+            >
+              <PlasticStack>
+                {family.goals.map(sharedGoal => (
+                  <PlasticItem
+                    key={sharedGoal.id}
+                    index={index++}
+                    label={sharedGoal.name}
+                    onOpen={() => { setWorkspace('household'); setActiveTab('cards'); }}
+                  >
+                    <GoalPlastic goal={sharedGoal} />
+                  </PlasticItem>
+                ))}
+              </PlasticStack>
             </PlasticSection>
           )}
         </PlasticList>

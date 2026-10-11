@@ -306,6 +306,9 @@ export interface SavingsGoal {
   deadline: number;  // timestamp
   color?: string;    // ACCOUNT_COLORS key; unset = auto by name
   userId: string;
+  scope?: 'personal' | 'household';
+  householdId?: string;
+  createdBy?: string;
   createdAt: number;
 }
 

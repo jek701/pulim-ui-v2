@@ -35,6 +35,7 @@ export const qk = {
   household: (uid: string) => ['household', uid] as const,
   householdTransactions: (uid: string) => ['householdTransactions', uid] as const,
   householdCards: (uid: string) => ['householdCards', uid] as const,
+  householdGoals: (uid: string) => ['householdGoals', uid] as const,
   householdCategories: (uid: string) => ['householdCategories', uid] as const,
   householdBudgets: (uid: string) => ['householdBudgets', uid] as const,
 };
