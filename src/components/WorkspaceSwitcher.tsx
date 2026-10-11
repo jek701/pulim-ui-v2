@@ -268,16 +268,21 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
   const { t } = useTranslation();
   const { user } = useApp();
   const family = useHousehold(user?.uid ?? null);
+  const canPick = Boolean(telegramApp?.requestChat) && tgAtLeast('9.6');
+  const canShareCard = Boolean(telegramApp?.shareMessage) && tgAtLeast('8.0');
   const [busy, setBusy] = useState<'pick' | 'share' | null>(null);
+  const [preparedPick, setPreparedPick] = useState<{ buttonId: string; token: string } | null>(null);
+  const [preparingPick, setPreparingPick] = useState(canPick);
   const [pick, setPick] = useState<PickState | null>(null);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
-
-  const canPick = Boolean(telegramApp?.requestChat) && tgAtLeast('9.6');
-  const canShareCard = Boolean(telegramApp?.shareMessage) && tgAtLeast('8.0');
+  const pickPreparationStarted = useRef(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
 
   const ensureInvite = async () => {
     if (invite) return invite;
@@ -289,6 +294,25 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
   const showError = (err: unknown) => {
     setError(err instanceof ApiError && err.code === 'INVITE_LIMIT' ? t('family.invite_limit') : t('family.invite_error'));
   };
+
+  // Telegram opens native pickers only from a live user gesture. Prepare the bot-side
+  // button while the panel is visible so the click itself can call requestChat directly.
+  useEffect(() => {
+    if (!canPick || pickPreparationStarted.current) return;
+    pickPreparationStarted.current = true;
+    setPreparingPick(true);
+    void (async () => {
+      try {
+        const current = await ensureInvite();
+        const { buttonId } = await family.prepareInvitePick(current.token);
+        if (alive.current) setPreparedPick({ buttonId, token: current.token });
+      } catch (err) {
+        if (alive.current) showError(err);
+      } finally {
+        if (alive.current) setPreparingPick(false);
+      }
+    })();
+  }, [canPick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const watchDelivery = async (token: string) => {
     for (let attempt = 0; attempt < PICK_POLL_ATTEMPTS; attempt += 1) {
@@ -304,21 +328,17 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
     if (alive.current) setPick({ phase: 'timeout' });
   };
 
-  const pickContact = async () => {
-    if (!telegramApp?.requestChat) return;
-    setBusy('pick'); setError(''); setPick(null);
+  const pickContact = () => {
+    if (!telegramApp?.requestChat || !preparedPick) return;
+    setError(''); setPick(null);
     try {
-      const current = await ensureInvite();
-      const { buttonId } = await family.prepareInvitePick(current.token);
-      telegramApp.requestChat(buttonId, picked => {
+      telegramApp.requestChat(preparedPick.buttonId, picked => {
         if (!picked) return;
         setPick({ phase: 'waiting' });
-        void watchDelivery(current.token);
+        void watchDelivery(preparedPick.token);
       });
     } catch (err) {
       showError(err);
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -371,9 +391,17 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
     <div className={styles.invitePanel}>
       <p className={styles.inviteTitle}>{t('family.invite_partner')}</p>
       {canPick && (
-        <button className={styles.inviteAction} type="button" disabled={busy !== null} onClick={pickContact}>
+        <button
+          className={styles.inviteAction}
+          type="button"
+          disabled={busy !== null || preparingPick || !preparedPick}
+          onClick={pickContact}
+        >
           <span className={styles.inviteActionIcon}><HiUserPlus size={19} /></span>
-          <span><b>{t('family.pick_contact')}</b><small>{t('family.pick_contact_hint')}</small></span>
+          <span>
+            <b>{t('family.pick_contact')}</b>
+            <small>{preparingPick ? t('family.pick_contact_preparing') : t('family.pick_contact_hint')}</small>
+          </span>
         </button>
       )}
       <button

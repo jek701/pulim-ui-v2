@@ -1065,6 +1065,7 @@ const en = {
     joining: 'Joining…',
     invite_partner: 'Invite partner',
     pick_contact: 'Choose from contacts',
+    pick_contact_preparing: 'Preparing the contact picker…',
     pick_contact_hint: 'Your partner gets a notification from the Pulim bot',
     send_to_chat: 'Send invitation to a chat',
     send_to_chat_hint: 'A message with a button is sent from you',

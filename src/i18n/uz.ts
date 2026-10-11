@@ -1064,6 +1064,7 @@ const uz = {
         joining: 'Ulanmoqda…',
         invite_partner: 'Juftingizni taklif qilish',
         pick_contact: 'Kontaktlardan tanlash',
+        pick_contact_preparing: 'Kontaktlar ro‘yxati tayyorlanmoqda…',
         pick_contact_hint: 'Juftingizga Pulim botidan xabar boradi',
         send_to_chat: 'Taklifni chatga yuborish',
         send_to_chat_hint: 'Tugmali xabar sizning nomingizdan yuboriladi',
