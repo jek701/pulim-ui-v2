@@ -1116,6 +1116,8 @@ const en = {
     settings: 'Family settings',
     members: 'Members',
     members_hint: 'A family budget has two equal participants.',
+    edit_your_name: 'Edit your name',
+    member_name_hint: 'Each participant sets their own name. It updates throughout the shared budget.',
     personal_card_access: 'Personal card access',
     personal_card_access_hint: 'Allow a card to be used for tracking family purchases.',
     hide_balance: 'Hide balance from partner',

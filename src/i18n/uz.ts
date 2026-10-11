@@ -1115,6 +1115,8 @@ const uz = {
         settings: 'Oila sozlamalari',
         members: 'Ishtirokchilar',
         members_hint: 'Oilaviy byudjetda ikki teng huquqli ishtirokchi bor.',
+        edit_your_name: 'Ismingizni o‘zgartirish',
+        member_name_hint: 'Har bir ishtirokchi o‘z ismini kiritadi. U umumiy byudjetning barcha joyida yangilanadi.',
         personal_card_access: 'Shaxsiy kartalarga kirish',
         personal_card_access_hint: 'Tanlangan kartadan oilaviy xarajatlarni hisobga olishga ruxsat bering.',
         hide_balance: 'Balansni juftingizdan yashirish',

@@ -7,6 +7,7 @@ import {
   HiEye,
   HiEyeSlash,
   HiPlus,
+  HiPencil,
   HiShieldCheck,
   HiTrash,
   HiUsers,
@@ -307,8 +308,30 @@ const FamilyAccounts = ({ family }: { family: FamilyState }) => {
 
 const FamilySettings = ({ family }: { family: FamilyState }) => {
   const { t } = useTranslation();
-  const { user } = useApp();
+  const { user, saveProfile } = useApp();
   const personalCards = useCards(user?.uid ?? null);
+  const ownMember = family.household?.members.find(member => member.userId === user?.uid);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(ownMember?.name ?? '');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState(false);
+
+  const saveName = async () => {
+    const name = nameDraft.trim();
+    if (!name || nameSaving) return;
+    setNameSaving(true);
+    setNameError(false);
+    try {
+      await saveProfile({ name });
+      await family.refresh();
+      setEditingName(false);
+    } catch {
+      setNameError(true);
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.pageTitle}><div><p>{t('family.shared_budget')}</p><h1>{t('family.settings')}</h1></div><HiUsers size={24} /></header>
@@ -316,8 +339,42 @@ const FamilySettings = ({ family }: { family: FamilyState }) => {
       <section className={styles.settingsCard}>
         <div className={styles.settingsHeading}><div><h2>{t('family.members')}</h2><p>{t('family.members_hint')}</p></div><span>{family.household?.members.length}/2</span></div>
         <div className={styles.memberGrid}>{family.household?.members.map(member => (
-          <div key={member.userId}><span>{member.name.slice(0, 1).toUpperCase()}</span><b>{member.name}</b><small>{t(`family.role_${member.role}`)}</small></div>
+          <div key={member.userId}>
+            <span>{member.name.slice(0, 1).toUpperCase()}</span>
+            <b>{member.name}</b>
+            <small>{t(`family.role_${member.role}`)}</small>
+            {member.userId === user?.uid && (
+              <button
+                className={styles.memberEdit}
+                type="button"
+                aria-label={t('family.edit_your_name')}
+                onClick={() => {
+                  setNameDraft(member.name);
+                  setNameError(false);
+                  setEditingName(value => !value);
+                }}
+              ><HiPencil size={13} />{t('common.edit')}</button>
+            )}
+          </div>
         ))}</div>
+        {editingName && (
+          <div className={styles.memberNameEditor}>
+            <p>{t('family.member_name_hint')}</p>
+            <div>
+              <input
+                autoFocus
+                value={nameDraft}
+                maxLength={60}
+                onChange={event => setNameDraft(event.target.value)}
+                onKeyDown={event => { if (event.key === 'Enter') void saveName(); }}
+              />
+              <button type="button" disabled={!nameDraft.trim() || nameSaving} onClick={() => void saveName()}>
+                {nameSaving ? t('common.saving') : t('common.save')}
+              </button>
+            </div>
+            {nameError && <span>{t('common.error_save')}</span>}
+          </div>
+        )}
       </section>
 
       <section className={styles.settingsCard}>
