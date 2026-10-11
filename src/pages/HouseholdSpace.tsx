@@ -32,26 +32,30 @@ const HouseholdSpace = () => {
   const { user, activeTab } = useApp();
   const family = useHousehold(user?.uid ?? null);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   if (family.householdLoading || (family.household && family.spaceLoading)) return <PageLoader />;
   if (!family.household) return null;
 
-  const addModal = showAddTransaction && (
+  const transactionModal = (showAddTransaction || editingTransaction) && (
     <AddTransactionModal
       categories={family.categories}
       subcategories={[]}
       cards={family.cards}
       cardOrder={[]}
-      onAdd={family.addTransaction}
-      onClose={() => setShowAddTransaction(false)}
+      initialData={editingTransaction ?? undefined}
+      onAdd={editingTransaction
+        ? data => family.updateTransaction(editingTransaction.id, data)
+        : family.addTransaction}
+      onClose={() => { setShowAddTransaction(false); setEditingTransaction(null); }}
       onSaveCardOrder={async () => undefined}
     />
   );
 
-  if (activeTab === 'transactions') return <><FamilyTransactions family={family} onAdd={() => setShowAddTransaction(true)} />{addModal}</>;
+  if (activeTab === 'transactions') return <><FamilyTransactions family={family} onAdd={() => setShowAddTransaction(true)} onEdit={setEditingTransaction} />{transactionModal}</>;
   if (activeTab === 'cards') return <FamilyAccounts family={family} />;
   if (activeTab === 'settings') return <FamilySettings family={family} />;
-  return <><FamilyHome family={family} onAdd={() => setShowAddTransaction(true)} />{addModal}</>;
+  return <><FamilyHome family={family} onAdd={() => setShowAddTransaction(true)} />{transactionModal}</>;
 };
 
 type FamilyState = ReturnType<typeof useHousehold>;
@@ -169,10 +173,11 @@ const FamilyHome = ({ family, onAdd }: { family: FamilyState; onAdd: () => void 
   );
 };
 
-const FamilyTransactionRow = ({ transaction, cards, categories, onDelete }: {
+const FamilyTransactionRow = ({ transaction, cards, categories, onEdit, onDelete }: {
   transaction: Transaction;
   cards: Card[];
   categories: Category[];
+  onEdit?: () => void;
   onDelete?: () => void;
 }) => {
   const { t, i18n } = useTranslation();
@@ -196,13 +201,20 @@ const FamilyTransactionRow = ({ transaction, cards, categories, onDelete }: {
         <b className={transaction.type === 'income' ? styles.positive : styles.negative}>
           {transaction.type === 'income' ? '+' : '−'}{formatAmount(transaction.amount, transaction.currency)}
         </b>
-        {onDelete && <button type="button" aria-label={t('common.delete')} onClick={onDelete}><HiTrash size={14} /></button>}
+        {(onEdit || onDelete) && <div className={styles.transactionActions}>
+          {onEdit && <button type="button" aria-label={t('common.edit')} onClick={onEdit}><HiPencil size={14} /></button>}
+          {onDelete && <button type="button" aria-label={t('common.delete')} onClick={onDelete}><HiTrash size={14} /></button>}
+        </div>}
       </div>
     </div>
   );
 };
 
-const FamilyTransactions = ({ family, onAdd }: { family: FamilyState; onAdd: () => void }) => {
+const FamilyTransactions = ({ family, onAdd, onEdit }: {
+  family: FamilyState;
+  onAdd: () => void;
+  onEdit: (transaction: Transaction) => void;
+}) => {
   const { t, i18n } = useTranslation();
   const { confirm, node } = useConfirm();
   const [monthOffset, setMonthOffset] = useState(0);
@@ -248,7 +260,14 @@ const FamilyTransactions = ({ family, onAdd }: { family: FamilyState; onAdd: () 
           <p>{label}</p>
           <div className={styles.transactionList}>
             {items.map(transaction => (
-              <FamilyTransactionRow key={transaction.id} transaction={transaction} cards={family.cards} categories={family.categories} onDelete={() => remove(transaction)} />
+              <FamilyTransactionRow
+                key={transaction.id}
+                transaction={transaction}
+                cards={family.cards}
+                categories={family.categories}
+                onEdit={transaction.source ? undefined : () => onEdit(transaction)}
+                onDelete={transaction.source ? undefined : () => remove(transaction)}
+              />
             ))}
           </div>
         </section>

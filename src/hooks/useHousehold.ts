@@ -73,6 +73,10 @@ export function useHousehold(userId: string | null) {
     await api.post('/v1/households/current/transactions', data);
     await invalidateHousehold();
   };
+  const updateTransaction = async (id: string, data: NewTransaction) => {
+    await api.patch(`/v1/households/current/transactions/${id}`, data);
+    await invalidateHousehold();
+  };
   const removeTransaction = async (id: string) => {
     await api.del(`/v1/households/current/transactions/${id}`);
     await invalidateHousehold();
@@ -106,6 +110,7 @@ export function useHousehold(userId: string | null) {
     getInviteStatus,
     acceptInvite,
     addTransaction,
+    updateTransaction,
     removeTransaction,
     addSharedCard,
     setCardAccess,

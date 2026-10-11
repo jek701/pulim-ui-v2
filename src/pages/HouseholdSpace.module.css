@@ -48,9 +48,10 @@
 .transactionMain b { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }
 .transactionMain > div span { color: var(--text3); font-size: 9px; }
 .transactionMain p, .transactionMain small { display: block; margin-top: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text3); font-size: 10px; }
-.transactionAmount { display: flex; align-items: center; gap: 6px; }
+.transactionAmount { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .transactionAmount > b { font-size: 12px; white-space: nowrap; }
-.transactionAmount button { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: var(--text3); background: var(--surface2); }
+.transactionActions { display: flex; gap: 4px; }
+.transactionActions button { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: var(--text3); background: var(--surface2); }
 .positive { color: var(--income) !important; }
 .negative { color: var(--expense) !important; }
 
