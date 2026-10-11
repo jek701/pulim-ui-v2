@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HiCheck, HiCheckCircle, HiChevronDown, HiClipboardDocument, HiPaperAirplane, HiPlus, HiUser, HiUserPlus, HiUsers } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context';
@@ -241,14 +241,6 @@ const FamilySetup = ({ inviteToken, onInviteHandled, onClose }: {
   );
 };
 
-type PickState =
-  | { phase: 'waiting' }
-  | { phase: 'delivered' | 'not_delivered'; name: string }
-  | { phase: 'timeout' };
-
-const PICK_POLL_MS = 1500;
-const PICK_POLL_ATTEMPTS = 14;
-
 /** Never derived from window.location: inside Telegram its hash carries signed tgWebAppData. */
 const fallbackInviteLink = (token: string) => {
   const url = new URL('/', window.location.origin);
@@ -268,21 +260,12 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
   const { t } = useTranslation();
   const { user } = useApp();
   const family = useHousehold(user?.uid ?? null);
-  const canPick = Boolean(telegramApp?.requestChat) && tgAtLeast('9.6');
   const canShareCard = Boolean(telegramApp?.shareMessage) && tgAtLeast('8.0');
+  const canPick = canShareCard;
   const [busy, setBusy] = useState<'pick' | 'share' | null>(null);
-  const [preparedPick, setPreparedPick] = useState<{ buttonId: string; token: string } | null>(null);
-  const [preparingPick, setPreparingPick] = useState(canPick);
-  const [pick, setPick] = useState<PickState | null>(null);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
-  const alive = useRef(true);
-  const pickPreparationStarted = useRef(false);
-  useEffect(() => {
-    alive.current = true;
-    return () => { alive.current = false; };
-  }, []);
 
   const ensureInvite = async () => {
     if (invite) return invite;
@@ -295,53 +278,6 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
     setError(err instanceof ApiError && err.code === 'INVITE_LIMIT' ? t('family.invite_limit') : t('family.invite_error'));
   };
 
-  // Telegram opens native pickers only from a live user gesture. Prepare the bot-side
-  // button while the panel is visible so the click itself can call requestChat directly.
-  useEffect(() => {
-    if (!canPick || pickPreparationStarted.current) return;
-    pickPreparationStarted.current = true;
-    setPreparingPick(true);
-    void (async () => {
-      try {
-        const current = await ensureInvite();
-        const { buttonId } = await family.prepareInvitePick(current.token);
-        if (alive.current) setPreparedPick({ buttonId, token: current.token });
-      } catch (err) {
-        if (alive.current) showError(err);
-      } finally {
-        if (alive.current) setPreparingPick(false);
-      }
-    })();
-  }, [canPick]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const watchDelivery = async (token: string) => {
-    for (let attempt = 0; attempt < PICK_POLL_ATTEMPTS; attempt += 1) {
-      await new Promise(resolve => window.setTimeout(resolve, PICK_POLL_MS));
-      if (!alive.current) return;
-      const status = await family.getInviteStatus(token).catch(() => null);
-      const delivery = status?.delivery;
-      if (delivery?.status === 'delivered' || delivery?.status === 'not_delivered') {
-        setPick({ phase: delivery.status, name: delivery.recipientName || t('family.member') });
-        return;
-      }
-    }
-    if (alive.current) setPick({ phase: 'timeout' });
-  };
-
-  const pickContact = () => {
-    if (!telegramApp?.requestChat || !preparedPick) return;
-    setError(''); setPick(null);
-    try {
-      telegramApp.requestChat(preparedPick.buttonId, picked => {
-        if (!picked) return;
-        setPick({ phase: 'waiting' });
-        void watchDelivery(preparedPick.token);
-      });
-    } catch (err) {
-      showError(err);
-    }
-  };
-
   const shareLink = async (current: HouseholdInvite) => {
     const link = linkOf(current);
     const text = t('family.share_text', { name: householdName });
@@ -351,6 +287,20 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
       await navigator.share({ text, url: link }).catch(() => undefined);
     } else {
       await copy(current);
+    }
+  };
+
+  const pickContact = async () => {
+    if (!telegramApp?.shareMessage) return;
+    setBusy('pick'); setError('');
+    try {
+      const current = await ensureInvite();
+      const { messageId } = await family.prepareInviteShare(current.token);
+      telegramApp.shareMessage(messageId, sent => { if (sent) setShared(true); });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -394,14 +344,11 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
         <button
           className={styles.inviteAction}
           type="button"
-          disabled={busy !== null || preparingPick || !preparedPick}
-          onClick={pickContact}
+          disabled={busy !== null}
+          onClick={() => void pickContact()}
         >
           <span className={styles.inviteActionIcon}><HiUserPlus size={19} /></span>
-          <span>
-            <b>{t('family.pick_contact')}</b>
-            <small>{preparingPick ? t('family.pick_contact_preparing') : t('family.pick_contact_hint')}</small>
-          </span>
+          <span><b>{t('family.pick_contact')}</b><small>{t('family.pick_contact_hint')}</small></span>
         </button>
       )}
       <button
@@ -419,16 +366,6 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
         <small>{t('family.link_valid')}</small>
       </button>
 
-      {pick?.phase === 'waiting' && <p className={styles.inviteStatus}>{t('family.invite_sending')}</p>}
-      {pick?.phase === 'delivered' && (
-        <p className={`${styles.inviteStatus} ${styles.inviteStatusOk}`}>
-          <HiCheckCircle size={17} />{t('family.invite_delivered', { name: pick.name })}
-        </p>
-      )}
-      {pick?.phase === 'not_delivered' && (
-        <p className={styles.inviteStatus}>{t('family.invite_not_delivered', { name: pick.name })}</p>
-      )}
-      {pick?.phase === 'timeout' && <p className={styles.inviteStatus}>{t('family.invite_timeout')}</p>}
       {shared && (
         <p className={`${styles.inviteStatus} ${styles.inviteStatusOk}`}>
           <HiCheckCircle size={17} />{t('family.invite_shared')}

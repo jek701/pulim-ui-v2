@@ -5,6 +5,7 @@ import { useApp } from '../context';
 import { api } from '../api/client';
 import { qk } from '../api/queryClient';
 import type { Tab } from '../types';
+import { navTabsForWorkspace } from '../utils/tabNavigation';
 import styles from './BottomNav.module.css';
 
 /**
@@ -55,11 +56,19 @@ const BottomNav = () => {
     { id: 'subscriptions', label: t('nav.subs'),      Icon: HiArrowPath },
     { id: 'settings',      label: t('nav.settings'),  Icon: HiCog6Tooth },
   ];
-  const familyTabs = personalTabs.filter(tab => tab.id !== 'subscriptions');
-  const TABS = workspace === 'household' ? familyTabs : personalTabs;
+  const navTabs = navTabsForWorkspace(workspace);
+  const TABS = navTabs.map(id => personalTabs.find(tab => tab.id === id)!);
+  const activeIndex = navTabs.indexOf(activeTab);
 
   return (
-    <nav className={styles.nav}>
+    <nav
+      className={styles.nav}
+      style={{
+        '--tab-count': TABS.length,
+        '--indicator-x': `${Math.max(0, activeIndex) * 100}%`,
+      } as React.CSSProperties}
+    >
+      <span className={`${styles.activeIndicator} ${activeIndex < 0 ? styles.activeIndicatorHidden : ''}`} aria-hidden="true" />
       {TABS.map(({ id, label, Icon }) => (
         <button
           key={id}

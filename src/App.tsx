@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppProvider, useApp } from './context';
 import { queryClient } from './api/queryClient';
@@ -23,18 +23,38 @@ import PhoneNameSetup from './pages/PhoneNameSetup';
 import HouseholdSpace from './pages/HouseholdSpace';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import { useDevNotesAccess } from './hooks/useDevNotes';
+import { adjacentNavTab } from './utils/tabNavigation';
 import styles from './App.module.css';
 
 // Owner-only feedback widget: never downloaded unless the server enables it for this uid.
 const DevNotesRoot = lazy(() => import('./devNotes/DevNotesRoot'));
 
 const PageContent = () => {
-  const { activeTab, workspace } = useApp();
-  if (workspace === 'household') {
-    return <div key={`household-${activeTab}`} className={styles.pageAnim}><HouseholdSpace /></div>;
-  }
-  return (
-    <div key={activeTab} className={styles.pageAnim}>
+  const { activeTab, setActiveTab, tabTransitionDirection, workspace } = useApp();
+  const gesture = useRef<{ pointerId: number; x: number; y: number } | null>(null);
+  const lastWheelSwitch = useRef(0);
+  const transitionClass = tabTransitionDirection === 'forward'
+    ? styles.pageForward
+    : tabTransitionDirection === 'backward' ? styles.pageBackward : '';
+
+  const switchBy = (direction: -1 | 1) => {
+    const next = adjacentNavTab(activeTab, workspace, direction);
+    if (next) setActiveTab(next);
+  };
+
+  const ignoresTabSwipe = (target: EventTarget | null, boundary: HTMLElement) => {
+    let element = target instanceof Element ? target : null;
+    while (element && element !== boundary) {
+      if (element.matches('button, a, input, textarea, select, [role="dialog"], [data-tab-swipe="ignore"]')) return true;
+      const style = window.getComputedStyle(element);
+      if (/(auto|scroll)/.test(style.overflowX) && element.scrollWidth > element.clientWidth + 4) return true;
+      element = element.parentElement;
+    }
+    return false;
+  };
+
+  const page = workspace === 'household' ? <HouseholdSpace /> : (
+    <>
       {activeTab === 'home'         && <Home />}
       {activeTab === 'transactions' && <Transactions />}
       {activeTab === 'cards'        && <Accounts />}
@@ -42,6 +62,38 @@ const PageContent = () => {
       {activeTab === 'charts'        && <Charts />}
       {activeTab === 'calendar'      && <Calendar />}
       {activeTab === 'settings'     && <Settings />}
+    </>
+  );
+
+  return (
+    <div
+      className={styles.pageViewport}
+      onPointerDown={event => {
+        if (event.pointerType === 'mouse' || ignoresTabSwipe(event.target, event.currentTarget)) return;
+        gesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+      }}
+      onPointerUp={event => {
+        const start = gesture.current;
+        gesture.current = null;
+        if (!start || start.pointerId !== event.pointerId) return;
+        const dx = event.clientX - start.x;
+        const dy = event.clientY - start.y;
+        if (Math.abs(dx) < 52 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+        switchBy(dx < 0 ? 1 : -1);
+      }}
+      onPointerCancel={() => { gesture.current = null; }}
+      onWheel={event => {
+        if (ignoresTabSwipe(event.target, event.currentTarget)) return;
+        if (Math.abs(event.deltaX) < 48 || Math.abs(event.deltaX) < Math.abs(event.deltaY) * 1.2) return;
+        const now = Date.now();
+        if (now - lastWheelSwitch.current < 450) return;
+        lastWheelSwitch.current = now;
+        switchBy(event.deltaX > 0 ? 1 : -1);
+      }}
+    >
+      <div key={`${workspace}-${activeTab}`} className={`${styles.pageAnim} ${transitionClass}`}>
+        {page}
+      </div>
     </div>
   );
 };
