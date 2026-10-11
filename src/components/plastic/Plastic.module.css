@@ -129,8 +129,6 @@
 .bottom {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
 }
 
 .amountWrap {
@@ -165,9 +163,8 @@
 .chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 4px;
-  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .chip {
@@ -229,6 +226,7 @@
 .lg .circles i { width: 26px; height: 26px; }
 .lg .circles i + i { margin-left: -10px; }
 .lg .name { font-size: 17px; margin-top: auto; margin-bottom: 4px; }
+.lg .chips { margin-bottom: 5px; }
 .lg .amount { font-size: 28px; }
 .lg .cur { font-size: 14px; }
 

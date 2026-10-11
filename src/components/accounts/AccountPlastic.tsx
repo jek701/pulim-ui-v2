@@ -35,6 +35,8 @@ const AccountPlastic = ({ card, size = 'sm', hidden, placeholderName, className,
   const usedPct = isCredit && limit > 0 ? Math.min(100, Math.max(0, (card.balance / limit) * 100)) : 0;
   const excluded = !isCredit && card.includeInTotalBalance === false;
   const network = detectCardNetwork(card);
+  const familyChip = card.familyAccess?.enabled || card.isHouseholdAccount;
+  const hasChips = familyChip || excluded || (isCredit && Boolean(card.dueDay));
 
   const topLabel = (!isCash && card.bank.trim()) || t(`accounts.type_${card.cardType}_title`);
 
@@ -61,16 +63,9 @@ const AccountPlastic = ({ card, size = 'sm', hidden, placeholderName, className,
         {card.name.trim() || placeholderName}
       </p>
 
-      <div className={styles.bottom}>
-        <div className={styles.amountWrap}>
-          {isCredit && <span className={styles.amountLabel}>{t('accounts.available')}</span>}
-          <span className={styles.amount}>
-            {hidden ? HIDDEN_AMOUNT : fmt(available)}
-            <span className={styles.cur}>{card.currency}</span>
-          </span>
-        </div>
+      {hasChips && (
         <div className={styles.chips}>
-          {(card.familyAccess?.enabled || card.isHouseholdAccount) && (
+          {familyChip && (
             <span className={styles.chip}>
               <HiUsers size={12} /> {t(card.isHouseholdAccount ? 'family.common_chip' : 'family.connected_chip')}
             </span>
@@ -83,6 +78,16 @@ const AccountPlastic = ({ card, size = 'sm', hidden, placeholderName, className,
           {isCredit && card.dueDay && (
             <span className={styles.chip}>{t('accounts.due_chip', { day: card.dueDay })}</span>
           )}
+        </div>
+      )}
+
+      <div className={styles.bottom}>
+        <div className={styles.amountWrap}>
+          {isCredit && <span className={styles.amountLabel}>{t('accounts.available')}</span>}
+          <span className={styles.amount}>
+            {hidden ? HIDDEN_AMOUNT : fmt(available)}
+            <span className={styles.cur}>{card.currency}</span>
+          </span>
         </div>
       </div>
 
