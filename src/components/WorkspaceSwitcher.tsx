@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { HiCheck, HiCheckCircle, HiClipboardDocument, HiPaperAirplane, HiPlus, HiUser, HiUserPlus, HiUsers } from 'react-icons/hi2';
+import { HiCheck, HiCheckCircle, HiChevronDown, HiClipboardDocument, HiPaperAirplane, HiPlus, HiUser, HiUserPlus, HiUsers } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context';
 import { useHousehold } from '../hooks/useHousehold';
@@ -41,6 +41,7 @@ const WorkspaceSwitcher = () => {
   const family = useHousehold(user?.uid ?? null);
   const [inviteToken, setInviteToken] = useState<string | null>(inviteTokenFromLaunch);
   const [showSetup, setShowSetup] = useState(() => Boolean(inviteToken));
+  const [showChooser, setShowChooser] = useState(false);
 
   useEffect(() => {
     if (!family.householdLoading && workspace === 'household' && !family.household) {
@@ -49,6 +50,7 @@ const WorkspaceSwitcher = () => {
   }, [family.household, family.householdLoading, setWorkspace, workspace]);
 
   const openFamily = () => {
+    setShowChooser(false);
     if (family.household) setWorkspace('household');
     else setShowSetup(true);
   };
@@ -56,35 +58,54 @@ const WorkspaceSwitcher = () => {
   return (
     <>
       <div className={styles.wrap}>
-        <div className={styles.switcher} role="tablist" aria-label={t('family.workspace_label')}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={workspace === 'personal'}
-            className={`${styles.option} ${workspace === 'personal' ? styles.active : ''}`}
-            onClick={() => setWorkspace('personal')}
-          >
-            <HiUser size={15} />
-            <span>{t('family.personal')}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={workspace === 'household'}
-            className={`${styles.option} ${workspace === 'household' ? styles.familyActive : ''}`}
-            onClick={openFamily}
-          >
-            {family.household ? <HiUsers size={16} /> : <HiPlus size={16} />}
-            <span>{family.household?.name || t('family.shared')}</span>
-          </button>
-        </div>
-        {workspace === 'household' && family.household && (
-          <button className={styles.manage} type="button" onClick={() => setShowSetup(true)}>
-            <span>{family.household.members.length}/2</span>
-            <HiUsers size={16} />
-          </button>
-        )}
+        <button
+          className={`${styles.current} ${workspace === 'household' ? styles.currentFamily : ''}`}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={showChooser}
+          onClick={() => setShowChooser(true)}
+        >
+          {workspace === 'household' ? <HiUsers size={15} /> : <HiUser size={15} />}
+          <span>{workspace === 'household' ? family.household?.name || t('family.shared') : t('family.personal')}</span>
+          <HiChevronDown size={14} />
+        </button>
       </div>
+
+      {showChooser && (
+        <Modal title={t('family.workspace_label')} onClose={() => setShowChooser(false)}>
+          <div className={styles.workspaceList} role="list">
+            <button
+              type="button"
+              className={workspace === 'personal' ? styles.workspaceActive : ''}
+              onClick={() => { setWorkspace('personal'); setShowChooser(false); }}
+            >
+              <span className={styles.workspaceIcon}><HiUser size={20} /></span>
+              <span><b>{t('family.personal')}</b><small>{t('family.personal_workspace_hint')}</small></span>
+              {workspace === 'personal' && <HiCheck size={18} />}
+            </button>
+            <button
+              type="button"
+              className={workspace === 'household' ? styles.workspaceActive : ''}
+              onClick={openFamily}
+            >
+              <span className={`${styles.workspaceIcon} ${styles.workspaceFamilyIcon}`}>
+                {family.household ? <HiUsers size={20} /> : <HiPlus size={20} />}
+              </span>
+              <span><b>{family.household?.name || t('family.shared')}</b><small>{t('family.family_workspace_hint')}</small></span>
+              {workspace === 'household' && <HiCheck size={18} />}
+            </button>
+          </div>
+          {family.household && (
+            <button
+              className={styles.secondary}
+              type="button"
+              onClick={() => { setShowChooser(false); setShowSetup(true); }}
+            >
+              <HiUsers size={17} />{t('family.manage_members')}
+            </button>
+          )}
+        </Modal>
+      )}
 
       {showSetup && (
         <FamilySetup
