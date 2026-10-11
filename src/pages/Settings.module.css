@@ -451,6 +451,58 @@
   background: var(--surface);
 }
 
+.accountNameEditor {
+  margin-top: 10px;
+  padding: 15px;
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+.accountNameEditor > label {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.accountNameEditor > p {
+  margin-top: 4px;
+  color: var(--text3);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.accountNameEditor > div {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.accountNameEditor input {
+  min-width: 0;
+  flex: 1;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.accountNameEditor button {
+  min-width: 92px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accountNameEditor button:disabled { opacity: .45; }
+.accountNameEditor > span { display: block; margin-top: 8px; color: var(--expense); font-size: 11px; }
+
 .methodList,
 .languageList {
   overflow: hidden;

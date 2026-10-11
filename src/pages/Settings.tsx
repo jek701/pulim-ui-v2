@@ -1,4 +1,4 @@
-import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
     HiArrowRightOnRectangle,
@@ -149,6 +149,9 @@ const Settings = () => {
     const [view, setView] = useState<SettingsView>('home');
     const pageRef = useRef<HTMLDivElement>(null);
     const [editingProfile, setEditingProfile] = useState(false);
+    const [profileName, setProfileName] = useState(profile?.name ?? '');
+    const [profileNameSaving, setProfileNameSaving] = useState(false);
+    const [profileNameError, setProfileNameError] = useState(false);
     const {
         categories,
         subcategories,
@@ -293,6 +296,25 @@ const Settings = () => {
     const aiUsageLine = isPremium
         ? t('settings.sub_premium_active')
         : t('premium.ai_usage_banner', {used: aiUsed, limit: 10});
+
+    useEffect(() => {
+        setProfileName(profile?.name ?? '');
+    }, [profile?.name]);
+
+    const saveProfileName = async () => {
+        const name = profileName.trim();
+        if (!name || profileNameSaving) return;
+        setProfileNameSaving(true);
+        setProfileNameError(false);
+        try {
+            await saveProfile({name});
+            setProfileName(name);
+        } catch {
+            setProfileNameError(true);
+        } finally {
+            setProfileNameSaving(false);
+        }
+    };
 
     useLayoutEffect(() => {
         if (pageRef.current) pageRef.current.scrollTop = 0;
@@ -547,7 +569,31 @@ const Settings = () => {
                     <span className={styles.profileInfo}>
             <span className={styles.profileEmail}>{accountName}</span>
             {profileContact && <span className={styles.profileContact}>{profileContact}</span>}
-          </span>
+                    </span>
+                </div>
+                <div className={styles.accountNameEditor}>
+                    <label htmlFor="profile-name">{t('settings.profile_name_label')}</label>
+                    <p>{t('settings.profile_name_hint')}</p>
+                    <div>
+                        <input
+                            id="profile-name"
+                            value={profileName}
+                            maxLength={60}
+                            placeholder={t('settings.profile_name_placeholder')}
+                            onChange={event => setProfileName(event.target.value)}
+                            onKeyDown={event => {
+                                if (event.key === 'Enter') void saveProfileName();
+                            }}
+                        />
+                        <button
+                            type="button"
+                            disabled={!profileName.trim() || profileNameSaving || profileName.trim() === (profile?.name ?? '').trim()}
+                            onClick={() => void saveProfileName()}
+                        >
+                            {profileNameSaving ? t('common.saving') : t('common.save')}
+                        </button>
+                    </div>
+                    {profileNameError && <span>{t('common.error_save')}</span>}
                 </div>
             </div>
 
