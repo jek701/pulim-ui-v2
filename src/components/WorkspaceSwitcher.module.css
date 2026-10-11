@@ -99,8 +99,6 @@
 .inviteAction b { font-size: 14px; font-weight: 750; }
 .inviteAction small { font-size: 11px; opacity: .82; }
 .inviteActionIcon { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px; background: rgba(255,255,255,.18); }
-.inviteActionSecondary { color: var(--accent2); border: 1px solid rgba(124,58,237,.25); background: rgba(124,58,237,.10); }
-.inviteActionSecondary .inviteActionIcon { background: rgba(124,58,237,.14); }
 .copyLink { min-height: 40px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; color: var(--text2); font-size: 13px; font-weight: 650; }
 .copyLink small { width: 100%; text-align: center; color: var(--text3); font-size: 11px; font-weight: 500; }
 .inviteStatus { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border-radius: 13px; background: var(--surface2); color: var(--text2); font-size: 12px; line-height: 1.45; }

@@ -1075,8 +1075,6 @@ const ru = {
     join: 'Присоединиться',
     joining: 'Подключаем…',
     invite_partner: 'Пригласить партнёра',
-    pick_contact: 'Выбрать из контактов',
-    pick_contact_hint: 'Откроется список личных чатов Telegram',
     send_to_chat: 'Отправить приглашение в чат',
     send_to_chat_hint: 'Сообщение с кнопкой уйдёт от вашего имени',
     link_valid: 'Ссылка открывает Pulim в Telegram и действует 7 дней',

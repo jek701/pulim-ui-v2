@@ -1063,8 +1063,6 @@ const uz = {
         join: 'Qo‘shilish',
         joining: 'Ulanmoqda…',
         invite_partner: 'Juftingizni taklif qilish',
-        pick_contact: 'Kontaktlardan tanlash',
-        pick_contact_hint: 'Telegram’dagi shaxsiy chatlar ro‘yxati ochiladi',
         send_to_chat: 'Taklifni chatga yuborish',
         send_to_chat_hint: 'Tugmali xabar sizning nomingizdan yuboriladi',
         link_valid: 'Havola Pulim’ni Telegram’da ochadi va 7 kun amal qiladi',

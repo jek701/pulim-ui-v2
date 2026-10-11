@@ -1064,8 +1064,6 @@ const en = {
     join: 'Join family',
     joining: 'Joining…',
     invite_partner: 'Invite partner',
-    pick_contact: 'Choose from contacts',
-    pick_contact_hint: 'Opens your private Telegram chats',
     send_to_chat: 'Send invitation to a chat',
     send_to_chat_hint: 'A message with a button is sent from you',
     link_valid: 'The link opens Pulim in Telegram and is valid for 7 days',

@@ -28,7 +28,6 @@ interface AppContextType {
   reloadUser: () => Promise<void>;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
-  tabTransitionDirection: 'forward' | 'backward' | null;
   categoryFilter: string | null;
   setCategoryFilter: (id: string | null) => void;
   /** History filters live here so switching tabs no longer silently clears them. */
@@ -242,17 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [telegramRetryKey, setTelegramRetryKey] = useState(0);
   const [telegramLinkPending, setTelegramLinkPending] = useState(false);
   const [telegramLinkError, setTelegramLinkError] = useState<string | null>(null);
-  const [activeTab, setActiveTabState] = useState<Tab>(initialActiveTab);
-  const activeTabRef = useRef(activeTab);
-  const [tabTransitionDirection, setTabTransitionDirection] = useState<'forward' | 'backward' | null>(null);
-  const setActiveTab = useCallback((next: Tab) => {
-    const current = activeTabRef.current;
-    if (current === next) return;
-    const order: readonly Tab[] = ['home', 'transactions', 'cards', 'subscriptions', 'charts', 'calendar', 'settings'];
-    setTabTransitionDirection(order.indexOf(next) >= order.indexOf(current) ? 'forward' : 'backward');
-    activeTabRef.current = next;
-    setActiveTabState(next);
-  }, []);
+  const [activeTab, setActiveTab] = useState<Tab>(initialActiveTab);
   const [workspace, setWorkspaceState] = useState<'personal' | 'household'>(() => {
     try { return localStorage.getItem('pulim.workspace') === 'household' ? 'household' : 'personal'; }
     catch { return 'personal'; }
@@ -262,11 +251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try { localStorage.setItem('pulim.workspace', next); } catch { /* storage can be unavailable */ }
     setCategoryFilter(null);
     setHistoryFilters(EMPTY_HISTORY_FILTERS);
-    setActiveTabState(current => {
-      const next = current === 'subscriptions' || current === 'calendar' || current === 'charts' ? 'home' : current;
-      activeTabRef.current = next;
-      return next;
-    });
+    setActiveTab(current => current === 'subscriptions' || current === 'calendar' || current === 'charts' ? 'home' : current);
   }, []);
   const [transactionDeepLinkId, setTransactionDeepLinkId] = useState<string | null>(initialTransactionDeepLink);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -677,7 +662,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       url.searchParams.delete('tx');
       window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     }
-  }, [transactionDeepLinkId, setActiveTab]);
+  }, [transactionDeepLinkId]);
 
   const clearTransactionDeepLink = useCallback(() => setTransactionDeepLinkId(null), []);
 
@@ -768,7 +753,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       linkTelegram,
       dismissTelegramLinkPrompt,
       reloadUser,
-      activeTab, setActiveTab, tabTransitionDirection,
+      activeTab, setActiveTab,
       categoryFilter, setCategoryFilter,
       historyFilters, setHistoryFilters,
       tabResetNonce, requestTabReset,

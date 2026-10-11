@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HiCheck, HiCheckCircle, HiChevronDown, HiClipboardDocument, HiPaperAirplane, HiPlus, HiUser, HiUserPlus, HiUsers } from 'react-icons/hi2';
+import { HiCheck, HiCheckCircle, HiChevronDown, HiClipboardDocument, HiPaperAirplane, HiPlus, HiUser, HiUsers } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context';
 import { useHousehold } from '../hooks/useHousehold';
@@ -261,8 +261,7 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
   const { user } = useApp();
   const family = useHousehold(user?.uid ?? null);
   const canShareCard = Boolean(telegramApp?.shareMessage) && tgAtLeast('8.0');
-  const canPick = canShareCard;
-  const [busy, setBusy] = useState<'pick' | 'share' | null>(null);
+  const [busy, setBusy] = useState<'share' | null>(null);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
@@ -287,20 +286,6 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
       await navigator.share({ text, url: link }).catch(() => undefined);
     } else {
       await copy(current);
-    }
-  };
-
-  const pickContact = async () => {
-    if (!telegramApp?.shareMessage) return;
-    setBusy('pick'); setError('');
-    try {
-      const current = await ensureInvite();
-      const { messageId } = await family.prepareInviteShare(current.token);
-      telegramApp.shareMessage(messageId, sent => { if (sent) setShared(true); });
-    } catch (err) {
-      showError(err);
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -340,19 +325,8 @@ const InvitePanel = ({ householdName, invite, onInvite }: {
   return (
     <div className={styles.invitePanel}>
       <p className={styles.inviteTitle}>{t('family.invite_partner')}</p>
-      {canPick && (
-        <button
-          className={styles.inviteAction}
-          type="button"
-          disabled={busy !== null}
-          onClick={() => void pickContact()}
-        >
-          <span className={styles.inviteActionIcon}><HiUserPlus size={19} /></span>
-          <span><b>{t('family.pick_contact')}</b><small>{t('family.pick_contact_hint')}</small></span>
-        </button>
-      )}
       <button
-        className={`${styles.inviteAction} ${canPick ? styles.inviteActionSecondary : ''}`}
+        className={styles.inviteAction}
         type="button"
         disabled={busy !== null}
         onClick={sendToChat}
