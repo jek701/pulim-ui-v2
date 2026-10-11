@@ -1119,6 +1119,8 @@ const uz = {
         member_name_hint: 'Har bir ishtirokchi o‘z ismini kiritadi. U umumiy byudjetning barcha joyida yangilanadi.',
         personal_card_access: 'Shaxsiy kartalarga kirish',
         personal_card_access_hint: 'Tanlangan kartadan oilaviy xarajatlarni hisobga olishga ruxsat bering.',
+        add_card_to_budget: 'Umumiy byudjetga qo‘shish',
+        add_card_to_budget_hint: 'Kartadan «{{name}}» xarajatlari uchun foydalanish mumkin. Shaxsiy tarix va balans yopiq qoladi.',
         hide_balance: 'Balansni juftingizdan yashirish',
         show_balance: 'Balansni juftingizga ko‘rsatish',
         no_personal_cards: 'Avval shaxsiy makonda hisob qo‘shing.',

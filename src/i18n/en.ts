@@ -1120,6 +1120,8 @@ const en = {
     member_name_hint: 'Each participant sets their own name. It updates throughout the shared budget.',
     personal_card_access: 'Personal card access',
     personal_card_access_hint: 'Allow a card to be used for tracking family purchases.',
+    add_card_to_budget: 'Add to shared budget',
+    add_card_to_budget_hint: 'Use this card for purchases in “{{name}}”. Personal history and balance stay hidden.',
     hide_balance: 'Hide balance from partner',
     show_balance: 'Show balance to partner',
     no_personal_cards: 'Add a personal account in your personal space first.',

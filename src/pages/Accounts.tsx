@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { HiPlus, HiArrowsRightLeft, HiEye, HiEyeSlash } from 'react-icons/hi2';
 import { useApp } from '../context';
 import { useCards } from '../hooks/useCards';
+import { useHousehold } from '../hooks/useHousehold';
 import { useTransactions } from '../hooks/useTransactions';
 import { useEntitlements } from '../hooks/useEntitlements';
 import { usePremiumGate, PremiumCornerStar } from '../components/PremiumLock';
@@ -46,6 +47,7 @@ const Accounts = () => {
   const { t } = useTranslation();
   const { user } = useApp();
   const { cards, loading, add, update, remove, refill, saveCardOrder } = useCards(user?.uid ?? null);
+  const family = useHousehold(user?.uid ?? null);
   const { transfer } = useTransactions(user?.uid ?? null);
   const { isPremium } = useEntitlements();
   const premiumGate = usePremiumGate();
@@ -55,6 +57,7 @@ const Accounts = () => {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [hidden, setHidden] = useState(readHidden);
   const [dragging, setDragging] = useState(false);
+  const [familyAccessBusy, setFamilyAccessBusy] = useState<string | null>(null);
   // Savings/debts report when they show their own empty-state button, so the FAB hides.
   const [tabEmpty, setTabEmpty] = useState(false);
 
@@ -92,6 +95,15 @@ const Accounts = () => {
       confirmLabel: t('common.delete'),
     });
     if (ok) await remove(id);
+  };
+
+  const setFamilyAccess = async (id: string, enabled: boolean) => {
+    setFamilyAccessBusy(id);
+    try {
+      await family.setCardAccess(id, enabled, false);
+    } finally {
+      setFamilyAccessBusy(null);
+    }
   };
 
   const switchView = (v: AccountView) => { setView(v); setAddTrigger(0); setTabEmpty(false); };
@@ -199,6 +211,10 @@ const Accounts = () => {
           onEdit={() => setOverlay({ kind: 'edit', id: overlayCard.id })}
           onDelete={() => handleDelete(overlayCard.id)}
           onToggleInclude={include => { void update(overlayCard.id, { includeInTotalBalance: include }); }}
+          householdName={family.household?.name}
+          familyAccessEnabled={overlayCard.familyAccess?.householdId === family.household?.id && overlayCard.familyAccess?.enabled === true}
+          familyAccessBusy={familyAccessBusy === overlayCard.id}
+          onToggleFamilyAccess={enabled => { void setFamilyAccess(overlayCard.id, enabled); }}
           onClose={() => setOverlay(null)}
         />
       )}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { HiArrowsRightLeft, HiArrowDownTray, HiPencil, HiTrash } from 'react-icons/hi2';
+import { HiArrowsRightLeft, HiArrowDownTray, HiPencil, HiTrash, HiUsers } from 'react-icons/hi2';
 import type { Card } from '../../types';
 import { formatAmount } from '../../utils/format';
 import Modal from '../Modal';
@@ -16,12 +16,17 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onToggleInclude: (include: boolean) => void;
+  householdName?: string;
+  familyAccessEnabled?: boolean;
+  familyAccessBusy?: boolean;
+  onToggleFamilyAccess?: (enabled: boolean) => void;
   onClose: () => void;
 }
 
 /** Details + every action for one account; opened by tapping its plastic. */
 const AccountSheet = ({
-  card, hidden, canTransfer, onTransfer, onRefill, onEdit, onDelete, onToggleInclude, onClose,
+  card, hidden, canTransfer, onTransfer, onRefill, onEdit, onDelete, onToggleInclude,
+  householdName, familyAccessEnabled = false, familyAccessBusy = false, onToggleFamilyAccess, onClose,
 }: Props) => {
   const { t } = useTranslation();
   const isCredit = card.cardType === 'credit';
@@ -48,6 +53,24 @@ const AccountSheet = ({
       )}
 
       <SheetActions actions={actions} />
+
+      {householdName && onToggleFamilyAccess && (
+        <label className={formStyles.switchRow}>
+          <span>
+            <span className={formStyles.switchTitle}><HiUsers size={16} />{t('family.add_card_to_budget')}</span>
+            <small>{t('family.add_card_to_budget_hint', { name: householdName })}</small>
+          </span>
+          <span className={formStyles.switch}>
+            <input
+              type="checkbox"
+              checked={familyAccessEnabled}
+              disabled={familyAccessBusy}
+              onChange={e => onToggleFamilyAccess(e.target.checked)}
+            />
+            <span />
+          </span>
+        </label>
+      )}
 
       {!isCredit && (
         <label className={formStyles.switchRow}>

@@ -68,6 +68,12 @@
   cursor: pointer;
 }
 
+.switchTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .switchRow small {
   display: block;
   margin-top: 2px;
