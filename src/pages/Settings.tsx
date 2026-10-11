@@ -49,6 +49,7 @@ import {formatAmount} from '../utils/format';
 import Onboarding from './Onboarding';
 import EmojiInput from '../components/EmojiInput';
 import HomeWidgetsSettings from '../components/HomeWidgetsSettings';
+import WorkspaceSwitcher from '../components/WorkspaceSwitcher';
 import {resolveHomeWidgets, type HomeWidgetSetting} from '../utils/homeWidgets';
 import {DEFAULT_CATEGORIES} from '../utils/defaultCategories';
 import {SHORTCUT_INSTALL_URL} from '../utils/shortcut';
@@ -391,6 +392,11 @@ const Settings = () => {
                 </button>
                 {renderPremiumCard()}
             </div>
+
+            <section className={styles.menuSection}>
+                <p className={styles.sectionLabel}>{t('family.workspace_label')}</p>
+                <WorkspaceSwitcher/>
+            </section>
 
             <section className={styles.menuSection}>
                 <p className={styles.sectionLabel}>{t('settings.quick_settings')}</p>

@@ -35,12 +35,12 @@ const cleanInviteUrl = (token: string | null) => {
   window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
 };
 
-const WorkspaceSwitcher = () => {
+const WorkspaceSwitcher = ({ controllerOnly = false }: { controllerOnly?: boolean }) => {
   const { t } = useTranslation();
   const { user, workspace, setWorkspace } = useApp();
   const family = useHousehold(user?.uid ?? null);
-  const [inviteToken, setInviteToken] = useState<string | null>(inviteTokenFromLaunch);
-  const [showSetup, setShowSetup] = useState(() => Boolean(inviteToken));
+  const [inviteToken, setInviteToken] = useState<string | null>(() => controllerOnly ? inviteTokenFromLaunch() : null);
+  const [showSetup, setShowSetup] = useState(() => controllerOnly && Boolean(inviteToken));
   const [showChooser, setShowChooser] = useState(false);
 
   useEffect(() => {
@@ -57,17 +57,24 @@ const WorkspaceSwitcher = () => {
 
   return (
     <>
-      <button
-        className={`${styles.current} ${workspace === 'household' ? styles.currentFamily : ''}`}
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={showChooser}
-        onClick={() => setShowChooser(true)}
-      >
-        {workspace === 'household' ? <HiUsers size={15} /> : <HiUser size={15} />}
-        <span>{workspace === 'household' ? family.household?.name || t('family.shared') : t('family.personal')}</span>
-        <HiChevronDown size={14} />
-      </button>
+      {!controllerOnly && (
+        <button
+          className={styles.current}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={showChooser}
+          onClick={() => setShowChooser(true)}
+        >
+          <span className={`${styles.currentIcon} ${workspace === 'household' ? styles.currentFamilyIcon : ''}`}>
+            {workspace === 'household' ? <HiUsers size={19} /> : <HiUser size={19} />}
+          </span>
+          <span className={styles.currentCopy}>
+            <b>{t('family.workspace_label')}</b>
+            <small>{workspace === 'household' ? family.household?.name || t('family.shared') : t('family.personal')}</small>
+          </span>
+          <HiChevronDown size={17} />
+        </button>
+      )}
 
       {showChooser && (
         <Modal title={t('family.workspace_label')} onClose={() => setShowChooser(false)}>

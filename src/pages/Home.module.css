@@ -12,9 +12,6 @@
   padding: 20px 20px 12px;
 }
 
-.identity { min-width: 0; flex: 1; }
-.titleRow { display: flex; align-items: center; gap: 8px; min-width: 0; }
-
 .greeting {
   font-size: 13px;
   color: var(--text3);
@@ -22,10 +19,6 @@
 }
 
 .name {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 22px;
   font-weight: 700;
   text-transform: capitalize;

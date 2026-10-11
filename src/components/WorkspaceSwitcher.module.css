@@ -1,28 +1,27 @@
 .current {
-  max-width: 140px;
-  height: 30px;
-  padding: 0 9px;
-  flex: 0 1 auto;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text2);
+  gap: 10px;
+  border-radius: 15px;
+  color: var(--text);
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  font-size: 10px;
-  font-weight: 700;
+  text-align: left;
 }
-.current span {
+.currentCopy {
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.current svg:last-child { flex: 0 0 auto; color: var(--text3); }
-.currentFamily { color: #fff; border-color: transparent; background: linear-gradient(135deg, #6d28d9, #9333ea); box-shadow: 0 5px 16px rgba(124,58,237,.24); }
-.currentFamily svg:last-child { color: rgba(255,255,255,.72); }
+.currentCopy b { font-size: 13px; font-weight: 650; }
+.currentCopy small { overflow: hidden; color: var(--text3); font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
+.current > svg { flex: 0 0 auto; color: var(--text3); }
+.currentIcon { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 11px; color: var(--accent2); background: rgba(124,58,237,.12); }
+.currentFamilyIcon { color: #fff; background: linear-gradient(135deg, #6d28d9, #9333ea); }
 
 .workspaceList { display: flex; flex-direction: column; gap: 9px; }
 .workspaceList > button {

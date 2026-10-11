@@ -112,12 +112,9 @@ const FamilyHome = ({ family, onAdd }: { family: FamilyState; onAdd: () => void 
   return (
     <div className={styles.page}>
       <header className={styles.heroHeader}>
-        <div className={styles.heroIdentity}>
+        <div>
           <p>{t('family.shared_budget')}</p>
-          <div className={styles.heroTitleRow}>
-            <h1>{family.household?.name}</h1>
-            <WorkspaceSwitcher />
-          </div>
+          <h1>{family.household?.name}</h1>
         </div>
         <div className={styles.avatars}>
           {family.household?.members.map(member => (
@@ -435,6 +432,10 @@ const FamilySettings = ({ family }: { family: FamilyState }) => {
   return (
     <div className={styles.page}>
       <header className={styles.pageTitle}><div><p>{t('family.shared_budget')}</p><h1>{t('family.settings')}</h1></div><HiUsers size={24} /></header>
+
+      <section className={styles.workspaceSettings}>
+        <WorkspaceSwitcher />
+      </section>
 
       <section className={styles.settingsCard}>
         <div className={styles.settingsHeading}><div><h2>{t('family.members')}</h2><p>{t('family.members_hint')}</p></div><span>{family.household?.members.length}/2</span></div>
