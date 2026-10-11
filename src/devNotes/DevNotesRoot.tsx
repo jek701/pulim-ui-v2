@@ -4,6 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {HiOutlineLightBulb} from 'react-icons/hi2';
 import {useDevNotes, type DevNoteContext} from '../hooks/useDevNotes';
 import {captureScreenshot, describeTarget, DEV_NOTES_ATTR, elementAt} from './capture';
+import {telegramApp, tgAtLeast} from '../utils/telegram';
 import DevNotesList from './DevNotesList';
 import Sheet from './Sheet';
 import {placeLabel} from './place';
@@ -24,6 +25,12 @@ const LONG_PRESS_MS = 550;
 const FAB = 52;
 const EDGE = 8;
 const ui = {[DEV_NOTES_ATTR]: ''};
+
+const setTelegramVerticalSwipes = (enabled: boolean) => {
+  if (!telegramApp || !tgAtLeast('7.7')) return;
+  if (enabled) telegramApp.enableVerticalSwipes?.();
+  else telegramApp.disableVerticalSwipes?.();
+};
 
 const readNumber = (key: string) => {
   try { return Number(localStorage.getItem(key)) || 0; } catch { return 0; }
@@ -133,7 +140,10 @@ const Fab = ({badge, onTap, onLongPress}: {badge: number; onTap: () => void; onL
   const finish = () => {
     if (gesture.current) window.clearTimeout(gesture.current.timer);
     gesture.current = null;
+    setTelegramVerticalSwipes(true);
   };
+
+  useEffect(() => () => setTelegramVerticalSwipes(true), []);
 
   return createPortal(
     <button
@@ -146,6 +156,8 @@ const Fab = ({badge, onTap, onLongPress}: {badge: number; onTap: () => void; onL
         top: `calc(${EDGE}px + ${position.y} * (var(--app-height) - ${FAB + EDGE * 2}px))`,
       }}
       onPointerDown={event => {
+        event.preventDefault();
+        setTelegramVerticalSwipes(false);
         event.currentTarget.setPointerCapture(event.pointerId);
         const timer = window.setTimeout(() => {
           if (!gesture.current || gesture.current.dragged) return;
@@ -155,6 +167,7 @@ const Fab = ({badge, onTap, onLongPress}: {badge: number; onTap: () => void; onL
         gesture.current = {startX: event.clientX, startY: event.clientY, dragged: false, longPressed: false, timer};
       }}
       onPointerMove={event => {
+        event.preventDefault();
         const current = gesture.current;
         if (!current || current.longPressed) return;
         if (!current.dragged && Math.hypot(event.clientX - current.startX, event.clientY - current.startY) < 8) return;
