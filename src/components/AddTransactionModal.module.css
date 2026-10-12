@@ -524,6 +524,80 @@
   color: var(--text);
 }
 
+.addCategoryItem {
+  border-style: dashed;
+  border-color: var(--border);
+  background: transparent;
+}
+
+.addCategoryIcon {
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--accent2);
+}
+
+.quickCategoryForm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.quickCategoryPreview {
+  min-height: 70px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid;
+  border-radius: var(--r);
+}
+
+.quickCategoryPreview > span {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 23px;
+}
+
+.quickCategoryPreview > strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quickCategoryLabel {
+  margin-bottom: 9px;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.quickCategoryColors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quickCategoryColor {
+  width: 34px;
+  height: 34px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.quickCategoryColorActive {
+  border-color: var(--surface);
+  box-shadow: 0 0 0 2px var(--accent2);
+}
+
 .subRow {
   display: flex;
   flex-wrap: wrap;

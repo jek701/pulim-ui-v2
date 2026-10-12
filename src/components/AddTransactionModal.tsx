@@ -9,6 +9,8 @@ import {
     HiBanknotes,
     HiBuildingLibrary,
     HiXMark,
+    HiPlus,
+    HiLockClosed,
 } from 'react-icons/hi2';
 import {useTranslation} from 'react-i18next';
 import {
@@ -32,13 +34,20 @@ import {Input, Textarea} from './FormField';
 import {NumberInput} from './NumberInput';
 import type {Category, Subcategory, Currency, Card, Transaction, CardType} from '../types';
 import type {NewTransaction} from '../hooks/useTransactions';
+import type {NewCategory} from '../hooks/useCategories';
 import {CURRENCIES} from '../utils/currencies';
 import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
 import {formatAmount, toDateInput} from '../utils/format';
 import {useCategoryName} from '../utils/categoryName';
 import {useConfirm} from './ConfirmDialog';
 import {rankCategoriesByUsage, suggestTransactionAmounts} from '../utils/transactionSuggestions';
+import {useEntitlements} from '../hooks/useEntitlements';
+import {usePremiumGate} from './PremiumLock';
+import EmojiInput from './EmojiInput';
 import styles from './AddTransactionModal.module.css';
+
+const CATEGORY_COLORS = ['#30D158', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF9F0A', '#FF375F', '#FF453A', '#5AC8FA', '#FFD60A', '#636366'];
+const CATEGORY_ICONS = ['🍔', '🚗', '🛍️', '💡', '🎮', '🏥', '📚', '🏠', '✈️', '💈', '📦', '🏦', '💼', '💻', '📈', '🎁'];
 
 function applyOrder(cards: Card[], order: string[]): Card[] {
     if (!order.length) return cards;
@@ -96,17 +105,20 @@ interface Props {
     onClose: () => void;
     onReturn?: () => void;
     onSaveCardOrder: (ids: string[]) => Promise<void>;
+    onAddCategory?: (data: NewCategory) => Promise<Category>;
     recentCardIds?: string[];
 }
 
 const AddTransactionModal: React.FC<Props> = ({
                                                   categories, subcategories, transactions, cards, cardOrder, initialData,
-                                                  onAdd, onClose, onReturn, onSaveCardOrder,
+                                                  onAdd, onClose, onReturn, onSaveCardOrder, onAddCategory,
                                                   recentCardIds = [],
                                               }) => {
     const {t, i18n} = useTranslation();
     const categoryName = useCategoryName();
     const {confirm, node: confirmNode} = useConfirm();
+    const {isPremium} = useEntitlements();
+    const premiumGate = usePremiumGate();
     const editing = !!initialData;
     const [type, setType] = useState<'income' | 'expense'>(initialData?.type ?? 'expense');
     const [amount, setAmount] = useState(initialData ? String(initialData.amount) : '');
@@ -121,6 +133,15 @@ const AddTransactionModal: React.FC<Props> = ({
     const [showReorder, setShowReorder] = useState(false);
     const [showCardPicker, setShowCardPicker] = useState(false);
     const [cardSearch, setCardSearch] = useState('');
+    const [showAddCategory, setShowAddCategory] = useState(false);
+    const [categoryForm, setCategoryForm] = useState<NewCategory>({
+        name: '',
+        icon: '📦',
+        color: '#5E5CE6',
+        type: 'expense',
+    });
+    const [categorySaving, setCategorySaving] = useState(false);
+    const [categoryError, setCategoryError] = useState('');
 
     const initialSnapshot = useRef(JSON.stringify({
         type: initialData?.type ?? 'expense',
@@ -140,6 +161,7 @@ const AddTransactionModal: React.FC<Props> = ({
      * the transaction data itself was never at risk, but the typing was.
      */
     const handleClose = async () => {
+        if (showAddCategory || premiumGate.isOpen) return;
         if (!isDirty || saving) { onClose(); return; }
         const ok = await confirm({
             title: t('add_transaction.discard_title'),
@@ -275,6 +297,37 @@ const AddTransactionModal: React.FC<Props> = ({
         );
     };
 
+    const openAddCategory = () => {
+        if (!isPremium) {
+            premiumGate.open('categories');
+            return;
+        }
+        setCategoryForm({
+            name: '',
+            icon: type === 'income' ? '💰' : '📦',
+            color: '#5E5CE6',
+            type,
+        });
+        setCategoryError('');
+        setShowAddCategory(true);
+    };
+
+    const handleAddCategory = async () => {
+        if (!onAddCategory || !categoryForm.name.trim() || categorySaving) return;
+        setCategorySaving(true);
+        setCategoryError('');
+        try {
+            const category = await onAddCategory({...categoryForm, name: categoryForm.name.trim()});
+            setCategoryId(category.id);
+            setSubcategoryId('');
+            setShowAddCategory(false);
+        } catch {
+            setCategoryError(t('common.error_save'));
+        } finally {
+            setCategorySaving(false);
+        }
+    };
+
     const handleSave = async () => {
         if (!canSave) return;
         setSaving(true);
@@ -316,7 +369,8 @@ const AddTransactionModal: React.FC<Props> = ({
     };
 
     return (
-        <Modal
+        <>
+            <Modal
             title={editing ? t('add_transaction.title_edit') : t('add_transaction.title_new')}
             onClose={handleClose}
             footer={
@@ -530,6 +584,18 @@ const AddTransactionModal: React.FC<Props> = ({
                             <span className={styles.catName}>{categoryName(cat)}</span>
                         </button>
                     ))}
+                    {onAddCategory && (
+                        <button
+                            type="button"
+                            className={`${styles.catItem} ${styles.addCategoryItem}`}
+                            onClick={openAddCategory}
+                        >
+                            <span className={`${styles.catIcon} ${styles.addCategoryIcon}`}>
+                                {isPremium ? <HiPlus size={22}/> : <HiLockClosed size={17}/>}
+                            </span>
+                            <span className={styles.catName}>{t('settings.btn_add_category')}</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -561,8 +627,70 @@ const AddTransactionModal: React.FC<Props> = ({
             <Textarea label={t('add_transaction.comment_placeholder')}
                       placeholder={t('add_transaction.comment_placeholder')} value={comment}
                       onChange={e => setComment(e.target.value)} rows={2}/>
-            {confirmNode}
-        </Modal>
+                {confirmNode}
+            </Modal>
+
+            {showAddCategory && (
+                <Modal
+                    title={t('settings.modal_new_category')}
+                    onClose={() => !categorySaving && setShowAddCategory(false)}
+                    footer={
+                        <>
+                            {categoryError && <p className={styles.errorMsg}>{categoryError}</p>}
+                            <button
+                                type="button"
+                                className={`${styles.saveBtn} ${categorySaving || !categoryForm.name.trim() ? styles.disabled : ''}`}
+                                onClick={handleAddCategory}
+                                disabled={categorySaving || !categoryForm.name.trim()}
+                            >
+                                {categorySaving ? t('common.saving') : t('settings.btn_add_category')}
+                            </button>
+                        </>
+                    }
+                >
+                    <div className={styles.quickCategoryForm}>
+                        <div
+                            className={styles.quickCategoryPreview}
+                            style={{background: `${categoryForm.color}16`, borderColor: `${categoryForm.color}55`}}
+                        >
+                            <span style={{background: `${categoryForm.color}2b`}}>{categoryForm.icon}</span>
+                            <strong>{categoryForm.name.trim() || t('settings.category_preview_placeholder')}</strong>
+                        </div>
+                        <Input
+                            autoFocus
+                            label={t('common.name')}
+                            placeholder={t('settings.category_name_placeholder')}
+                            value={categoryForm.name}
+                            onChange={event => setCategoryForm(form => ({...form, name: event.target.value}))}
+                        />
+                        <EmojiInput
+                            label={t('settings.icon_label')}
+                            value={categoryForm.icon}
+                            onChange={icon => setCategoryForm(form => ({...form, icon}))}
+                            suggestions={CATEGORY_ICONS}
+                            placeholder={t('settings.emoji_placeholder')}
+                            compactSuggestions
+                        />
+                        <div>
+                            <p className={styles.quickCategoryLabel}>{t('settings.color_label')}</p>
+                            <div className={styles.quickCategoryColors}>
+                                {CATEGORY_COLORS.map(color => (
+                                    <button
+                                        type="button"
+                                        key={color}
+                                        className={`${styles.quickCategoryColor} ${categoryForm.color === color ? styles.quickCategoryColorActive : ''}`}
+                                        style={{background: color}}
+                                        onClick={() => setCategoryForm(form => ({...form, color}))}
+                                        aria-label={color}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+            {premiumGate.node}
+        </>
     );
 };
 
