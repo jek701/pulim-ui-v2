@@ -37,6 +37,7 @@ import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
 import {formatAmount, toDateInput} from '../utils/format';
 import {useCategoryName} from '../utils/categoryName';
 import {useConfirm} from './ConfirmDialog';
+import {rankCategoriesByUsage} from '../utils/transactionSuggestions';
 import styles from './AddTransactionModal.module.css';
 
 function applyOrder(cards: Card[], order: string[]): Card[] {
@@ -86,6 +87,7 @@ function SortableCardItem({card}: SortableCardItemProps) {
 interface Props {
     categories: Category[];
     subcategories: Subcategory[];
+    transactions: Transaction[];
     cards: Card[];
     cardOrder: string[];
     userId?: string;
@@ -98,7 +100,7 @@ interface Props {
 }
 
 const AddTransactionModal: React.FC<Props> = ({
-                                                  categories, subcategories, cards, cardOrder, initialData,
+                                                  categories, subcategories, transactions, cards, cardOrder, initialData,
                                                   onAdd, onClose, onReturn, onSaveCardOrder,
                                                   recentCardIds = [],
                                               }) => {
@@ -186,7 +188,11 @@ const AddTransactionModal: React.FC<Props> = ({
         onSaveCardOrder(newOrder);
     };
 
-    const filteredCats = categories.filter(c => c.type === type || c.type === 'both');
+    const filteredCats = useMemo(() => rankCategoriesByUsage(
+        categories.filter(category => category.type === type || category.type === 'both'),
+        transactions,
+        type,
+    ), [categories, transactions, type]);
     const filteredSubs = subcategories.filter(s => s.categoryId === categoryId);
     const cardRequired = cards.length > 0;
     const canSave = !!amount && parseFloat(amount) > 0 && !!categoryId && (!cardRequired || !!cardId);

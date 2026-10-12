@@ -47,6 +47,7 @@ const HouseholdSpace = () => {
     <AddTransactionModal
       categories={family.categories}
       subcategories={[]}
+      transactions={family.transactions}
       cards={family.cards}
       cardOrder={[]}
       initialData={editingTransaction ?? undefined}

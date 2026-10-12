@@ -1135,6 +1135,7 @@ const Transactions = () => {
                 <AddTransactionModal
                     categories={categories}
                     subcategories={subcategories}
+                    transactions={transactions}
                     cards={cards}
                     cardOrder={cardOrder}
                     recentCardIds={recentCardIds}
@@ -1155,6 +1156,7 @@ const Transactions = () => {
                 <AddTransactionModal
                     categories={categories}
                     subcategories={subcategories}
+                    transactions={transactions}
                     cards={cards}
                     cardOrder={cardOrder}
                     recentCardIds={recentCardIds}

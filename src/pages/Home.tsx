@@ -482,6 +482,7 @@ const Home = () => {
         <AddTransactionModal
           categories={categories}
           subcategories={subcategories}
+          transactions={transactions}
           cards={cards}
           cardOrder={cardOrder}
           recentCardIds={recentCardIds}
