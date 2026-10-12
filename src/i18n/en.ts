@@ -508,6 +508,7 @@ const en = {
     account_available: 'Available limit',
     account_no_results: 'No matching accounts',
     reorder_accounts: 'Reorder accounts',
+    amount_suggestions: 'Suggested amounts',
     category_label: 'Category',
     subcategory_label: 'Subcategory',
     subcategory_none: 'None',

@@ -508,6 +508,7 @@ const uz = {
         account_available: 'Mavjud limit',
         account_no_results: 'Mos hisob topilmadi',
         reorder_accounts: 'Hisoblar tartibini o‘zgartirish',
+        amount_suggestions: 'Summa takliflari',
         category_label: 'Kategoriya',
         subcategory_label: 'Ichki kategoriya',
         subcategory_none: 'Ichki kategoriyasiz',

@@ -514,6 +514,7 @@ const ru = {
     account_available: 'Доступный лимит',
     account_no_results: 'Подходящих счетов нет',
     reorder_accounts: 'Изменить порядок счетов',
+    amount_suggestions: 'Подсказки суммы',
     category_label: 'Категория',
     subcategory_label: 'Подкатегория',
     subcategory_none: 'Без подкатегории',

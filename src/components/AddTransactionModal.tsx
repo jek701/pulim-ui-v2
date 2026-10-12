@@ -37,7 +37,7 @@ import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
 import {formatAmount, toDateInput} from '../utils/format';
 import {useCategoryName} from '../utils/categoryName';
 import {useConfirm} from './ConfirmDialog';
-import {rankCategoriesByUsage} from '../utils/transactionSuggestions';
+import {rankCategoriesByUsage, suggestTransactionAmounts} from '../utils/transactionSuggestions';
 import styles from './AddTransactionModal.module.css';
 
 function applyOrder(cards: Card[], order: string[]): Card[] {
@@ -104,7 +104,7 @@ const AddTransactionModal: React.FC<Props> = ({
                                                   onAdd, onClose, onReturn, onSaveCardOrder,
                                                   recentCardIds = [],
                                               }) => {
-    const {t} = useTranslation();
+    const {t, i18n} = useTranslation();
     const categoryName = useCategoryName();
     const {confirm, node: confirmNode} = useConfirm();
     const editing = !!initialData;
@@ -193,6 +193,12 @@ const AddTransactionModal: React.FC<Props> = ({
         transactions,
         type,
     ), [categories, transactions, type]);
+    const amountSuggestions = useMemo(() => suggestTransactionAmounts(
+        transactions,
+        type,
+        currency,
+        categoryId,
+    ), [categoryId, currency, transactions, type]);
     const filteredSubs = subcategories.filter(s => s.categoryId === categoryId);
     const cardRequired = cards.length > 0;
     const canSave = !!amount && parseFloat(amount) > 0 && !!categoryId && (!cardRequired || !!cardId);
@@ -483,6 +489,25 @@ const AddTransactionModal: React.FC<Props> = ({
                 >
                     {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
                 </select>
+            </div>
+            <div className={styles.amountSuggestions} aria-label={t('add_transaction.amount_suggestions')}>
+                {amountSuggestions.map(suggestion => {
+                    const label = new Intl.NumberFormat(i18n.language, {
+                        notation: 'compact',
+                        maximumFractionDigits: 1,
+                    }).format(suggestion);
+                    return (
+                        <button
+                            type="button"
+                            key={suggestion}
+                            className={`${styles.amountSuggestion} ${Number(amount) === suggestion ? styles.amountSuggestionActive : ''}`}
+                            onClick={() => setAmount(String(suggestion))}
+                            aria-label={formatAmount(suggestion, currency)}
+                        >
+                            {label}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Categories */}

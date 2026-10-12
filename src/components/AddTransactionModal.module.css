@@ -74,6 +74,33 @@
   background: none;
 }
 
+.amountSuggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 7px;
+}
+
+.amountSuggestion {
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.amountSuggestion:active,
+.amountSuggestionActive {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--accent2);
+}
+
 .fieldLabel {
   font-size: 13px;
   font-weight: 500;
