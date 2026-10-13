@@ -42,14 +42,6 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'firestore-cache',
-              networkTimeoutSeconds: 10,
-            },
-          },
-          {
             urlPattern: /^https:\/\/identitytoolkit\.googleapis\.com\/.*/i,
             handler: 'NetworkOnly',
           },
