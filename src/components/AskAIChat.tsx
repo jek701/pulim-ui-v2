@@ -43,7 +43,7 @@ const AskAIChat = ({ onClose }: Props) => {
 
   const [showPremium, setShowPremium] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]); // optimistic local view before Firestore writes settle
+  const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]); // optimistic local view before API writes settle
   const [input, setInput] = useState('');
   const [streamingText, setStreamingText] = useState('');
   const [isThinking, setIsThinking] = useState(false);

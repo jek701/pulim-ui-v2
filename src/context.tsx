@@ -508,7 +508,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : null;
 
         // Show the success animation as soon as the payment service confirms
-        // the order. Firestore projection is allowed to catch up in parallel.
+        // the order. profile projection is allowed to catch up in parallel.
         paymentModalDismissedRef.current = false;
         setPaymentResult({ phase: 'success', order: confirmedOrder });
 

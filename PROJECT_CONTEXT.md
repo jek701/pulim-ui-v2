@@ -4,6 +4,20 @@ This file is a compact technical map of the Pulim codebase. It is intended to he
 
 Last reviewed: 2026-09-01.
 
+## Current data access — 2026-10-13 correction
+
+Business data is accessed through `src/api/client.ts`, React Query hooks and
+`pulim-api-v2`. Payments use `src/api/paymentClient.ts` and `pulim-payment-api`.
+Firebase Auth remains responsible for sign-in and tokens. The UI no longer
+initializes Firestore, exports `db`, or contains the old unused `runImport` utility.
+The PWA no longer has a Firestore runtime caching rule. The main API implementation now uses a separate MySQL application schema;
+production rollout and verification are recorded in the migration runbook.
+
+The Firestore security/collections/listener and client-side balance instructions
+below describe the historical implementation. Do not use them to add new client
+writes or listeners. Use the current REST hooks and atomic backend endpoints.
+Migration progress: `pulim-api-v2/docs/mysql-migration-progress.ru.md`.
+
 ## Product Summary
 
 Pulim is a mobile-first personal finance tracker built for Uzbekistan users, with UZS as the base currency. It is designed to run as a Telegram Mini App and as a PWA. The app tracks income, expenses, accounts, cards, cash wallets, subscriptions, planned expenses/income, debts, savings goals, deposits, budgets, exchange rates, and AI financial analysis.
@@ -19,7 +33,7 @@ Core business idea:
 
 - Frontend: React 19, TypeScript, Vite 8.
 - Styling: CSS Modules plus global CSS variables in `src/global.css`.
-- Backend/data: Firebase Auth and Firestore.
+- Auth: Firebase Auth. Business data: REST through the main API; payments through Payment API.
 - PWA: `vite-plugin-pwa` with Firebase Hosting output from `dist`.
 - i18n: `i18next`, `react-i18next`, locales in `src/i18n`.
 - Charts: `recharts`.
@@ -48,7 +62,7 @@ Configured in `.env` or deployment environment:
 - `VITE_TELEGRAM_AUTH_API_URL`
 - No model-provider key belongs in Vite. `OPENAI_API_KEY` is configured only in `pulim-api-v2`.
 
-`src/firebase.ts` exports `firebaseConfigured`, `firebaseProjectId`, `firebaseAuthDomain`, `db`, and `auth`. If Firebase env vars are missing, `App.tsx` renders a setup screen instead of the app.
+`src/firebase.ts` exports `firebaseConfigured`, `firebaseProjectId`, `firebaseAuthDomain`, and `auth`. If Firebase env vars are missing, `App.tsx` renders a setup screen instead of the app.
 
 ## Entry Points and App Shell
 

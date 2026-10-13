@@ -23,7 +23,7 @@ frontend never talks to Eskiz and there is **no reCAPTCHA** anywhere in the flow
 Flow:
 
 1. `POST /auth/phone/send-code` — the API issues a 6-digit code, stores only its
-   HMAC in Firestore (`phoneVerifications`), and sends the SMS via Eskiz.
+   HMAC in the main API database (`phone_verifications`), and sends the SMS via Eskiz.
 2. `POST /auth/phone/verify` — on a match the API mints a Firebase **custom
    token**, which the client exchanges via `signInWithCustomToken`.
 
