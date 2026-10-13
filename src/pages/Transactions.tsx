@@ -69,7 +69,7 @@ const Transactions = () => {
         updateReturn,
         loading: txLoading,
     } = useTransactions(user?.uid ?? null);
-    const {categories, subcategories, addCategory, loading: catLoading} = useCategories(user?.uid ?? null);
+    const {categories, subcategories, addCategory, addSubcategory, loading: catLoading} = useCategories(user?.uid ?? null);
     const {cards, cardOrder, saveCardOrder} = useCards(user?.uid ?? null);
     const {budgets} = useBudgets(user?.uid ?? null);
     const {isPremium} = useEntitlements();
@@ -1141,6 +1141,7 @@ const Transactions = () => {
                     recentCardIds={recentCardIds}
                     onSaveCardOrder={saveCardOrder}
                     onAddCategory={addCategory}
+                    onAddSubcategory={addSubcategory}
                     onAdd={async (data: NewTransaction) => {
                         // The server adjusts the card balance when cardId is present.
                         await add(data);
@@ -1163,6 +1164,7 @@ const Transactions = () => {
                     recentCardIds={recentCardIds}
                     onSaveCardOrder={saveCardOrder}
                     onAddCategory={addCategory}
+                    onAddSubcategory={addSubcategory}
                     initialData={editingTx}
                     onAdd={handleEditSave}
                     onClose={() => setEditingTx(null)}

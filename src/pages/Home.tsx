@@ -26,7 +26,7 @@ const Home = () => {
   const { t, i18n } = useTranslation();
   const { user, profile, setActiveTab, setCategoryFilter } = useApp();
   const { transactions, add, returnTransaction, loading: txLoading } = useTransactions(user?.uid ?? null);
-  const { categories, subcategories, addCategory, loading: catLoading } = useCategories(user?.uid ?? null);
+  const { categories, subcategories, addCategory, addSubcategory, loading: catLoading } = useCategories(user?.uid ?? null);
   const { cards, cardOrder, saveCardOrder, loading: cardsLoading } = useCards(user?.uid ?? null);
   const { budgets, loading: budgetLoading } = useBudgets(user?.uid ?? null);
   const [showAdd, setShowAdd] = useState(false);
@@ -488,6 +488,7 @@ const Home = () => {
           recentCardIds={recentCardIds}
           onSaveCardOrder={saveCardOrder}
           onAddCategory={addCategory}
+                    onAddSubcategory={addSubcategory}
           userId={user?.uid}
           onAdd={async (data: NewTransaction) => {
             // The server adjusts the card balance when cardId is present.

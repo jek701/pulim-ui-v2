@@ -35,8 +35,9 @@ export function useCategories(userId: string | null) {
     qc.invalidateQueries({ queryKey: qk.categories(uid) });
   };
   const addSubcategory = async (data: NewSubcategory) => {
-    await api.post('/v1/subcategories', data);
-    qc.invalidateQueries({ queryKey: qk.subcategories(uid) });
+    const subcategory = await api.post<Subcategory>('/v1/subcategories', data);
+    await qc.invalidateQueries({ queryKey: qk.subcategories(uid) });
+    return subcategory;
   };
   const updateSubcategory = async (id: string, data: Partial<NewSubcategory>) => {
     await api.patch(`/v1/subcategories/${id}`, data);

@@ -34,7 +34,7 @@ import {Input, Textarea} from './FormField';
 import {NumberInput} from './NumberInput';
 import type {Category, Subcategory, Currency, Card, Transaction, CardType} from '../types';
 import type {NewTransaction} from '../hooks/useTransactions';
-import type {NewCategory} from '../hooks/useCategories';
+import type {NewCategory, NewSubcategory} from '../hooks/useCategories';
 import {CURRENCIES} from '../utils/currencies';
 import {getRateToBase, BASE_CURRENCY} from '../utils/nbuRates';
 import {formatAmount, toDateInput} from '../utils/format';
@@ -106,12 +106,13 @@ interface Props {
     onReturn?: () => void;
     onSaveCardOrder: (ids: string[]) => Promise<void>;
     onAddCategory?: (data: NewCategory) => Promise<Category>;
+    onAddSubcategory?: (data: NewSubcategory) => Promise<Subcategory>;
     recentCardIds?: string[];
 }
 
 const AddTransactionModal: React.FC<Props> = ({
                                                   categories, subcategories, transactions, cards, cardOrder, initialData,
-                                                  onAdd, onClose, onReturn, onSaveCardOrder, onAddCategory,
+                                                  onAdd, onClose, onReturn, onSaveCardOrder, onAddCategory, onAddSubcategory,
                                                   recentCardIds = [],
                                               }) => {
     const {t, i18n} = useTranslation();
@@ -140,6 +141,10 @@ const AddTransactionModal: React.FC<Props> = ({
         color: '#5E5CE6',
         type: 'expense',
     });
+    const [showAddSubcategory, setShowAddSubcategory] = useState(false);
+    const [subcategoryName, setSubcategoryName] = useState('');
+    const [subcategorySaving, setSubcategorySaving] = useState(false);
+    const [subcategoryError, setSubcategoryError] = useState('');
     const [categorySaving, setCategorySaving] = useState(false);
     const [categoryError, setCategoryError] = useState('');
 
@@ -161,7 +166,7 @@ const AddTransactionModal: React.FC<Props> = ({
      * the transaction data itself was never at risk, but the typing was.
      */
     const handleClose = async () => {
-        if (showAddCategory || premiumGate.isOpen) return;
+        if (showAddCategory || showAddSubcategory || premiumGate.isOpen) return;
         if (!isDirty || saving) { onClose(); return; }
         const ok = await confirm({
             title: t('add_transaction.discard_title'),
@@ -325,6 +330,21 @@ const AddTransactionModal: React.FC<Props> = ({
             setCategoryError(t('common.error_save'));
         } finally {
             setCategorySaving(false);
+        }
+    };
+
+    const handleAddSubcategory = async () => {
+        if (!onAddSubcategory || !categoryId || !subcategoryName.trim() || subcategorySaving) return;
+        setSubcategorySaving(true);
+        setSubcategoryError('');
+        try {
+            const subcategory = await onAddSubcategory({categoryId, name: subcategoryName.trim()});
+            setSubcategoryId(subcategory.id);
+            setShowAddSubcategory(false);
+        } catch {
+            setSubcategoryError(t('common.error_save'));
+        } finally {
+            setSubcategorySaving(false);
         }
     };
 
@@ -600,7 +620,7 @@ const AddTransactionModal: React.FC<Props> = ({
             </div>
 
             {/* Subcategories */}
-            {filteredSubs.length > 0 && (
+            {categoryId && (filteredSubs.length > 0 || onAddSubcategory) && (
                 <div>
                     <p className={styles.fieldLabel}>{t('add_transaction.subcategory_label')}</p>
                     <div className={styles.subRow}>
@@ -619,6 +639,22 @@ const AddTransactionModal: React.FC<Props> = ({
                                 {s.name}
                             </button>
                         ))}
+                        {onAddSubcategory && (
+                            <button
+                                type="button"
+                                className={styles.subChip}
+                                onClick={() => {
+                                    if (!isPremium) { premiumGate.open('categories'); return; }
+                                    setSubcategoryName('');
+                                    setSubcategoryError('');
+                                    setShowAddSubcategory(true);
+                                }}
+                                aria-label={t('settings.btn_add_subcategory_save')}
+                            >
+                                {isPremium ? <HiPlus size={16}/> : <HiLockClosed size={16}/>}
+                                {t('settings.btn_add_subcategory_save')}
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -686,6 +722,29 @@ const AddTransactionModal: React.FC<Props> = ({
                                 ))}
                             </div>
                         </div>
+                    </div>
+                </Modal>
+            )}
+            {showAddSubcategory && (
+                <Modal
+                    title={t('settings.modal_new_subcategory')}
+                    onClose={() => !subcategorySaving && setShowAddSubcategory(false)}
+                    footer={<>
+                        {subcategoryError && <p className={styles.errorMsg}>{subcategoryError}</p>}
+                        <button type="button" className={styles.saveBtn}
+                            disabled={subcategorySaving || !subcategoryName.trim()}
+                            onClick={handleAddSubcategory}>
+                            {subcategorySaving ? t('common.saving') : t('settings.btn_add_subcategory_save')}
+                        </button>
+                    </>}
+                >
+                    <div className={styles.quickCategoryForm}>
+                        <p className={styles.fieldLabel}>
+                            {t('settings.subcategory_parent_label')}: {categoryName(categories.find(category => category.id === categoryId)!)}
+                        </p>
+                        <Input autoFocus label={t('settings.subcategory_name_label')}
+                            placeholder={t('settings.subcategory_name_placeholder')}
+                            value={subcategoryName} onChange={event => setSubcategoryName(event.target.value)}/>
                     </div>
                 </Modal>
             )}
