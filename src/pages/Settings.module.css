@@ -855,35 +855,6 @@
   gap: 14px;
 }
 
-.categoryPreview {
-  min-height: 70px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 11px 12px;
-  border: 1px solid;
-  border-radius: 17px;
-}
-
-.categoryPreviewIcon {
-  width: 46px;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 15px;
-  font-size: 24px;
-}
-
-.categoryPreviewCopy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.categoryPreviewCopy small,
 .parentCategoryCopy small {
   color: var(--text3);
   font-size: 9px;
@@ -892,19 +863,28 @@
   text-transform: uppercase;
 }
 
-.categoryPreviewCopy strong {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 16px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.categoryPreviewCopy > span {
+.categoryAppearance summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
   color: var(--text2);
-  font-size: 11px;
+  font-size: 13px;
 }
+.categoryAppearance summary::-webkit-details-marker { display: none; }
+.categoryAppearance summary > span:nth-child(2) { flex: 1; }
+.categoryAppearance[open] summary > svg { transform: rotate(90deg); }
+.categoryAppearanceIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 22px;
+}
+.categoryColorDot { width: 14px; height: 14px; border-radius: 50%; }
+.categoryAppearanceBody { display: flex; flex-direction: column; gap: 14px; padding-top: 16px; }
 
 .formCard {
   width: 100%;

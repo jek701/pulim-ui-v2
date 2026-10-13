@@ -106,3 +106,12 @@
   border-color: var(--accent);
   background: rgba(124, 58, 237, 0.12);
 }
+
+.collapsedInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

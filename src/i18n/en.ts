@@ -932,6 +932,7 @@ const en = {
     icon_label: 'Icon',
     color_label: 'Color',
     emoji_placeholder: 'Type or paste any emoji…',
+    category_appearance: 'Icon and color',
     category_preview_label: 'Preview',
     category_preview_placeholder: 'Your new category',
     btn_add_category: 'Add Category',

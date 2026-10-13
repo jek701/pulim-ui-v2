@@ -944,6 +944,7 @@ const ru = {
     icon_label: 'Иконка',
     color_label: 'Цвет',
     emoji_placeholder: 'Введите или вставьте любой эмодзи…',
+    category_appearance: 'Значок и цвет',
     category_preview_label: 'Предпросмотр',
     category_preview_placeholder: 'Ваша новая категория',
     btn_add_category: 'Добавить категорию',

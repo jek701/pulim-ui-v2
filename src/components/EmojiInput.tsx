@@ -9,6 +9,7 @@ interface Props {
   label?: string;
   placeholder?: string;
   compactSuggestions?: boolean;
+  collapsibleInput?: boolean;
 }
 
 const getFirstEmoji = (str: string): string => {
@@ -16,7 +17,7 @@ const getFirstEmoji = (str: string): string => {
   return seg[0]?.segment ?? '';
 };
 
-const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, placeholder, compactSuggestions = false }) => {
+const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, placeholder, compactSuggestions = false, collapsibleInput = false }) => {
   const { t } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t('common.emoji_placeholder');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,13 +38,16 @@ const EmojiInput: React.FC<Props> = ({ value, onChange, suggestions, label, plac
         <button
           type="button"
           className={`${styles.preview} ${focused ? styles.previewFocused : ''}`}
+          aria-label={label ?? t('common.emoji_placeholder')}
+          aria-expanded={collapsibleInput ? focused : undefined}
           onClick={() => { inputRef.current?.focus(); setFocused(true); }}
         >
           {value}
         </button>
         <input
           ref={inputRef}
-          className={styles.hiddenInput}
+          className={`${styles.hiddenInput} ${collapsibleInput && !focused ? styles.collapsedInput : ''}`}
+          aria-label={label ?? resolvedPlaceholder}
           placeholder={resolvedPlaceholder}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

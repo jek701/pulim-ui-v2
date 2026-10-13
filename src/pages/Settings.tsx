@@ -1084,11 +1084,6 @@ const Settings = () => {
         );
     };
 
-    const categoryTypeLabel = catForm.type === 'expense'
-        ? t('settings.type_expense')
-        : catForm.type === 'income'
-            ? t('settings.type_income')
-            : t('settings.type_both');
     const subcategoryParent = categories.find(category => category.id === showAddSub);
 
     const content: Record<SettingsView, () => ReactNode> = {
@@ -1120,17 +1115,6 @@ const Settings = () => {
                     }
                 >
                     <div className={styles.categoryForm}>
-                        <div className={styles.categoryPreview}
-                             style={{background: `${catForm.color}16`, borderColor: `${catForm.color}55`}}>
-                            <span className={styles.categoryPreviewIcon}
-                                  style={{background: `${catForm.color}2b`}}>{catForm.icon}</span>
-                            <span className={styles.categoryPreviewCopy}>
-                <small>{t('settings.category_preview_label')}</small>
-                <strong>{catForm.name.trim() || t('settings.category_preview_placeholder')}</strong>
-                <span>{categoryTypeLabel}</span>
-              </span>
-                        </div>
-
                         <div className={styles.formCard}>
                             <Input
                                 autoFocus
@@ -1155,29 +1139,41 @@ const Settings = () => {
                                     ))}
                                 </div>
                             </div>
-                            <EmojiInput
-                                label={t('settings.icon_label')}
-                                value={catForm.icon}
-                                onChange={icon => setFormField('icon', icon)}
-                                suggestions={ICON_SUGGESTIONS}
-                                placeholder={t('settings.emoji_placeholder')}
-                                compactSuggestions
-                            />
-                            <div>
-                                <p className={styles.pickLabel}>{t('settings.color_label')}</p>
-                                <div className={styles.colorRow}>
-                                    {COLORS.map(color => (
-                                        <button
-                                            type="button"
-                                            key={color}
-                                            className={`${styles.colorBtn} ${catForm.color === color ? styles.colorActive : ''}`}
-                                            style={{background: color}}
-                                            onClick={() => setFormField('color', color)}
-                                            aria-label={color}
-                                        />
-                                    ))}
+                            <details className={styles.categoryAppearance}>
+                                <summary>
+                                    <span className={styles.categoryAppearanceIcon}
+                                        style={{background: `${catForm.color}22`}}>{catForm.icon}</span>
+                                    <span>{t('settings.category_appearance')}</span>
+                                    <span className={styles.categoryColorDot} style={{background: catForm.color}}/>
+                                    <HiChevronRight size={18}/>
+                                </summary>
+                                <div className={styles.categoryAppearanceBody}>
+                                    <EmojiInput
+                                        label={t('settings.icon_label')}
+                                        value={catForm.icon}
+                                        onChange={icon => setFormField('icon', icon)}
+                                        suggestions={ICON_SUGGESTIONS}
+                                        placeholder={t('settings.emoji_placeholder')}
+                                        compactSuggestions
+                                        collapsibleInput
+                                    />
+                                    <div>
+                                        <p className={styles.pickLabel}>{t('settings.color_label')}</p>
+                                        <div className={styles.colorRow}>
+                                            {COLORS.map(color => (
+                                                <button
+                                                    type="button"
+                                                    key={color}
+                                                    className={`${styles.colorBtn} ${catForm.color === color ? styles.colorActive : ''}`}
+                                                    style={{background: color}}
+                                                    onClick={() => setFormField('color', color)}
+                                                    aria-label={color}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </details>
                         </div>
                     </div>
                 </Modal>
