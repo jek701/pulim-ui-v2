@@ -1,5 +1,8 @@
 # Pulim Project Context for AI
 
+> Newer, more complete docs are in [docs/ai/](docs/ai/) (start with `AGENTS.md`).
+> This file is kept for history; parts of it describe the Firestore era.
+
 This file is a compact technical map of the Pulim codebase. It is intended to help future AI/code agents understand the project quickly without re-reading every file.
 
 Last reviewed: 2026-09-01.
